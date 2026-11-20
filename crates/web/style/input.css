@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@source "../src";
+
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+/* ---------- Design tokens (from the Checko logo) ---------- */
+:root {
+  --green: #65a982;
+  --green-strong: #4f9470;
+  --lavender: #a48cd9;
+  --peach: #f4a587;
+  --ink: #251e2e;
+  --bg: #f7f5f2;
+  --surface: rgb(255 255 255 / 0.62);
+  --surface-border: rgb(255 255 255 / 0.9);
+  --text: var(--ink);
+  --muted: #6b6475;
+  --shadow: 0 10px 30px -12px rgb(37 30 46 / 0.25);
+  --spot: rgb(101 169 130 / 0.18);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17131d;
+    --surface: rgb(40 33 50 / 0.6);
+    --surface-border: rgb(255 255 255 / 0.08);
+    --text: #f3eff7;
+    --muted: #b2a9bd;
+    --shadow: 0 10px 30px -12px rgb(0 0 0 / 0.6);
+    --spot: rgb(164 140 217 / 0.2);
+  }
+}
+
+@theme {
+  --font-sans: "Nunito", ui-rounded, system-ui, sans-serif;
+}
+
+html { background: var(--bg); color: var(--text); }
+body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+.text-muted { color: var(--muted); }
+
+.brand { display: flex; align-items: center; gap: 0.5rem; font-size: 1.6rem; font-weight: 900; letter-spacing: -0.03em; color: var(--text); text-decoration: none; }
+.brand img { height: 2.4rem; width: auto; }
+.page-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; line-height: 1.1; letter-spacing: -0.02em; }
+
+/* ---------- Aurora background ---------- */
+.aurora { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+.blob { position: absolute; width: 55vmax; height: 55vmax; border-radius: 50%; filter: blur(90px); opacity: 0.45; }
+.blob-green { background: var(--green); top: -20vmax; left: -15vmax; animation: drift1 22s ease-in-out infinite alternate; }
+.blob-lavender { background: var(--lavender); top: 10vmax; right: -20vmax; animation: drift2 26s ease-in-out infinite alternate; }
+.blob-peach { background: var(--peach); bottom: -30vmax; left: 20vmax; opacity: 0.35; animation: drift3 30s ease-in-out infinite alternate; }
+@media (prefers-color-scheme: dark) { .blob { opacity: 0.22; } }
+.grain { position: absolute; inset: 0; opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+@keyframes drift1 { to { transform: translate(12vmax, 8vmax) scale(1.1); } }
+@keyframes drift2 { to { transform: translate(-10vmax, 12vmax) scale(0.9); } }
+@keyframes drift3 { to { transform: translate(-14vmax, -8vmax) scale(1.15); } }
+
+/* ---------- Glass + spotlight cards ---------- */
+.card {
+  position: relative; overflow: hidden; border-radius: 1.5rem; padding: 1.5rem;
+  background: var(--surface); border: 1px solid var(--surface-border);
+  backdrop-filter: blur(18px) saturate(140%); box-shadow: var(--shadow);
+  transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s;
+}
+.card:hover { transform: translateY(-3px); }
+.spotlight::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.3s;
+  background: radial-gradient(420px circle at var(--x, 50%) var(--y, 50%), var(--spot), transparent 60%);
+}
+.spotlight:hover::before { opacity: 1; }
+
+/* ---------- Bento grid ---------- */
+.bento { display: grid; gap: 1.25rem; grid-template-columns: repeat(1, minmax(0, 1fr)); }
+@media (min-width: 640px) { .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) {
+  .bento { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .bento-wide { grid-column: span 2; grid-row: span 2; }
+}
+
+/* ---------- XP bar ---------- */
+.xp-bar { height: 0.9rem; border-radius: 999px; background: rgb(101 169 130 / 0.15); overflow: hidden; }
+.xp-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--lavender)); transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+
+/* ---------- Quick add (rotating placeholder) ---------- */
+.quick-add {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.9rem 1.25rem; border-radius: 1.25rem;
+  background: var(--surface); border: 1px solid var(--surface-border); backdrop-filter: blur(18px); box-shadow: var(--shadow);
+  color: var(--green-strong); transition: box-shadow 0.2s;
+}
+.quick-add:focus-within { box-shadow: 0 0 0 3px rgb(101 169 130 / 0.4), var(--shadow); }
+.quick-add input { flex: 1; min-width: 0; background: transparent; border: 0; outline: 0; font: inherit; font-size: 1.1rem; color: var(--text); }
+.quick-add input::placeholder { color: var(--muted); }
+.quick-add kbd { font: inherit; font-size: 0.75rem; font-weight: 800; color: var(--muted); padding: 0.2rem 0.5rem; border-radius: 0.5rem; border: 1px solid var(--surface-border); }
+
+.chip { font-size: 0.8rem; font-weight: 800; padding: 0.3rem 0.8rem; border-radius: 999px; background: rgb(164 140 217 / 0.2); color: var(--lavender); }
+
+/* ---------- Blur text ---------- */
+.blur-word { display: inline-block; margin-right: 0.25em; animation: blurIn 0.7s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes blurIn { from { opacity: 0; filter: blur(10px); transform: translateY(8px); } to { opacity: 1; filter: blur(0); transform: none; } }
+
+/* ---------- Mascot sprite ---------- */
+.mascot {
+  width: var(--size); height: var(--size);
+  background-repeat: no-repeat; background-size: calc(var(--frames) * var(--size)) var(--size);
+  animation: sprite var(--dur) steps(var(--frames)) infinite;
+  image-rendering: auto;
+}
+@keyframes sprite { from { background-position: 0 0; } to { background-position: calc(-1 * var(--frames) * var(--size)) 0; } }
+.mascot-button { background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; transition: transform 0.25s cubic-bezier(.34,1.56,.64,1); }
+.mascot-button:hover { transform: scale(1.06) rotate(-3deg); }
+.mascot-button:active { transform: scale(0.94); }
+
+/* ---------- Floating dock ---------- */
+.dock {
+  position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 50;
+  display: flex; align-items: flex-end; gap: 0.5rem; padding: 0.6rem 0.8rem; border-radius: 1.5rem;
+  background: var(--surface); border: 1px solid var(--surface-border); backdrop-filter: blur(20px) saturate(150%); box-shadow: var(--shadow);
+}
+.dock-item {
+  position: relative; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 1rem;
+  text-decoration: none; transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), background 0.2s; transform-origin: bottom;
+}
+.dock-icon { font-size: 1.55rem; }
+.dock-item:hover { transform: scale(1.35) translateY(-4px); }
+.dock-item:hover + .dock-item, .dock-item:has(+ .dock-item:hover) { transform: scale(1.15); }
+.dock-item[aria-current="page"] { background: rgb(101 169 130 / 0.22); }
+.dock-item[aria-current="page"]::after {
+  content: ""; position: absolute; bottom: -0.35rem; width: 0.3rem; height: 0.3rem; border-radius: 50%; background: var(--green);
+}
+.dock-tooltip {
+  position: absolute; bottom: calc(100% + 0.6rem); padding: 0.25rem 0.6rem; border-radius: 0.6rem; white-space: nowrap;
+  font-size: 0.75rem; font-weight: 800; background: var(--ink); color: #fff; opacity: 0; transform: translateY(4px);
+  pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+}
+.dock-item:hover .dock-tooltip, .dock-item:focus-visible .dock-tooltip { opacity: 1; transform: none; }
+.dock-item:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
