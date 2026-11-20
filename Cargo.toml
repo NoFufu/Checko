@@ -1,0 +1,18 @@
+[workspace]
+resolver = "2"
+members = ["crates/core", "crates/web"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+chrono = { version = "0.4", default-features = false, features = ["serde", "std"] }
+uuid = { version = "1", features = ["v7", "serde", "js"] }
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1

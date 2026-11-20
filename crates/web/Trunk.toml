@@ -1,0 +1,16 @@
+[build]
+target = "index.html"
+dist = "dist"
+
+[watch]
+ignore = ["style/output.css"]
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 8080
+
+# Build Tailwind before every Trunk build.
+[[hooks]]
+stage = "pre_build"
+command = "sh"
+command_arguments = ["-c", "cd ../.. && npx tailwindcss -i crates/web/style/input.css -o crates/web/style/output.css --minify"]
