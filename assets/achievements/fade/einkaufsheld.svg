@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Einkaufsheld</title>
+  <defs>
+    <linearGradient id="einkaufsheld" x2="0" y2="1">
+      <stop offset="0" stop-color="#d9edab"/>
+      <stop offset="0.48" stop-color="#91c770"/>
+      <stop offset="1" stop-color="#34774f"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#einkaufsheld)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path d="M45 59l12-22m26 22L71 37" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path fill-rule="evenodd" d="M32 55h64a6 6 0 0 1 0 12h-3l-6 25a7 7 0 0 1-7 5H48a7 7 0 0 1-7-5l-6-25h-3a6 6 0 0 1 0-12Zm15 20 3 12a3 3 0 1 0 6-1l-3-12a3 3 0 0 0-6 1Zm14-1v12a3 3 0 0 0 6 0V74a3 3 0 0 0-6 0Zm14 0-3 12a3 3 0 0 0 6 1l3-12a3 3 0 0 0-6-1Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><path d="M45 59l12-22m26 22L71 37" fill="none" stroke="currentColor" stroke-width="8" stroke-linecap="round"/><path fill-rule="evenodd" d="M32 55h64a6 6 0 0 1 0 12h-3l-6 25a7 7 0 0 1-7 5H48a7 7 0 0 1-7-5l-6-25h-3a6 6 0 0 1 0-12Zm15 20 3 12a3 3 0 1 0 6-1l-3-12a3 3 0 0 0-6 1Zm14-1v12a3 3 0 0 0 6 0V74a3 3 0 0 0-6 0Zm14 0-3 12a3 3 0 0 0 6 1l3-12a3 3 0 0 0-6-1Z"/></g>
+</svg>

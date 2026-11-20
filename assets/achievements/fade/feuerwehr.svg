@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Feuerwehr</title>
+  <defs>
+    <linearGradient id="feuerwehr" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffc1a7"/>
+      <stop offset="0.48" stop-color="#f18267"/>
+      <stop offset="1" stop-color="#a43738"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#feuerwehr)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path fill-rule="evenodd" d="M34 71c0-15 9-28 22-31a8 8 0 0 1 16 0c13 3 22 16 22 31-18 5-42 5-60 0Zm30-22c-4 4-8 5-11 5 0 8 4 13 11 17 7-4 11-9 11-17-3 0-7-1-11-5Z"/><path d="M30 75c20 6 48 6 68 0 6 0 9 8 3 11-20 8-54 8-74 0-6-3-3-11 3-11Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><path fill-rule="evenodd" d="M34 71c0-15 9-28 22-31a8 8 0 0 1 16 0c13 3 22 16 22 31-18 5-42 5-60 0Zm30-22c-4 4-8 5-11 5 0 8 4 13 11 17 7-4 11-9 11-17-3 0-7-1-11-5Z"/><path d="M30 75c20 6 48 6 68 0 6 0 9 8 3 11-20 8-54 8-74 0-6-3-3-11 3-11Z"/></g>
+</svg>
