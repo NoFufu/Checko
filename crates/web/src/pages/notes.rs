@@ -1,14 +1,14 @@
 use leptos::prelude::*;
 
 use super::placeholder::Placeholder;
-use crate::components::mascot::Mood;
+use crate::components::{icon::Glyph, mascot::Mood};
 
 #[component]
 pub fn NotesPage() -> impl IntoView {
     view! {
         <Placeholder
             title="Notizen"
-            emoji="📝"
+            icon=Glyph::Notes
             phase="Kommt in Phase 3"
             hint="Markdown-Notizen mit Pins, Farben und Verlinkungen."
             mood=Mood::Blink
