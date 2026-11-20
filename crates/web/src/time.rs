@@ -24,6 +24,11 @@ const MONTHS: [&str; 12] = [
     "Dezember",
 ];
 
+/// Today's weekday with Monday = 0 … Sunday = 6.
+pub fn weekday_index() -> usize {
+    (js_sys::Date::new_0().get_day() as usize + 6) % 7
+}
+
 pub fn greeting() -> &'static str {
     match js_sys::Date::new_0().get_hours() {
         5..=10 => "Guten Morgen",

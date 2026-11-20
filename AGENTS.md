@@ -16,8 +16,8 @@ Der Besitzer des Projekts (NoFufu) entscheidet bei Unklarheiten. Im Zweifel: **n
 - `crates/web/style/**` (Tailwind‑Eingabe, eigene CSS‑Klassen, Animationen)
 - `assets/**` (Logo, Icons, Maskottchen‑Bilder)
 - Rein visuelle Komponenten:
+  - `crates/web/src/components/topbar.rs` (nur Aussehen)
   - `crates/web/src/components/icon.rs`
-  - `crates/web/src/components/aurora.rs`
   - `crates/web/src/components/blur_text.rs`
   - `crates/web/src/components/spotlight_card.rs`
   - `crates/web/src/components/mascot.rs` (nur Darstellung, die `Mood`‑Varianten bleiben)
@@ -44,9 +44,12 @@ Braucht eine Design‑Idee neue Logik (z. B. Wisch‑Geste, Drag & Drop, Konfett
 
 Diese Klassen dürfen **neu gestaltet, aber nicht umbenannt oder gelöscht** werden:
 
-`card`, `spotlight`, `bento`, `bento-wide`, `quick-add`, `chip`, `page-title`, `text-muted`, `brand`, `blur-word`, `mascot`, `mascot-button`, `xp-bar`, `xp-fill`, `dock`, `dock-item`, `dock-label`, `dock-brand`, `app-content`, `placeholder-icon`, `checko-icon`, `module-icon`, `aurora`, `blob`, `blob-green`, `blob-lavender`, `blob-peach`, `grain`
+- Layout: `app-shell`, `app-main`, `page`, `sidebar`, `sidebar-brand`, `brand-mark`, `brand-name`, `brand-sub`, `sidebar-search`, `sidebar-bottom`, `nav-section`, `nav-heading`, `nav-heading-row`, `nav-collapsible`, `nav-item`, `nav-label`, `area-list`, `area-item`, `area-dot`, `profile-card`, `profile-row`, `profile-name`, `profile-sub`, `avatar`, `theme-switch`, `theme-option` (+ `active`)
+- Bausteine: `topbar`, `crumb`, `btn`, `btn-primary`, `btn-outline`, `btn-lg`, `btn-icon`, `panel`, `chip`, `segmented`, `segment` (+ `active`), `toolbar`, `section-head`, `quick-add`, `empty-line`, `empty-panel`, `empty-icon`, `list-panel`, `list-empty`, `list-icon`, `text-muted`, `checko-icon`, `module-icon`
+- Heute‑Seite: `hero`, `hero-text`, `hero-kicker`, `hero-title`, `hero-sub`, `hero-art`, `hero-sun`, `hill`, `hill-1`, `hill-2`, `hill-3`, `sky-top`, `sky-bottom`, `dash-grid`, `dash-main`, `dash-side`, `metric-grid`, `metric-label`, `metric-sub`, `metric-value`, `metric-unit`, `metric-foot`, `week-bars`, `week-col`, `week-bar`, `week-day` (+ `today`), `xp-bar`, `xp-fill`, `stat-grid`, `stat`, `stat-value`, `stat-label`
+- Für später aufgehoben: `blur-word`, `mascot`, `spotlight`
 
-Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Maskottchen) werden aus Rust gesetzt und müssen erhalten bleiben. Neue Klassen dürfen jederzeit dazukommen.
+Das Farbschema wird über `<html data-theme="light|dark|system">` gesteuert (aus Rust und einem kleinen Skript in `index.html`). Die Farb‑Tokens stehen als CSS‑Variablen oben in `input.css`. Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Maskottchen) werden aus Rust gesetzt und müssen erhalten bleiben. Neue Klassen dürfen jederzeit dazukommen.
 
 ## Arbeitsablauf
 
@@ -65,12 +68,12 @@ Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Mas
 
 - Farben aus dem Logo: Grün `#65a982`, Lavendel `#a48cd9`, Pfirsich `#f4a587`, Tinte `#251e2e`. Als CSS‑Variablen in `crates/web/style/input.css`.
 - Hell‑ und Dunkelmodus müssen beide funktionieren.
-- Freundlich und rund: Glas‑Karten, Schrift Nunito.
+- Ruhig und aufgeräumt: helle, neutrale Flächen, feine Rahmen, schwarze Hauptknöpfe, Schrift Inter. Markenfarben nur als Akzent.
 - Animationen 150–300 ms mit Federwirkung. `prefers-reduced-motion` respektieren.
 - Kontrast mindestens WCAG AA. Fokus‑Rahmen für die Tastaturbedienung nicht entfernen.
 - Vorbilder: reactbits.dev und ui.aceternity.com, nachgebaut in CSS (kein React). Details stehen in `docs/PLAN.md`.
 
 ## Projektstand
 
-- Phase 0 ist fertig: Grundgerüst, Heute‑Seite, Navigationsleiste links (Outlook‑Stil, auf dem Handy unten), Platzhalter‑Seiten, Outline‑Icons. Das Maskottchen ist vorerst ausgeblendet.
+- Phase 0 ist fertig: Grundgerüst mit Seitenleiste links (wie ein Dashboard: Suche, Übersicht, Bereiche, Einstellungen, Profilkarte mit Hell/Dunkel/System), Kopfzeile, Heute‑Seite mit Begrüßung, Kennzahlen und Schnellstatistik. Auf dem Handy wird die Seitenleiste zur Leiste unten. Das Maskottchen ist vorerst ausgeblendet.
 - **Als Nächstes baut Claude Phase 1: Aufgaben** (anlegen, abhaken, speichern, XP). Während Phase 1 läuft, ändert Codex `crates/web/src/pages/tasks.rs` und `crates/web/src/pages/today.rs` bitte gar nicht.

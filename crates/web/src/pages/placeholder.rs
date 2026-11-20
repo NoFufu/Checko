@@ -1,9 +1,8 @@
 use leptos::prelude::*;
 
 use crate::components::{
-    blur_text::BlurText,
     icon::{Glyph, Icon},
-    spotlight_card::SpotlightCard,
+    topbar::Topbar,
 };
 
 /// Friendly "coming soon" page used until a module is built.
@@ -15,15 +14,14 @@ pub fn Placeholder(
     hint: &'static str,
 ) -> impl IntoView {
     view! {
-        <h1 class="page-title flex items-center gap-3">
-            <span class="module-icon"><Icon glyph=icon size=32 /></span>
-            <BlurText text=title />
-        </h1>
-        <SpotlightCard class="mt-8 flex flex-col items-center gap-4 py-14 text-center">
-            <span class="module-icon placeholder-icon"><Icon glyph=icon size=48 /></span>
-            <p class="text-lg font-bold">"Hier entsteht gerade etwas …"</p>
-            <p class="max-w-md text-muted">{hint}</p>
-            <span class="chip">{phase}</span>
-        </SpotlightCard>
+        <Topbar title=title icon=icon />
+        <div class="page">
+            <section class="panel empty-panel">
+                <span class="empty-icon"><Icon glyph=icon size=28 /></span>
+                <h1 class="text-xl font-semibold">{title}</h1>
+                <p class="max-w-md text-muted">{hint}</p>
+                <span class="chip">{phase}</span>
+            </section>
+        </div>
     }
 }

@@ -11,6 +11,14 @@ pub enum Glyph {
     Streak,
     Pin,
     Add,
+    Search,
+    Bell,
+    Settings,
+    Sun,
+    Moon,
+    Monitor,
+    ChevronDown,
+    Clock,
 }
 
 #[component]
@@ -25,6 +33,14 @@ pub fn Icon(glyph: Glyph, #[prop(default = 24)] size: u32) -> impl IntoView {
         Glyph::Streak => "M12 3c1 4-1.5 5-1.5 7.5-1.4 0-2.5-1.2-2.5-2.5C5.8 10 5 12 5 14a7 7 0 1 0 14 0c0-4-3-8-7-11Z",
         Glyph::Pin => "M15 3.5l5.5 5.5-2.4.9-2.9 2.9.3 3.2L8 8.5l3.2.3 2.9-2.9.9-2.4ZM11.8 12.2 4 20",
         Glyph::Add => "M12 5v14M5 12h14",
+        Glyph::Search => "M20 20l-4.2-4.2M17 10.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0Z",
+        Glyph::Bell => "M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Zm4 4a2 2 0 0 0 4 0",
+        Glyph::Settings => "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.4-3a7.4 7.4 0 0 0-.1-1.2l2-1.6-2-3.4-2.4.9a7.5 7.5 0 0 0-2-1.2L14.5 3h-5l-.4 2.5a7.5 7.5 0 0 0-2 1.2l-2.4-.9-2 3.4 2 1.6a7.4 7.4 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-.9a7.5 7.5 0 0 0 2 1.2l.4 2.5h5l.4-2.5a7.5 7.5 0 0 0 2-1.2l2.4.9 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z",
+        Glyph::Sun => "M12 3v1.5m0 15V21m9-9h-1.5m-15 0H3m15.4-6.4-1 1M6.6 17.4l-1 1m12.8 0-1-1M6.6 6.6l-1-1M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
+        Glyph::Moon => "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z",
+        Glyph::Monitor => "M4 5h16v10H4zM9 19h6m-3-4v4",
+        Glyph::ChevronDown => "M6 9l6 6 6-6",
+        Glyph::Clock => "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     };
 
     view! {

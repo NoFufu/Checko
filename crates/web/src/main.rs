@@ -6,10 +6,10 @@ use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
-use components::{aurora::Aurora, dock::Dock};
+use components::sidebar::Sidebar;
 use pages::{
-    calendar::CalendarPage, notes::NotesPage, shopping::ShoppingPage, tasks::TasksPage,
-    today::TodayPage,
+    calendar::CalendarPage, notes::NotesPage, settings::SettingsPage, shopping::ShoppingPage,
+    tasks::TasksPage, today::TodayPage,
 };
 
 /// URL prefix when hosted in a sub-folder (e.g. GitHub Pages: "/Checko").
@@ -33,16 +33,16 @@ fn main() {
 fn App() -> impl IntoView {
     view! {
         <Router base=BASE>
-            <Aurora />
-            <Dock />
-            <div class="app-content relative z-10 min-h-screen">
-                <main class="mx-auto max-w-6xl px-4 pt-8 pb-28 sm:px-8 sm:pb-12">
-                    <Routes fallback=|| view! { <p>"Seite nicht gefunden."</p> }>
+            <div class="app-shell">
+                <Sidebar />
+                <main class="app-main">
+                    <Routes fallback=|| view! { <p class="p-8">"Seite nicht gefunden."</p> }>
                         <Route path=path!("/") view=TodayPage />
                         <Route path=path!("/aufgaben") view=TasksPage />
                         <Route path=path!("/kalender") view=CalendarPage />
                         <Route path=path!("/notizen") view=NotesPage />
                         <Route path=path!("/einkauf") view=ShoppingPage />
+                        <Route path=path!("/einstellungen") view=SettingsPage />
                     </Routes>
                 </main>
             </div>
