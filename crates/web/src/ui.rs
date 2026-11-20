@@ -40,3 +40,35 @@ pub fn priority_class(p: Priority) -> &'static str {
         Priority::P4 => "urgency urgency-4",
     }
 }
+
+/// Icon for a category (emoji for common names, otherwise the first letter).
+pub fn category_icon(name: &str) -> String {
+    let n = name.to_lowercase();
+    let pick = [
+        (["arbeit", "job", "büro"].as_slice(), "💼"),
+        (&["privat", "zuhause", "home"], "🏠"),
+        (&["gesundheit", "arzt", "zahnarzt", "medizin"], "🩺"),
+        (&["bad", "badezimmer"], "🛁"),
+        (&["küche", "kochen", "essen", "rezept"], "🍳"),
+        (&["einkauf", "einkaufen", "shopping"], "🛒"),
+        (&["garten", "pflanzen"], "🌱"),
+        (&["auto", "fahrrad", "auto & co"], "🚗"),
+        (&["sport", "fitness", "training"], "🏃"),
+        (&["haushalt", "putzen", "wohnung"], "🧹"),
+        (&["schule", "uni", "lernen", "studium"], "📚"),
+        (&["finanzen", "geld", "steuer", "steuern", "rechnung"], "💶"),
+        (&["urlaub", "reise", "reisen"], "✈️"),
+        (&["familie", "kinder"], "👨‍👩‍👧"),
+        (&["geburtstag", "geschenke", "geschenk"], "🎁"),
+        (&["projekt", "projekte", "ideen", "idee"], "💡"),
+    ];
+    for (names, icon) in pick {
+        if names.contains(&n.as_str()) {
+            return icon.to_string();
+        }
+    }
+    name.chars()
+        .next()
+        .map(|c| c.to_uppercase().collect())
+        .unwrap_or_default()
+}

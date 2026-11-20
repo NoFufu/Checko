@@ -226,6 +226,14 @@ impl Store {
         t.due_time = new.time;
         t.tags = new.tags;
         t.recurrence = new.recurrence;
+        // Confirm where the task went when it is not for today.
+        if let Some(d) = t.due.filter(|d| *d != today()) {
+            let mut when = crate::time::due_label(d, today());
+            if let Some(time) = t.due_time {
+                when.push_str(&format!(" · {}", time.format("%H:%M")));
+            }
+            self.notify(format!("Eingetragen für {when}"), None);
+        }
         self.tasks.update(|ts| ts.push(t));
     }
 

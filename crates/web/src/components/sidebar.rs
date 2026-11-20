@@ -181,6 +181,10 @@ fn CategoryFolder(name: String) -> impl IntoView {
         js_sys::encode_uri_component(&name)
     );
     let drop_name = name.clone();
+    let row_style = format!("--c:{}", area_color(&name));
+    let icon = crate::ui::category_icon(&name);
+    let toggle_label = format!("{name} auf- oder zuklappen");
+    let label = name.clone();
 
     view! {
         <li
@@ -197,25 +201,25 @@ fn CategoryFolder(name: String) -> impl IntoView {
                 }
             }
         >
-            <div class="area-item">
+            <div class="folder-row" style=row_style>
+                <A href=href attr:class="folder-link">
+                    <span class="cat-icon">{icon}</span>
+                    <span class="flex-1 truncate">{label}</span>
+                </A>
+                <Show when=move || count() != 0>
+                    <span class="nav-count">{count}</span>
+                </Show>
                 <button
                     type="button"
                     class="folder-toggle"
                     class:open=move || open.get()
                     aria-expanded=move || open.get().to_string()
-                    aria-label=format!("{name} auf- oder zuklappen")
+                    aria-label=toggle_label
                     disabled=move || count() == 0
                     on:click=move |_| open.update(|o| *o = !*o)
                 >
                     <Icon glyph=Glyph::ChevronDown size=14 />
                 </button>
-                <A href=href attr:class="folder-link">
-                    <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
-                    <span class="flex-1 truncate">{name.clone()}</span>
-                </A>
-                <Show when=move || count() != 0>
-                    <span class="nav-count">{count}</span>
-                </Show>
             </div>
             <Show when=move || { open.get() && count() > 0 }>
                 <ul class="folder-tasks">

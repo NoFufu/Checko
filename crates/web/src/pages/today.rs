@@ -41,7 +41,6 @@ pub fn TodayPage() -> impl IntoView {
                 <div class="hero-text">
                     <p class="hero-kicker">{today_label()}</p>
                     <h1 class="hero-title">{format!("{}!", greeting())}</h1>
-                    <p class="hero-sub">"Dein Tag auf einen Blick: Aufgaben, Termine und Einkäufe."</p>
                     <div class="mt-6 flex flex-wrap gap-3">
                         <a class="btn btn-primary btn-lg" href=format!("{}/aufgaben", crate::BASE)>
                             <Icon glyph=Glyph::Add size=18 />
@@ -84,8 +83,19 @@ pub fn TodayPage() -> impl IntoView {
                         </Show>
                     </section>
 
-                    <SectionHead icon=Glyph::Level title="Fortschritt" />
-                    <div class="metric-grid">
+                    <SectionHead icon=Glyph::Pin title="Kategorien" />
+                    <CategoryRings />
+                </div>
+
+                <aside class="dash-side">
+                    <SectionHead icon=Glyph::Calendar title="Nächste Termine" />
+                    <UpcomingEvents />
+                </aside>
+            </div>
+
+            <section class="play-zone" aria-label="Fortschritt und Erfolge">
+                    <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
+                    <div class="metric-grid metric-grid-4">
                         <section class="panel">
                             <p class="metric-label">"Erledigt diese Woche"</p>
                             <p class="metric-sub">"Aufgaben pro Tag"</p>
@@ -125,27 +135,16 @@ pub fn TodayPage() -> impl IntoView {
                             </p>
                         </section>
                     </div>
-                </div>
-
-                <aside class="dash-side">
-                    <SectionHead icon=Glyph::Calendar title="Nächste Termine" />
-                    <UpcomingEvents />
-
-                    <SectionHead icon=Glyph::Pin title="Kategorien" />
-                    <CategoryLegend />
-
-                    <SectionHead icon=Glyph::Level title="Erfolge" />
+                <div class="play-row">
                     <AchievementGrid />
-
-                    <SectionHead icon=Glyph::Streak title="Schnellstatistik" />
                     <div class="stat-grid">
                         <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
                         <Stat icon=Glyph::Tasks value=Signal::derive(move || open_count().to_string()) label="Offen" />
                         <Stat icon=Glyph::Shopping value=Signal::derive(move || store.shopping.with(|s| checko_core::open_count(s)).to_string()) label="Einkäufe" />
                         <Stat icon=Glyph::Pin value=Signal::derive(move || store.notes.with(|n| n.iter().filter(|n| n.pinned && n.meta.deleted_at.is_none()).count()).to_string()) label="Angepinnt" />
                     </div>
-                </aside>
-            </div>
+                </div>
+            </section>
         </div>
     }
 }
@@ -248,43 +247,81 @@ fn AchievementGrid() -> impl IntoView {
     }
 }
 
-/// Categories with open count and a progress bar (done / all), clickable.
+/// Categories as concentric rings (one per category, length = share of open
+/// tasks) with the total in the middle and a clickable legend next to it.
 #[component]
-fn CategoryLegend() -> impl IntoView {
+fn CategoryRings() -> impl IntoView {
     let store = Store::get();
-    let stats = move || store.tasks.with(|t| checko_core::category_stats(t));
+    let stats = move || {
+        let mut v = store.tasks.with(|t| checko_core::category_stats(t));
+        v.retain(|(_, open, _)| *open > 0);
+        v.sort_by_key(|(_, open, _)| std::cmp::Reverse(*open));
+        v.truncate(5);
+        v
+    };
     view! {
-        <section class="panel legend">
+        <section class="panel rings-panel">
             <Show
                 when=move || !stats().is_empty()
                 fallback=|| view! { <p class="text-sm text-muted">"Schreib „#Küche“ hinter eine Aufgabe, dann erscheint die Kategorie hier."</p> }
             >
-                <ul>
-                    {move || stats()
+                {move || {
+                    let s = stats();
+                    let total: usize = s.iter().map(|(_, o, _)| o).sum();
+                    let max = s.iter().map(|(_, o, _)| *o).max().unwrap_or(1).max(1) as f64;
+                    let rings = s
+                        .iter()
+                        .enumerate()
+                        .map(|(i, (name, open, _))| {
+                            let r = 90.0 - i as f64 * 12.0;
+                            let circ = 2.0 * std::f64::consts::PI * r;
+                            // 270° arc maximum, like the bklit ring chart
+                            let len = circ * 0.75 * (*open as f64 / max);
+                            let color = crate::ui::area_color(name);
+                            view! {
+                                <circle class="ring-track" cx="100" cy="100" r=r stroke-dasharray=format!("{} {}", circ * 0.75, circ) />
+                                <circle
+                                    class="ring-bar"
+                                    cx="100" cy="100" r=r
+                                    stroke=color
+                                    stroke-dasharray=format!("{len} {circ}")
+                                    style=format!("animation-delay:{}ms", i * 80)
+                                />
+                            }
+                        })
+                        .collect_view();
+                    let legend = s
                         .into_iter()
                         .map(|(name, open, done)| {
-                            let total = open + done;
-                            let pct = done * 100 / total.max(1);
                             let color = crate::ui::area_color(&name);
+                            let pct = done * 100 / (open + done).max(1);
                             let href = format!("{}/aufgaben?kategorie={}", crate::BASE, js_sys::encode_uri_component(&name));
                             view! {
                                 <li>
                                     <a class="legend-item" href=href>
                                         <span class="legend-row">
-                                            <span class="area-dot" style=format!("background:{color}")></span>
-                                            <span class="flex-1 font-medium">{name.clone()}</span>
+                                            <span class="cat-icon cat-icon-sm" style=format!("--c:{color}")>{crate::ui::category_icon(&name)}</span>
+                                            <span class="flex-1 font-semibold">{name.clone()}</span>
                                             <span class="legend-value">{open} " offen"</span>
-                                            <span class="legend-pct">{pct} "%"</span>
+                                            <span class="legend-pct" title="erledigt">{pct} " %"</span>
                                         </span>
-                                        <span class="legend-bar">
-                                            <span style=format!("width:{pct}%;background:{color}")></span>
-                                        </span>
+                                        <span class="legend-bar"><span style=format!("width:{}%;background:{color}", pct.max(3))></span></span>
                                     </a>
                                 </li>
                             }
                         })
-                        .collect_view()}
-                </ul>
+                        .collect_view();
+                    view! {
+                        <div class="rings">
+                            <svg viewBox="0 0 200 200" class="rings-svg" aria-hidden="true">
+                                <g transform="rotate(135 100 100)">{rings}</g>
+                                <text x="100" y="104" class="rings-total">{total}</text>
+                                <text x="100" y="122" class="rings-label">"offen"</text>
+                            </svg>
+                            <ul class="legend">{legend}</ul>
+                        </div>
+                    }
+                }}
             </Show>
         </section>
     }

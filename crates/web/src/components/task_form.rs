@@ -7,13 +7,6 @@ use super::icon::{Glyph, Icon};
 use crate::store::{NewTask, Store};
 use crate::time::{due_label, today};
 
-const PLACEHOLDERS: [&str; 4] = [
-    "Zahnarzt morgen 14:00 #Gesundheit !1",
-    "Wandleuchte kaufen #Küche",
-    "Steuererklärung bis Freitag !2",
-    "Wochenendtrip planen nächste Woche",
-];
-
 fn parse_priority(v: &str) -> Priority {
     match v {
         "1" => Priority::P1,
@@ -66,7 +59,11 @@ pub fn TaskForm(
 
     let areas = Memo::new(move |_| store.areas());
     let parsed = Memo::new(move |_| areas.with(|a| parse_quick_add(&title.get(), today(), a)));
-    let placeholder = PLACEHOLDERS[(js_sys::Math::random() * 4.0) as usize % 4];
+    let placeholder = if due_today {
+        "Neue Aufgabe für heute …"
+    } else {
+        "Neue Aufgabe …"
+    };
 
     let submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();

@@ -7,11 +7,12 @@
    Theme: <html data-theme="light|dark|system"> (set from Rust).
    ============================================================ */
 :root {
-  --green: #65a982;
-  --green-strong: #3f8761;
-  --icon-accent: #357455;
-  --lavender: #a48cd9;
-  --peach: #f4a587;
+  --green: #1fa463;
+  --green-strong: #15803d;
+  --icon-accent: #15803d;
+  --lavender: #6d4aff;
+  --peach: #f97316;
+  --accent-grad: linear-gradient(135deg, #22c55e 0%, #16a34a 55%, #0f9f6e 100%);
   --ink: #251e2e;
 
   --bg: #f6f6f7;
@@ -25,20 +26,20 @@
   --primary-text: #ffffff;
   --active-bg: #18181b;
   --active-text: #ffffff;
-  --shadow-sm: 0 1px 2px rgb(24 24 27 / 0.06);
-  --shadow: 0 1px 2px rgb(24 24 27 / 0.05), 0 4px 14px -6px rgb(24 24 27 / 0.08);
-  --sky-top: #e6f1ea;
-  --sky-bottom: #f3ecfb;
-  --hill-1: #c9b9ee;
-  --hill-2: #9fd0b3;
-  --hill-3: #65a982;
-  --sun: #f7c3ad;
+  --shadow-sm: 0 1px 2px rgb(24 24 27 / 0.06), 0 2px 6px -2px rgb(24 24 27 / 0.08);
+  --shadow: 0 1px 3px rgb(24 24 27 / 0.08), 0 8px 24px -10px rgb(24 24 27 / 0.18);
+  --sky-top: #cdeedd;
+  --sky-bottom: #e7ddff;
+  --hill-1: #9b82ff;
+  --hill-2: #34c27e;
+  --hill-3: #15925a;
+  --sun: #ff9a5c;
   --logo-ink: #251e2e;
   color-scheme: light;
 }
 
 :root[data-theme="dark"] {
-  --icon-accent: #92cfac;
+  --icon-accent: #4ade80;
   --bg: #0d0d10;
   --panel: #16161a;
   --panel-soft: #1d1d22;
@@ -54,16 +55,16 @@
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px -8px rgb(0 0 0 / 0.6);
   --sky-top: #1b2a24;
   --sky-bottom: #241d33;
-  --hill-1: #3e3560;
-  --hill-2: #2f5a44;
-  --hill-3: #3f8761;
-  --sun: #b9806d;
+  --hill-1: #5b45c9;
+  --hill-2: #1d8f5a;
+  --hill-3: #16a34a;
+  --sun: #f97316;
   --logo-ink: #f4f1f7;
   color-scheme: dark;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --icon-accent: #92cfac;
+    --icon-accent: #4ade80;
     --bg: #0d0d10;
     --panel: #16161a;
     --panel-soft: #1d1d22;
@@ -79,10 +80,10 @@
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 18px -8px rgb(0 0 0 / 0.6);
     --sky-top: #1b2a24;
     --sky-bottom: #241d33;
-    --hill-1: #3e3560;
-    --hill-2: #2f5a44;
-    --hill-3: #3f8761;
-    --sun: #b9806d;
+    --hill-1: #5b45c9;
+    --hill-2: #1d8f5a;
+    --hill-3: #16a34a;
+    --sun: #f97316;
     --logo-ink: #f4f1f7;
     color-scheme: dark;
   }
@@ -138,7 +139,7 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
   color: var(--text); text-decoration: none; font-weight: 500; transition: background 0.15s, color 0.15s;
 }
 .nav-item:hover { background: var(--panel-soft); }
-.nav-item[aria-current="page"] { background: var(--active-bg); color: var(--active-text); }
+.nav-item[aria-current="page"] { background: var(--accent-grad); color: #fff; box-shadow: 0 6px 16px -8px rgb(22 163 74 / 0.7); }
 .nav-item:focus-visible, .btn:focus-visible, .btn-icon:focus-visible, .segment:focus-visible, .theme-option:focus-visible, .sidebar-search:focus-visible {
   outline: 2px solid var(--green); outline-offset: 2px;
 }
@@ -356,10 +357,12 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .urgency:hover::after { transform: scale(1.2); }
 .urgency:disabled { cursor: default; opacity: 0.45; }
 .urgency:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
-.urgency-1 { --dot: #e5484d; }
-.urgency-2 { --dot: #f08c3a; }
-.urgency-3 { --dot: #e8c547; }
-.urgency-4 { --dot: #4caf7a; }
+.urgency-1 { --dot: #ef4444; --dot-light: #fca5a5; }
+.urgency-2 { --dot: #f97316; --dot-light: #fdba74; }
+.urgency-3 { --dot: #eab308; --dot-light: #fde68a; }
+.urgency-4 { --dot: #22c55e; --dot-light: #86efac; }
+.urgency::after { background: radial-gradient(circle at 32% 28%, var(--dot-light) 0%, var(--dot) 55%, color-mix(in srgb, var(--dot) 75%, #000) 100%) !important;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 0 0 3px color-mix(in srgb, var(--dot) 16%, transparent), 0 2px 8px -1px color-mix(in srgb, var(--dot) 60%, transparent) !important; }
 .segment .area-dot { display: inline-block; margin-right: 0.4rem; vertical-align: 0.05em; }
 
 /* ---------- Quick-add parsing ---------- */
@@ -592,3 +595,59 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
 }
+
+/* ============================================================
+   Design 2: more colour, depth and To-Do-style categories
+   ============================================================ */
+.panel { box-shadow: var(--shadow-sm); transition: box-shadow 0.2s, transform 0.2s; }
+.panel:hover { box-shadow: var(--shadow); }
+.hero { box-shadow: var(--shadow); }
+.btn-primary { box-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.55); }
+.check:hover { border-color: #22c55e; color: #22c55e; }
+.check.checked { background: var(--accent-grad); border-color: transparent; box-shadow: 0 4px 10px -4px rgb(22 163 74 / 0.8); }
+.week-bar.today, .week-bar.today.filled { background: var(--accent-grad); border-color: transparent; }
+.week-bar.filled { background: color-mix(in srgb, #22c55e 55%, var(--panel)); }
+.xp-fill { background: linear-gradient(90deg, #22c55e, #6d4aff); }
+.hero-kicker { color: var(--icon-accent); }
+.segment.active { box-shadow: var(--shadow-sm); }
+
+/* Category icon tile (sidebar, legend) */
+.cat-icon { display: grid; place-items: center; flex: none; width: 1.75rem; height: 1.75rem; border-radius: 0.5rem; font-size: 0.95rem; font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 80%, #fff), var(--c)); box-shadow: 0 3px 8px -3px color-mix(in srgb, var(--c) 80%, transparent); }
+.cat-icon-sm { width: 1.5rem; height: 1.5rem; font-size: 0.8rem; border-radius: 0.45rem; }
+
+/* Sidebar categories like Microsoft To Do: bigger rows with icon tiles */
+.area-list { margin: 0; padding: 0; border-left: 0; display: flex; flex-direction: column; gap: 0.1rem; }
+.folder-row { display: flex; align-items: center; gap: 0.25rem; padding-right: 0.15rem; }
+.folder-link { gap: 0.7rem; padding: 0.45rem 0.55rem; font-size: 0.95rem; font-weight: 500; color: var(--text); }
+.folder-link[aria-current="page"], .folder-link:hover { background: var(--panel-soft); }
+.folder-toggle { transform: none; opacity: 0.55; }
+.folder-toggle:not(.open) .checko-icon { transform: rotate(-90deg); }
+.folder-toggle:disabled { opacity: 0.15; }
+.folder-tasks { margin: 0.1rem 0 0.4rem 2.6rem; border-left: 2px solid color-mix(in srgb, var(--c, var(--border)) 35%, transparent); }
+.folder .nav-count { background: color-mix(in srgb, var(--c) 14%, var(--panel)); border-color: transparent; color: var(--text); font-weight: 700; }
+
+/* Category chips on tasks: solid colour block */
+.cat-chip { border: 0; color: color-mix(in srgb, var(--c) 75%, #000); background: color-mix(in srgb, var(--c) 15%, var(--panel)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 30%, transparent); }
+:root[data-theme="dark"] .cat-chip { color: color-mix(in srgb, var(--c) 60%, #fff); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cat-chip { color: color-mix(in srgb, var(--c) 60%, #fff); } }
+.cat-chip:hover { background: color-mix(in srgb, var(--c) 25%, var(--panel)); }
+.cat-chip-icon { font-size: 0.75rem; }
+
+/* Category rings (bklit ring-chart style) */
+.rings { display: grid; gap: 1rem; align-items: center; }
+@media (min-width: 640px) { .rings { grid-template-columns: 12rem 1fr; } }
+.rings-svg { width: 12rem; height: 12rem; margin: 0 auto; }
+.ring-track { fill: none; stroke: var(--panel-soft); stroke-width: 7; stroke-linecap: round; }
+.ring-bar { fill: none; stroke-width: 7; stroke-linecap: round; filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.15)); animation: ringIn 0.9s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes ringIn { from { stroke-dashoffset: 400; opacity: 0; } to { stroke-dashoffset: 0; opacity: 1; } }
+.rings-total { font-size: 1.6rem; font-weight: 800; text-anchor: middle; fill: var(--text); }
+.rings-label { font-size: 0.75rem; text-anchor: middle; fill: var(--muted); }
+.legend-item { display: block; }
+.legend .legend-bar { margin-left: 2.05rem; }
+
+/* Playful zone at the bottom of Today */
+.play-zone { margin-top: 2rem; padding-top: 1.25rem; border-top: 1px dashed var(--border-strong); display: flex; flex-direction: column; gap: 0.75rem; }
+.play-row { display: grid; gap: 0.75rem; }
+@media (min-width: 1024px) { .play-row { grid-template-columns: 2fr 1fr; align-items: start; } }
+.play-row .stat-grid { align-content: start; }

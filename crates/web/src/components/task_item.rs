@@ -34,13 +34,14 @@ pub fn CategoryChip(name: String) -> impl IntoView {
         <button
             type="button"
             class="cat-chip"
+            style=format!("--c:{}", area_color(&name))
             title=format!("Alle Aufgaben in „{name}“")
             on:click=move |e| {
                 e.stop_propagation();
                 navigate(&target, Default::default());
             }
         >
-            <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
+            <span class="cat-chip-icon" aria-hidden="true">{crate::ui::category_icon(&name)}</span>
             {name.clone()}
         </button>
     }

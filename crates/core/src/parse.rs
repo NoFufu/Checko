@@ -435,6 +435,19 @@ mod tests {
     }
 
     #[test]
+    fn dates_without_trailing_dot() {
+        let r = p("Arzt 24.11 14:00");
+        assert_eq!(
+            (r.title.as_str(), r.due, r.time),
+            ("Arzt", d(11, 24), t(14, 0))
+        );
+        let r = p("Zahnarzt am 14.11. um 14 Uhr");
+        assert_eq!(r.due, NaiveDate::from_ymd_opt(2027, 11, 14));
+        assert_eq!(r.time, t(14, 0));
+        assert_eq!(p("Rechnung 1.12,").due, d(12, 1));
+    }
+
+    #[test]
     fn times() {
         assert_eq!(p("x 9:30").time, t(9, 30));
         assert_eq!(p("x 14 uhr").time, t(14, 0));
