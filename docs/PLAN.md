@@ -108,7 +108,7 @@ checko/
 | ✅ **3 – Einkauf & Notizen** | Einkaufsliste mit Kategorien, Markdown‑Notizen, globale Suche | Alle Hauptmodule |
 | **4 – Gamification** | XP, Level, Streaks, Achievements, Axolotl‑Reaktionen, Konfetti, Themes | Spielerisch 🎉 |
 | **5 – Sync‑Server** | Axum + SQLite, Login, Änderungs‑Sync (UUID v7, `updated_at`, Soft‑Delete), Hosting (z. B. kleiner VPS/Fly.io) | PC‑Eingabe sofort am Handy |
-| **6 – Kalender & Erinnerungen** | Monat/Woche/Agenda, Wiederholungen, Benachrichtigungen (Web Push) | Kalender komplett |
+| 🟡 **6 – Kalender & Erinnerungen** | Monat/Woche/Agenda, Wiederholungen, Benachrichtigungen (Web Push) | Kalender komplett |
 | **7 – Handy & PWA** | Mobile Layout, Gesten, installierbar, offline mit IndexedDB | App‑Gefühl am Handy |
 | **8 – KI‑Assistent** | Claude über den Server: natürliche Sprache, Morgen‑Briefing, Auto‑Kategorien, Wochenrückblick | „Sag's einfach“ |
 | Später | Tauri‑Desktop/Mobile‑App, geteilte Einkaufslisten | |

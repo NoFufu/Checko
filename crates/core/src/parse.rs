@@ -14,7 +14,7 @@
 
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
 
-use crate::Priority;
+use crate::{Freq, Priority, Recurrence};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
@@ -23,6 +23,7 @@ pub enum TokenKind {
     Priority,
     Area,
     Tag,
+    Repeat,
 }
 
 /// Something the parser recognised, for highlighting in the UI.
@@ -41,6 +42,7 @@ pub struct ParsedTask {
     pub tags: Vec<String>,
     pub due: Option<NaiveDate>,
     pub time: Option<NaiveTime>,
+    pub recurrence: Option<Recurrence>,
     pub tokens: Vec<Token>,
 }
 
@@ -175,6 +177,60 @@ fn date_at(words: &[String], i: usize, today: NaiveDate) -> Option<(NaiveDate, u
     parse_numeric_date(w, today).map(|d| (d, 1))
 }
 
+fn unit_freq(w: &str) -> Option<Freq> {
+    match w {
+        "tag" | "tage" => Some(Freq::Daily),
+        "woche" | "wochen" => Some(Freq::Weekly),
+        "monat" | "monate" => Some(Freq::Monthly),
+        "jahr" | "jahre" => Some(Freq::Yearly),
+        _ => None,
+    }
+}
+
+/// Try to read a repeat rule at word `i`: "täglich", "jede Woche",
+/// "jeden Montag", "alle 2 Wochen". Returns (rule, first date, words used).
+fn repeat_at(
+    words: &[String],
+    i: usize,
+    today: NaiveDate,
+) -> Option<(Recurrence, Option<NaiveDate>, usize)> {
+    let w = words[i].as_str();
+    let next = words.get(i + 1).map(String::as_str);
+    let simple = |f| Some((Recurrence::every(f), None, 1));
+    match w {
+        "täglich" => return simple(Freq::Daily),
+        "wöchentlich" => return simple(Freq::Weekly),
+        "monatlich" => return simple(Freq::Monthly),
+        "jährlich" => return simple(Freq::Yearly),
+        "jeden" | "jede" | "jedes" => {
+            let n = next?;
+            if let Some(wd) = weekday(n) {
+                return Some((
+                    Recurrence::every(Freq::Weekly),
+                    Some(next_weekday(today, wd, false)),
+                    2,
+                ));
+            }
+            return unit_freq(n).map(|f| (Recurrence::every(f), None, 2));
+        }
+        "alle" => {
+            let n: u32 = next?.parse().ok()?;
+            let f = unit_freq(words.get(i + 2)?)?;
+            return Some((
+                Recurrence {
+                    freq: f,
+                    interval: n.max(1),
+                    until: None,
+                },
+                None,
+                3,
+            ));
+        }
+        _ => {}
+    }
+    None
+}
+
 /// Try to read a time starting at word `i`. Returns (time, words used).
 fn time_at(words: &[String], i: usize) -> Option<(NaiveTime, usize)> {
     let w = words[i].as_str();
@@ -251,6 +307,21 @@ pub fn parse_quick_add(input: &str, today: NaiveDate, areas: &[String]) -> Parse
             continue;
         }
 
+        if out.recurrence.is_none() {
+            if let Some((r, first, n)) = repeat_at(&words, i, today) {
+                out.recurrence = Some(r);
+                if out.due.is_none() {
+                    out.due = first;
+                }
+                out.tokens.push(Token {
+                    kind: TokenKind::Repeat,
+                    text: original(i, n),
+                });
+                i += n;
+                continue;
+            }
+        }
+
         // Optional "am/bis/ab" in front of a date.
         let prefix = usize::from(DATE_PREFIX.contains(&w) && i + 1 < words.len());
 
@@ -281,8 +352,8 @@ pub fn parse_quick_add(input: &str, today: NaiveDate, areas: &[String]) -> Parse
         i += 1;
     }
 
-    // A time without a date means today.
-    if out.time.is_some() && out.due.is_none() {
+    // A time or a repeat rule without a date starts today.
+    if (out.time.is_some() || out.recurrence.is_some()) && out.due.is_none() {
         out.due = Some(today);
     }
     out.title = title
@@ -392,6 +463,26 @@ mod tests {
         assert_eq!(p("Milch kaufen #privat").title, "Milch kaufen");
         assert_eq!(p("#Küche Lampe kaufen").title, "Lampe kaufen");
         assert_eq!(p("x #PRIVAT").area.as_deref(), Some("Privat"));
+    }
+
+    #[test]
+    fn repeats() {
+        let r = p("Müll rausbringen jeden Montag 7:00");
+        assert_eq!(r.title, "Müll rausbringen");
+        assert_eq!(r.recurrence, Some(Recurrence::every(Freq::Weekly)));
+        assert_eq!(r.due, d(11, 23));
+        assert_eq!(r.time, t(7, 0));
+        assert_eq!(p("Pflanzen gießen täglich").due, d(11, 20));
+        let r = p("Miete zahlen monatlich am 1.12.");
+        assert_eq!(r.recurrence.map(|r| r.freq), Some(Freq::Monthly));
+        assert_eq!(r.due, d(12, 1));
+        assert_eq!(
+            p("Haare schneiden alle 6 Wochen")
+                .recurrence
+                .map(|r| r.interval),
+            Some(6)
+        );
+        assert_eq!(p("Jede Menge Arbeit").title, "Jede Menge Arbeit");
     }
 
     #[test]

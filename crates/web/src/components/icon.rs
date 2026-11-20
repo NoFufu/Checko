@@ -25,6 +25,9 @@ pub enum Glyph {
     Pause,
     Trash,
     Undo,
+    Repeat,
+    ChevronLeft,
+    ChevronRight,
 }
 
 #[component]
@@ -49,6 +52,9 @@ pub fn Icon(glyph: Glyph, #[prop(default = 24)] size: u32) -> impl IntoView {
         Glyph::Play => "M8 5.5v13l10-6.5-10-6.5Z",
         Glyph::Pause => "M9 5.5v13M15 5.5v13",
         Glyph::Trash => "M4.5 7h15M10 11v6m4-6v6M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2",
+        Glyph::Repeat => "M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h16M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4",
+        Glyph::ChevronLeft => "M15 6l-6 6 6 6",
+        Glyph::ChevronRight => "M9 6l6 6-6 6",
         Glyph::Undo => "M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11",
         Glyph::Clock => "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     };

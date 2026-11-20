@@ -129,15 +129,7 @@ pub fn TodayPage() -> impl IntoView {
 
                 <aside class="dash-side">
                     <SectionHead icon=Glyph::Calendar title="Nächste Termine" />
-                    <section class="panel list-panel">
-                        <div class="list-empty">
-                            <span class="list-icon"><Icon glyph=Glyph::Clock size=18 /></span>
-                            <span>
-                                <span class="block font-semibold">"Keine Termine"</span>
-                                <span class="block text-sm text-muted">"Dein Kalender ist frei."</span>
-                            </span>
-                        </div>
-                    </section>
+                    <UpcomingEvents />
 
                     <SectionHead icon=Glyph::Pin title="Kategorien" />
                     <CategoryLegend />
@@ -155,6 +147,64 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
         </div>
+    }
+}
+
+/// Next events and dated tasks (14 days), max. 5.
+#[component]
+fn UpcomingEvents() -> impl IntoView {
+    let store = Store::get();
+    let items = move || {
+        let from = today();
+        store.events.with(|e| {
+            store.tasks.with(|t| {
+                checko_core::items_between(e, t, from, from + chrono::Duration::days(14))
+                    .into_iter()
+                    .filter(|i| {
+                        !i.done && (i.kind == checko_core::ItemKind::Event || i.start.is_some())
+                    })
+                    .take(5)
+                    .collect::<Vec<_>>()
+            })
+        })
+    };
+    view! {
+        <section class="panel list-panel">
+            <Show
+                when=move || !items().is_empty()
+                fallback=|| view! {
+                    <div class="list-empty">
+                        <span class="list-icon"><Icon glyph=Glyph::Clock size=18 /></span>
+                        <span>
+                            <span class="block font-semibold">"Keine Termine"</span>
+                            <span class="block text-sm text-muted">"Dein Kalender ist frei."</span>
+                        </span>
+                    </div>
+                }
+            >
+                <ul class="upcoming">
+                    {move || items()
+                        .into_iter()
+                        .map(|i| {
+                            let when = crate::time::due_label(i.date, today());
+                            let time = i.start.map(|t| t.format(" · %H:%M").to_string()).unwrap_or_default();
+                            let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or("var(--green)");
+                            view! {
+                                <li>
+                                    <a class="upcoming-item" href=format!("{}/kalender", crate::BASE) style=format!("--c:{color}")>
+                                        <span class="agenda-bar" aria-hidden="true"></span>
+                                        <span class="min-w-0">
+                                            <span class="block font-medium truncate">{i.title.clone()}</span>
+                                            <span class="block text-sm text-muted">{when}{time}</span>
+                                        </span>
+                                    </a>
+                                </li>
+                            }
+                        })
+                        .collect_view()}
+                </ul>
+            </Show>
+        </section>
     }
 }
 

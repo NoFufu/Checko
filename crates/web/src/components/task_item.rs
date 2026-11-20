@@ -79,6 +79,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     let categories: Vec<String> = task.categories().into_iter().map(str::to_string).collect();
     let (steps_done, steps_total) = task.step_progress();
     let has_notes = !task.notes.trim().is_empty();
+    let repeat = task.recurrence.map(|r| r.label());
     let title = task.title.clone();
 
     let on_drag = move |e: leptos::ev::DragEvent| {
@@ -129,6 +130,9 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                             <Icon glyph=Glyph::Calendar size=13 />
                             {d}
                         </span>
+                    })}
+                    {repeat.map(|r| view! {
+                        <span class="meta-item" title=r.clone()><Icon glyph=Glyph::Repeat size=13 /></span>
                     })}
                     {(steps_total > 0).then(|| view! {
                         <span class="meta-item" class:all-done=steps_done == steps_total>

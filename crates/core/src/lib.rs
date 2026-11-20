@@ -1,6 +1,7 @@
 //! Checko core: domain models and pure logic (no browser dependencies).
 
 pub mod achievements;
+pub mod calendar;
 pub mod gamification;
 pub mod model;
 pub mod notes;
@@ -9,6 +10,9 @@ pub mod shopping;
 pub mod tasks;
 
 pub use achievements::{achievement, unlock_new, Achievement, Snapshot, ACHIEVEMENTS};
+pub use calendar::{
+    items_between, month_grid, shift_month, CalendarItem, Event, Freq, ItemKind, Recurrence,
+};
 pub use gamification::{level_for_xp, xp_for_task, LevelProgress};
 pub use model::*;
 pub use notes::*;

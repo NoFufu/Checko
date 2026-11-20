@@ -58,4 +58,4 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - `run`: App starten und Screenshots machen.
 
 ## Aktuelle Aufgabe
-Phase 0–3 fertig. Phase 4 läuft: Erfolge (12 Abzeichen) und Level‑Up‑Feier sind drin. Offen in Phase 4: freischaltbare Themes, Fokus‑Modus (Spielelemente aus), Maskottchen (wartet auf Entscheidung von NoFufu).
+Phase 0–3 fertig, Phase 4 teilweise (Erfolge, Level‑Up; Themes/Fokus‑Modus/Maskottchen zurückgestellt). Phase 6 Schritt 1 fertig: Kalender (Monat, Agenda, Termine mit Wiederholung, Drag & Drop), wiederkehrende Aufgaben. Wiederholungen sind eine eigene kleine Regel in `core/calendar.rs` statt der `rrule`‑Crate. Offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2), Sync (Phase 5, wartet auf Hosting‑Entscheidung).

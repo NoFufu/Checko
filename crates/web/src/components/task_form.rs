@@ -85,6 +85,7 @@ pub fn TaskForm(
             due: p.due.or_else(|| due.get_untracked().parse().ok()),
             time: p.time,
             tags: p.tags,
+            recurrence: p.recurrence,
         });
         title.set(String::new());
         priority.set("4".into());
@@ -108,6 +109,9 @@ pub fn TaskForm(
                 label.push_str(&format!(" · {}", t.format("%H:%M")));
             }
             chips.push((Glyph::Calendar, label, "chip-date"));
+        }
+        if let Some(r) = p.recurrence {
+            chips.push((Glyph::Repeat, r.label(), "chip-date"));
         }
         if let Some(pr) = p.priority {
             chips.push((Glyph::Level, priority_name(pr).to_string(), "chip-prio"));

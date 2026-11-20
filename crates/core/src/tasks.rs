@@ -210,18 +210,45 @@ impl Task {
 
 /// Complete a task in a list and credit the profile. Returns the XP earned.
 pub fn complete_task(
-    tasks: &mut [Task],
+    tasks: &mut Vec<Task>,
     profile: &mut Profile,
     id: Uuid,
     now: DateTime<Utc>,
     today: NaiveDate,
 ) -> u32 {
-    let Some(t) = tasks.iter_mut().find(|t| t.meta.id == id) else {
+    let Some(idx) = tasks.iter().position(|t| t.meta.id == id) else {
         return 0;
     };
+    let t = &mut tasks[idx];
     let xp = t.complete(now, today);
     if xp > 0 {
         profile.add_xp(xp, today);
+    }
+    // Repeating task: create the next one (fresh steps, same settings).
+    if let (Some(r), Some(due)) = (t.recurrence, t.due) {
+        let after = due.max(today);
+        if let Some(next_due) = r.next_after(due, after) {
+            let mut next = Task::new(t.title.clone(), now);
+            next.notes = t.notes.clone();
+            next.priority = t.priority;
+            next.area = t.area.clone();
+            next.tags = t.tags.clone();
+            next.due = Some(next_due);
+            next.due_time = t.due_time;
+            next.recurrence = Some(r);
+            next.steps = t
+                .steps
+                .iter()
+                .map(|s| Step {
+                    id: Uuid::now_v7(),
+                    text: s.text.clone(),
+                    done: false,
+                })
+                .collect();
+            // stop the finished one from repeating again on reopen + complete
+            t.recurrence = None;
+            tasks.push(next);
+        }
     }
     xp
 }
@@ -425,6 +452,21 @@ mod tests {
         assert_eq!(t.step_progress(), (1, 2));
         t.remove_step(id, now);
         assert_eq!(t.step_progress(), (0, 1));
+    }
+
+    #[test]
+    fn repeating_task_creates_next() {
+        let now = Utc::now();
+        let mut t = task("Müll rausbringen", Priority::P4, Some(day(20)));
+        t.recurrence = Some(crate::Recurrence::every(crate::Freq::Weekly));
+        let id = t.meta.id;
+        let mut tasks = vec![t];
+        let mut p = Profile::default();
+        complete_task(&mut tasks, &mut p, id, now, day(20));
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[1].due, Some(day(27)));
+        assert!(tasks[1].is_open());
+        assert!(tasks[0].recurrence.is_none());
     }
 
     #[test]

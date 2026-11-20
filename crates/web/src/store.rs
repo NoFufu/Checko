@@ -6,8 +6,8 @@
 use std::time::Duration;
 
 use checko_core::{
-    all_areas, complete_task, parse_quick_add, reopen_task, Note, Priority, Profile, ShoppingItem,
-    Task,
+    all_areas, complete_task, parse_quick_add, reopen_task, Event, Note, Priority, Profile,
+    Recurrence, ShoppingItem, Task,
 };
 use chrono::{NaiveDate, NaiveTime};
 use leptos::prelude::*;
@@ -20,6 +20,7 @@ const TASKS_KEY: &str = "checko.tasks.v1";
 const PROFILE_KEY: &str = "checko.profile.v1";
 const NOTES_KEY: &str = "checko.notes.v1";
 const SHOPPING_KEY: &str = "checko.shopping.v1";
+const EVENTS_KEY: &str = "checko.events.v1";
 
 fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
@@ -52,6 +53,7 @@ pub enum Undo {
     Trash(Uuid),
     Complete(Uuid),
     NoteTrash(Uuid),
+    EventTrash(Uuid),
     ShoppingClear(Vec<Uuid>),
 }
 
@@ -71,6 +73,7 @@ pub struct NewTask {
     pub due: Option<NaiveDate>,
     pub time: Option<NaiveTime>,
     pub tags: Vec<String>,
+    pub recurrence: Option<Recurrence>,
 }
 
 #[derive(Clone, Copy)]
@@ -79,6 +82,7 @@ pub struct Store {
     pub profile: RwSignal<Profile>,
     pub notes: RwSignal<Vec<Note>>,
     pub shopping: RwSignal<Vec<ShoppingItem>>,
+    pub events: RwSignal<Vec<Event>>,
     pub toast: RwSignal<Option<Toast>>,
     /// The Strg+K quick-add dialog.
     pub quick_add_open: RwSignal<bool>,
@@ -96,6 +100,7 @@ impl Store {
             profile: RwSignal::new(load(PROFILE_KEY)),
             notes: RwSignal::new(load(NOTES_KEY)),
             shopping: RwSignal::new(load(SHOPPING_KEY)),
+            events: RwSignal::new(load(EVENTS_KEY)),
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
             detail: RwSignal::new(None),
@@ -105,6 +110,7 @@ impl Store {
         Effect::new(move |_| store.profile.with(|p| save(PROFILE_KEY, p)));
         Effect::new(move |_| store.notes.with(|n| save(NOTES_KEY, n)));
         Effect::new(move |_| store.shopping.with(|s| save(SHOPPING_KEY, s)));
+        Effect::new(move |_| store.events.with(|e| save(EVENTS_KEY, e)));
         store.watch_progress();
         provide_context(store);
         store
@@ -218,6 +224,7 @@ impl Store {
         t.due = new.due;
         t.due_time = new.time;
         t.tags = new.tags;
+        t.recurrence = new.recurrence;
         self.tasks.update(|ts| ts.push(t));
     }
 
@@ -314,6 +321,42 @@ impl Store {
 
     pub fn empty_trash(&self) {
         self.tasks.update(|ts| ts.retain(|t| !t.is_deleted()));
+    }
+
+    // ---------- Calendar ----------
+
+    pub fn add_event(&self, e: Event) {
+        if e.title.is_empty() {
+            return;
+        }
+        self.events.update(|es| es.push(e));
+    }
+
+    pub fn edit_event(&self, id: Uuid, f: impl FnOnce(&mut Event)) {
+        self.events.update(|es| {
+            if let Some(e) = es.iter_mut().find(|e| e.meta.id == id) {
+                f(e);
+                e.meta.updated_at = now();
+            }
+        });
+    }
+
+    pub fn delete_event(&self, id: Uuid) {
+        self.edit_event(id, |e| e.meta.deleted_at = Some(now()));
+        self.notify("Termin gelöscht", Some(Undo::EventTrash(id)));
+    }
+
+    /// Move a calendar item (event or task) to another day.
+    pub fn move_to_day(&self, kind: checko_core::ItemKind, id: Uuid, day: NaiveDate) {
+        match kind {
+            checko_core::ItemKind::Event => self.edit_event(id, |e| e.date = day),
+            checko_core::ItemKind::Task => {
+                let time = self.tasks.with_untracked(|ts| {
+                    ts.iter().find(|t| t.meta.id == id).and_then(|t| t.due_time)
+                });
+                self.set_due(id, Some(day), time);
+            }
+        }
     }
 
     // ---------- Notes ----------
@@ -413,6 +456,7 @@ impl Store {
         match undo {
             Undo::Trash(id) => self.restore(id),
             Undo::Complete(id) => self.reopen(id),
+            Undo::EventTrash(id) => self.edit_event(id, |e| e.meta.deleted_at = None),
             Undo::NoteTrash(id) => self.notes.update(|ns| {
                 if let Some(n) = ns.iter_mut().find(|n| n.meta.id == id) {
                     n.meta.deleted_at = None;

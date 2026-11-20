@@ -90,6 +90,9 @@ pub struct Task {
     pub xp_awarded: u32,
     #[serde(default)]
     pub steps: Vec<Step>,
+    /// Repeat rule: when done, the next occurrence is created automatically.
+    #[serde(default)]
+    pub recurrence: Option<crate::Recurrence>,
 }
 
 impl Task {
@@ -110,6 +113,7 @@ impl Task {
             done_on: None,
             xp_awarded: 0,
             steps: Vec::new(),
+            recurrence: None,
         }
     }
 }

@@ -1,4 +1,4 @@
-use checko_core::{Priority, Task, TaskStatus};
+use checko_core::{Freq, Priority, Recurrence, Task, TaskStatus};
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use leptos::{ev, prelude::*};
 
@@ -7,6 +7,33 @@ use super::task_item::CategoryChip;
 use crate::store::Store;
 use crate::time::{due_label, today};
 use crate::ui::{priority_class, priority_name};
+
+/// Repeat options shared by tasks and events ("" = none).
+pub fn repeat_value(r: Option<Recurrence>) -> &'static str {
+    match r.map(|r| (r.freq, r.interval)) {
+        Some((Freq::Daily, _)) => "d",
+        Some((Freq::Weekly, 2)) => "2w",
+        Some((Freq::Weekly, _)) => "w",
+        Some((Freq::Monthly, _)) => "m",
+        Some((Freq::Yearly, _)) => "y",
+        None => "",
+    }
+}
+
+pub fn repeat_from(v: &str) -> Option<Recurrence> {
+    match v {
+        "d" => Some(Recurrence::every(Freq::Daily)),
+        "w" => Some(Recurrence::every(Freq::Weekly)),
+        "2w" => Some(Recurrence {
+            freq: Freq::Weekly,
+            interval: 2,
+            until: None,
+        }),
+        "m" => Some(Recurrence::every(Freq::Monthly)),
+        "y" => Some(Recurrence::every(Freq::Yearly)),
+        _ => None,
+    }
+}
 
 const PRIORITIES: [Priority; 4] = [Priority::P4, Priority::P3, Priority::P2, Priority::P1];
 
@@ -152,6 +179,35 @@ fn DetailBody(task: Task) -> impl IntoView {
                     />
                 </label>
             </div>
+        </section>
+
+        <section class="drawer-section">
+            <h3 class="drawer-label">"Wiederholen"</h3>
+            <label class="field">
+                <span class="sr-only">"Wiederholen"</span>
+                <select
+                    aria-label="Wiederholen"
+                    prop:value=repeat_value(task.recurrence)
+                    on:change=move |e| {
+                        let r = repeat_from(&event_target_value(&e));
+                        store.edit(id, |t| {
+                            t.recurrence = r;
+                            if r.is_some() && t.due.is_none() {
+                                t.due = Some(today);
+                            }
+                            t.meta.updated_at = crate::time::now();
+                        });
+                    }
+                >
+                    <option value="">"Nicht wiederholen"</option>
+                    <option value="d">"Jeden Tag"</option>
+                    <option value="w">"Jede Woche"</option>
+                    <option value="2w">"Alle 2 Wochen"</option>
+                    <option value="m">"Jeden Monat"</option>
+                    <option value="y">"Jedes Jahr"</option>
+                </select>
+            </label>
+            <p class="text-sm text-muted mt-1">"Beim Abhaken wird automatisch die nächste Aufgabe angelegt."</p>
         </section>
 
         <section class="drawer-section">
