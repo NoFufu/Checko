@@ -34,11 +34,9 @@ fn App() -> impl IntoView {
     view! {
         <Router base=BASE>
             <Aurora />
-            <div class="relative z-10 min-h-screen pb-32">
-                <header class="mx-auto flex max-w-6xl items-center px-4 pt-6 sm:px-8">
-                    <a href=format!("{BASE}/") class="brand"><img src=asset("brand/icon.png") alt="" />"checko"</a>
-                </header>
-                <main class="mx-auto max-w-6xl px-4 pt-6 sm:px-8">
+            <Dock />
+            <div class="app-content relative z-10 min-h-screen">
+                <main class="mx-auto max-w-6xl px-4 pt-8 pb-28 sm:px-8 sm:pb-12">
                     <Routes fallback=|| view! { <p>"Seite nicht gefunden."</p> }>
                         <Route path=path!("/") view=TodayPage />
                         <Route path=path!("/aufgaben") view=TasksPage />
@@ -48,7 +46,6 @@ fn App() -> impl IntoView {
                     </Routes>
                 </main>
             </div>
-            <Dock />
         </Router>
     }
 }

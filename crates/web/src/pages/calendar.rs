@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 use super::placeholder::Placeholder;
-use crate::components::{icon::Glyph, mascot::Mood};
+use crate::components::icon::Glyph;
 
 #[component]
 pub fn CalendarPage() -> impl IntoView {
@@ -11,7 +11,6 @@ pub fn CalendarPage() -> impl IntoView {
             icon=Glyph::Calendar
             phase="Kommt in Phase 6"
             hint="Monat, Woche und Agenda mit Terminen und Wiederholungen."
-            mood=Mood::WalkRight
         />
     }
 }

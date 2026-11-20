@@ -3,7 +3,6 @@ use leptos::prelude::*;
 use crate::components::{
     blur_text::BlurText,
     icon::{Glyph, Icon},
-    mascot::{Mascot, Mood},
     spotlight_card::SpotlightCard,
 };
 
@@ -14,7 +13,6 @@ pub fn Placeholder(
     icon: Glyph,
     phase: &'static str,
     hint: &'static str,
-    mood: Mood,
 ) -> impl IntoView {
     view! {
         <h1 class="page-title flex items-center gap-3">
@@ -22,8 +20,8 @@ pub fn Placeholder(
             <BlurText text=title />
         </h1>
         <SpotlightCard class="mt-8 flex flex-col items-center gap-4 py-14 text-center">
-            <Mascot mood=Signal::stored(mood) size=150 />
-            <p class="text-lg font-bold">"Checko baut hier noch fleißig …"</p>
+            <span class="module-icon placeholder-icon"><Icon glyph=icon size=48 /></span>
+            <p class="text-lg font-bold">"Hier entsteht gerade etwas …"</p>
             <p class="max-w-md text-muted">{hint}</p>
             <span class="chip">{phase}</span>
         </SpotlightCard>

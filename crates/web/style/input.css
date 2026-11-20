@@ -112,35 +112,46 @@ body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antiali
 .mascot-button:hover { transform: scale(1.06) rotate(-3deg); }
 .mascot-button:active { transform: scale(0.94); }
 
-/* ---------- Floating dock ---------- */
-.dock {
-  position: fixed; left: 50%; bottom: 1.25rem; transform: translateX(-50%); z-index: 50;
-  display: flex; align-items: flex-end; gap: 0.5rem; padding: 0.6rem 0.8rem; border-radius: 1.5rem;
-  background: var(--surface); border: 1px solid var(--surface-border); backdrop-filter: blur(20px) saturate(150%); box-shadow: var(--shadow);
-}
-.dock-item {
-  position: relative; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 1rem;
-  text-decoration: none; transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), background 0.2s; transform-origin: bottom;
-}
+/* ---------- Left navigation rail (Outlook-style) ---------- */
 .checko-icon { display: block; flex: none; }
 .module-icon { color: var(--icon-accent); }
-.dock-item { color: var(--muted); }
-.dock-item:hover, .dock-item[aria-current="page"], .quick-add > .checko-icon {
-  color: var(--icon-accent);
+.placeholder-icon { display: grid; place-items: center; width: 5.5rem; height: 5.5rem; border-radius: 1.5rem; background: rgb(101 169 130 / 0.14); }
+
+.dock {
+  position: fixed; inset: 0 auto 0 0; z-index: 50; width: 5.5rem;
+  display: flex; flex-direction: column; align-items: center; gap: 0.35rem; padding: 1rem 0.5rem;
+  background: var(--surface); border-right: 1px solid var(--surface-border);
+  backdrop-filter: blur(20px) saturate(150%); box-shadow: var(--shadow);
 }
-.dock-item:hover { transform: scale(1.35) translateY(-4px); }
-.dock-item:hover + .dock-item, .dock-item:has(+ .dock-item:hover) { transform: scale(1.15); }
-.dock-item[aria-current="page"] { background: rgb(101 169 130 / 0.22); }
-.dock-item[aria-current="page"]::after {
-  content: ""; position: absolute; bottom: -0.35rem; width: 0.3rem; height: 0.3rem; border-radius: 50%; background: var(--green);
+.app-content { padding-left: 5.5rem; }
+.dock-brand { display: grid; place-items: center; width: 3.5rem; height: 3.5rem; margin-bottom: 0.75rem; border-radius: 1rem; }
+.dock-brand img { width: 3rem; height: auto; }
+.dock-item {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  width: 4.5rem; padding: 0.6rem 0.25rem; border-radius: 0.9rem; text-decoration: none;
+  color: var(--muted); transition: background 0.2s, color 0.2s, transform 0.2s cubic-bezier(.34,1.56,.64,1);
 }
-.dock-tooltip {
-  position: absolute; bottom: calc(100% + 0.6rem); padding: 0.25rem 0.6rem; border-radius: 0.6rem; white-space: nowrap;
-  font-size: 0.75rem; font-weight: 800; background: var(--ink); color: #fff; opacity: 0; transform: translateY(4px);
-  pointer-events: none; transition: opacity 0.15s, transform 0.15s;
+.dock-item:hover, .dock-item[aria-current="page"], .quick-add > .checko-icon { color: var(--icon-accent); }
+.dock-item:hover { background: rgb(101 169 130 / 0.1); }
+.dock-item:active { transform: scale(0.95); }
+.dock-item[aria-current="page"] { background: rgb(101 169 130 / 0.2); }
+.dock-item[aria-current="page"]::before {
+  content: ""; position: absolute; left: -0.5rem; top: 22%; bottom: 22%; width: 0.25rem; border-radius: 0 999px 999px 0; background: var(--green);
 }
-.dock-item:hover .dock-tooltip, .dock-item:focus-visible .dock-tooltip { opacity: 1; transform: none; }
-.dock-item:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+.dock-label { font-size: 0.72rem; font-weight: 800; line-height: 1; }
+.dock-item[aria-current="page"] .dock-label { color: var(--text); }
+.dock-item:focus-visible, .dock-brand:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; }
+
+/* Small screens: rail becomes a bottom bar */
+@media (max-width: 639px) {
+  .dock { inset: auto 0 0 0; width: auto; flex-direction: row; justify-content: space-around; padding: 0.4rem 0.25rem calc(0.4rem + env(safe-area-inset-bottom));
+    border-right: 0; border-top: 1px solid var(--surface-border); }
+  .dock { background: color-mix(in srgb, var(--bg) 88%, transparent); }
+  .dock-brand { display: none; }
+  .app-content { padding-left: 0; }
+  .dock-item { width: auto; flex: 1; }
+  .dock-item[aria-current="page"]::before { left: 30%; right: 30%; top: -0.4rem; bottom: auto; width: auto; height: 0.2rem; border-radius: 0 0 999px 999px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }

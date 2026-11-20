@@ -6,7 +6,6 @@ use leptos::prelude::*;
 use crate::components::{
     blur_text::BlurText,
     icon::{Glyph, Icon},
-    mascot::{Mascot, Mood},
     spotlight_card::SpotlightCard,
 };
 use crate::time::{greeting, today_label};
@@ -20,14 +19,6 @@ const PLACEHOLDERS: [&str; 4] = [
 
 #[component]
 pub fn TodayPage() -> impl IntoView {
-    // Mascot waves on arrival, then settles into blinking. Click it to wave again.
-    let mood = RwSignal::new(Mood::Wave);
-    let wave = move || {
-        mood.set(Mood::Wave);
-        set_timeout(move || mood.set(Mood::Blink), Duration::from_millis(2100));
-    };
-    wave();
-
     // Rotating example placeholder in the quick-add field.
     let ph = RwSignal::new(0usize);
     let _ = set_interval_with_handle(
@@ -46,9 +37,6 @@ pub fn TodayPage() -> impl IntoView {
                 </h1>
                 <p class="mt-2 text-lg text-muted">"Schön, dass du da bist. Was steht heute an?"</p>
             </div>
-            <button class="mascot-button" on:click=move |_| wave() aria-label="Checko winkt">
-                <Mascot mood=mood size=150 />
-            </button>
         </section>
 
         <form class="quick-add mt-8" on:submit=|ev| ev.prevent_default()>

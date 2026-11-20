@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 
 use super::placeholder::Placeholder;
-use crate::components::{icon::Glyph, mascot::Mood};
+use crate::components::icon::Glyph;
 
 #[component]
 pub fn ShoppingPage() -> impl IntoView {
@@ -11,7 +11,6 @@ pub fn ShoppingPage() -> impl IntoView {
             icon=Glyph::Shopping
             phase="Kommt in Phase 3"
             hint="Einkaufsliste nach Kategorien – abhaken per Wisch-Geste."
-            mood=Mood::Crawl
         />
     }
 }

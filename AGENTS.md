@@ -44,7 +44,7 @@ Braucht eine Design‑Idee neue Logik (z. B. Wisch‑Geste, Drag & Drop, Konfett
 
 Diese Klassen dürfen **neu gestaltet, aber nicht umbenannt oder gelöscht** werden:
 
-`card`, `spotlight`, `bento`, `bento-wide`, `quick-add`, `chip`, `page-title`, `text-muted`, `brand`, `blur-word`, `mascot`, `mascot-button`, `xp-bar`, `xp-fill`, `dock`, `dock-item`, `dock-tooltip`, `checko-icon`, `module-icon`, `aurora`, `blob`, `blob-green`, `blob-lavender`, `blob-peach`, `grain`
+`card`, `spotlight`, `bento`, `bento-wide`, `quick-add`, `chip`, `page-title`, `text-muted`, `brand`, `blur-word`, `mascot`, `mascot-button`, `xp-bar`, `xp-fill`, `dock`, `dock-item`, `dock-label`, `dock-brand`, `app-content`, `placeholder-icon`, `checko-icon`, `module-icon`, `aurora`, `blob`, `blob-green`, `blob-lavender`, `blob-peach`, `grain`
 
 Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Maskottchen) werden aus Rust gesetzt und müssen erhalten bleiben. Neue Klassen dürfen jederzeit dazukommen.
 
@@ -72,5 +72,5 @@ Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Mas
 
 ## Projektstand
 
-- Phase 0 ist fertig: Grundgerüst, Heute‑Seite, Menüleiste, Platzhalter‑Seiten, Outline‑Icons.
+- Phase 0 ist fertig: Grundgerüst, Heute‑Seite, Navigationsleiste links (Outlook‑Stil, auf dem Handy unten), Platzhalter‑Seiten, Outline‑Icons. Das Maskottchen ist vorerst ausgeblendet.
 - **Als Nächstes baut Claude Phase 1: Aufgaben** (anlegen, abhaken, speichern, XP). Während Phase 1 läuft, ändert Codex `crates/web/src/pages/tasks.rs` und `crates/web/src/pages/today.rs` bitte gar nicht.

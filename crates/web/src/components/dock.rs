@@ -37,18 +37,22 @@ const ITEMS: [Item; 5] = [
     },
 ];
 
-/// Floating dock with macOS-style magnification (CSS only).
+/// Left navigation rail (Outlook-style): icon above label, active item highlighted.
+/// On small screens it turns into a bottom bar.
 #[component]
 pub fn Dock() -> impl IntoView {
     view! {
         <nav class="dock" aria-label="Hauptnavigation">
+            <a href=format!("{}/", crate::BASE) class="dock-brand" aria-label="Checko Startseite">
+                <img src=crate::asset("brand/icon.png") alt="" />
+            </a>
             {ITEMS
                 .iter()
                 .map(|it| {
                     view! {
                         <A href=format!("{}{}", crate::BASE, it.href) exact=true attr:class="dock-item" attr:aria-label=it.label>
-                            <Icon glyph=it.icon />
-                            <span class="dock-tooltip">{it.label}</span>
+                            <Icon glyph=it.icon size=24 />
+                            <span class="dock-label">{it.label}</span>
                         </A>
                     }
                 })
