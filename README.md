@@ -1,4 +1,7 @@
-# Checko 🦎✅
+# Checko ✅
+
+> ## 👉 [**Checko öffnen: nofufu.github.io/Checko**](https://nofufu.github.io/Checko/)
+> Immer die aktuelle Version. Sie wird nach jeder Änderung in `main` automatisch neu veröffentlicht (dauert ca. 3–5 Minuten).
 
 Ein verspielter persönlicher Organizer – To‑Dos, Kalender, Notizen, Einkaufsliste und Erinnerungen – komplett in **Rust** (Leptos + WebAssembly).
 
