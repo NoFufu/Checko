@@ -651,3 +651,39 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .play-row { display: grid; gap: 0.75rem; }
 @media (min-width: 1024px) { .play-row { grid-template-columns: 2fr 1fr; align-items: start; } }
 .play-row .stat-grid { align-content: start; }
+
+/* ---------- Design 3: Duolingo-like streak, bottom layout, cleaner folders ---------- */
+.play-grid { display: grid; gap: 1.5rem; }
+@media (min-width: 1100px) { .play-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; } }
+.play-main, .play-side { display: flex; flex-direction: column; gap: 0.75rem; min-width: 0; }
+.play-row { display: grid; gap: 0.75rem; }
+@media (min-width: 900px) { .play-row { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); align-items: stretch; } }
+.level-card { display: flex; flex-direction: column; }
+.play-side .rings { grid-template-columns: 1fr; }
+.play-side .rings-svg { width: 11rem; height: 11rem; }
+
+.streak-card { display: flex; flex-direction: column; gap: 0.9rem; }
+.streak-top { display: flex; align-items: center; gap: 0.75rem; }
+.streak-flame { font-size: 2.8rem; line-height: 1; filter: grayscale(1) opacity(0.45); transition: filter 0.3s; }
+.streak-card.lit .streak-flame { filter: drop-shadow(0 6px 10px rgb(249 115 22 / 0.45)); animation: flicker 2.4s ease-in-out infinite; }
+@keyframes flicker { 0%,100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.06) rotate(-3deg); } }
+.streak-num { display: block; font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.streak-card.lit .streak-num { color: #f97316; }
+.streak-label { display: block; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
+.streak-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
+.streak-day { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.streak-dot { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 999px; background: var(--panel-soft); border: 2px solid var(--border); font-size: 0.85rem; font-weight: 800; color: #fff; }
+.streak-day.active .streak-dot { background: linear-gradient(135deg, #fb923c, #f97316); border-color: transparent; box-shadow: 0 4px 10px -4px rgb(249 115 22 / 0.8); }
+.streak-day.today .streak-dot { border-color: #f97316; }
+.streak-dname { font-size: 0.7rem; color: var(--muted); font-weight: 600; }
+.streak-day.today .streak-dname { color: var(--text); font-weight: 800; }
+.streak-hint { font-size: 0.82rem; color: var(--muted); }
+
+/* Sidebar folders: whole row highlights, chevron only when there is something to open */
+.folder-row { border-radius: 0.6rem; transition: background 0.15s; }
+.folder-row:hover { background: var(--panel-soft); }
+.folder-link, .folder-link:hover, .folder-link[aria-current="page"] { background: transparent; }
+.folder-toggle:disabled { visibility: hidden; }
+.folder-toggle { opacity: 0; }
+.folder-row:hover .folder-toggle, .folder-toggle.open, .folder-toggle:focus-visible { opacity: 0.7; }
+.folder .nav-count { min-width: 1.5rem; }

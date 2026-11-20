@@ -1,4 +1,4 @@
-use checko_core::{done_this_week, level_for_xp, open_tasks, today_tasks};
+use checko_core::{done_this_week, level_for_xp, today_tasks};
 use leptos::prelude::*;
 
 use crate::components::{
@@ -30,8 +30,6 @@ pub fn TodayPage() -> impl IntoView {
     let week = move || store.tasks.with(|t| done_this_week(t, today()));
     let week_total = move || week().iter().sum::<u32>();
     let progress = move || store.profile.with(|p| level_for_xp(p.xp));
-    let streak = move || store.profile.with(|p| p.current_streak(today()));
-    let open_count = move || store.tasks.with(|t| open_tasks(t, None).len());
     let today = weekday_index();
 
     view! {
@@ -82,9 +80,6 @@ pub fn TodayPage() -> impl IntoView {
                             </ul>
                         </Show>
                     </section>
-
-                    <SectionHead icon=Glyph::Pin title="Kategorien" />
-                    <CategoryRings />
                 </div>
 
                 <aside class="dash-side">
@@ -93,9 +88,11 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
 
-            <section class="play-zone" aria-label="Fortschritt und Erfolge">
-                    <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
-                    <div class="metric-grid metric-grid-4">
+            <section class="play-zone" aria-label="Fortschritt, Erfolge und Kategorien">
+                <div class="play-grid">
+                    <div class="play-main">
+                        <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
+                        <div class="metric-grid">
                         <section class="panel">
                             <p class="metric-label">"Erledigt diese Woche"</p>
                             <p class="metric-sub">"Aufgaben pro Tag"</p>
@@ -120,7 +117,11 @@ pub fn TodayPage() -> impl IntoView {
                                     .collect_view()}
                             </div>
                         </section>
-                        <section class="panel">
+                            <StreakCard />
+                        </div>
+                        <div class="play-row">
+                            <AchievementGrid />
+                        <section class="panel level-card">
                             <p class="metric-label">"Dein Level"</p>
                             <p class="metric-sub">"XP für erledigte Aufgaben"</p>
                             <p class="metric-value">{move || progress().level} <span class="metric-unit">"Level"</span></p>
@@ -134,18 +135,57 @@ pub fn TodayPage() -> impl IntoView {
                                 }}
                             </p>
                         </section>
+                        </div>
                     </div>
-                <div class="play-row">
-                    <AchievementGrid />
-                    <div class="stat-grid">
-                        <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
-                        <Stat icon=Glyph::Tasks value=Signal::derive(move || open_count().to_string()) label="Offen" />
-                        <Stat icon=Glyph::Shopping value=Signal::derive(move || store.shopping.with(|s| checko_core::open_count(s)).to_string()) label="Einkäufe" />
-                        <Stat icon=Glyph::Pin value=Signal::derive(move || store.notes.with(|n| n.iter().filter(|n| n.pinned && n.meta.deleted_at.is_none()).count()).to_string()) label="Angepinnt" />
+                    <div class="play-side">
+                        <SectionHead icon=Glyph::Pin title="Kategorien" />
+                        <CategoryRings />
                     </div>
                 </div>
             </section>
         </div>
+    }
+}
+
+/// Duolingo-style streak: big flame, days in a row, this week's active days.
+#[component]
+fn StreakCard() -> impl IntoView {
+    let store = Store::get();
+    let streak = move || store.profile.with(|p| p.current_streak(today()));
+    let week = move || store.tasks.with(|t| done_this_week(t, today()));
+    let today_idx = weekday_index();
+    let done_today = move || week()[today_idx] > 0;
+    view! {
+        <section class="panel streak-card" class:lit=move || { streak() > 0 }>
+            <div class="streak-top">
+                <span class="streak-flame" aria-hidden="true">"🔥"</span>
+                <span>
+                    <span class="streak-num">{streak}</span>
+                    <span class="streak-label">{move || if streak() == 1 { "Tag in Folge" } else { "Tage in Folge" }}</span>
+                </span>
+            </div>
+            <ul class="streak-week" aria-label="Aktive Tage diese Woche">
+                {WEEK
+                    .iter()
+                    .enumerate()
+                    .map(|(i, d)| view! {
+                        <li class="streak-day" class:active=move || { week()[i] > 0 } class:today=i == today_idx>
+                            <span class="streak-dot">{move || if week()[i] > 0 { "✓" } else { "" }}</span>
+                            <span class="streak-dname">{*d}</span>
+                        </li>
+                    })
+                    .collect_view()}
+            </ul>
+            <p class="streak-hint">
+                {move || if done_today() {
+                    "Heute schon geschafft – stark!".to_string()
+                } else if streak() > 0 {
+                    "Erledige heute eine Aufgabe, damit deine Serie hält.".to_string()
+                } else {
+                    "Erledige heute eine Aufgabe und starte eine Serie.".to_string()
+                }}
+            </p>
+        </section>
     }
 }
 
@@ -334,19 +374,6 @@ fn SectionHead(icon: Glyph, title: &'static str) -> impl IntoView {
             <Icon glyph=icon size=18 />
             {title}
         </h2>
-    }
-}
-
-#[component]
-fn Stat(icon: Glyph, #[prop(into)] value: Signal<String>, label: &'static str) -> impl IntoView {
-    view! {
-        <section class="panel stat">
-            <span class="list-icon"><Icon glyph=icon size=16 /></span>
-            <span>
-                <span class="stat-value">{value}</span>
-                <span class="stat-label">{label}</span>
-            </span>
-        </section>
     }
 }
 

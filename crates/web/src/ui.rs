@@ -47,7 +47,8 @@ pub fn category_icon(name: &str) -> String {
     let pick = [
         (["arbeit", "job", "büro"].as_slice(), "💼"),
         (&["privat", "zuhause", "home"], "🏠"),
-        (&["gesundheit", "arzt", "zahnarzt", "medizin"], "🩺"),
+        (&["gesundheit", "wellness"], "❤️"),
+        (&["arzt", "zahnarzt", "medizin", "termine arzt"], "🩺"),
         (&["bad", "badezimmer"], "🛁"),
         (&["küche", "kochen", "essen", "rezept"], "🍳"),
         (&["einkauf", "einkaufen", "shopping"], "🛒"),
