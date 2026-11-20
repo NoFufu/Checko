@@ -139,6 +139,9 @@ pub fn TodayPage() -> impl IntoView {
                         </div>
                     </section>
 
+                    <SectionHead icon=Glyph::Pin title="Kategorien" />
+                    <CategoryLegend />
+
                     <SectionHead icon=Glyph::Streak title="Schnellstatistik" />
                     <div class="stat-grid">
                         <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
@@ -149,6 +152,48 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
         </div>
+    }
+}
+
+/// Categories with open count and a progress bar (done / all), clickable.
+#[component]
+fn CategoryLegend() -> impl IntoView {
+    let store = Store::get();
+    let stats = move || store.tasks.with(|t| checko_core::category_stats(t));
+    view! {
+        <section class="panel legend">
+            <Show
+                when=move || !stats().is_empty()
+                fallback=|| view! { <p class="text-sm text-muted">"Schreib „#Küche“ hinter eine Aufgabe, dann erscheint die Kategorie hier."</p> }
+            >
+                <ul>
+                    {move || stats()
+                        .into_iter()
+                        .map(|(name, open, done)| {
+                            let total = open + done;
+                            let pct = done * 100 / total.max(1);
+                            let color = crate::ui::area_color(&name);
+                            let href = format!("{}/aufgaben?kategorie={}", crate::BASE, js_sys::encode_uri_component(&name));
+                            view! {
+                                <li>
+                                    <a class="legend-item" href=href>
+                                        <span class="legend-row">
+                                            <span class="area-dot" style=format!("background:{color}")></span>
+                                            <span class="flex-1 font-medium">{name.clone()}</span>
+                                            <span class="legend-value">{open} " offen"</span>
+                                            <span class="legend-pct">{pct} "%"</span>
+                                        </span>
+                                        <span class="legend-bar">
+                                            <span style=format!("width:{pct}%;background:{color}")></span>
+                                        </span>
+                                    </a>
+                                </li>
+                            }
+                        })
+                        .collect_view()}
+                </ul>
+            </Show>
+        </section>
     }
 }
 

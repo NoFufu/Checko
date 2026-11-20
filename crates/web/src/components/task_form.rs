@@ -149,11 +149,6 @@ pub fn TaskForm(
             </div>
             <Show
                 when=has_tokens
-                fallback=|| view! {
-                    <p id="quick-add-hint" class="parse-hint">
-                        "Tipp: „morgen 14 Uhr“, „Freitag“, „24.12.“, „#Küche“ (Kategorie) oder „!1“ (dringend) direkt mitschreiben."
-                    </p>
-                }
             >
                 <div id="quick-add-hint" class="parse-preview" aria-live="polite">
                     <span class="parse-title">
@@ -177,8 +172,8 @@ pub fn TaskForm(
                     <select bind:value=priority aria-label="Dringlichkeit">
                         <option value="1">"🔴 Dringend"</option>
                         <option value="2">"🟠 Hoch"</option>
-                        <option value="3">"🔵 Mittel"</option>
-                        <option value="4">"⚪ Normal"</option>
+                        <option value="3">"🟡 Mittel"</option>
+                        <option value="4">"🟢 Normal"</option>
                     </select>
                 </label>
                 <label class="field">

@@ -3,6 +3,7 @@ use leptos_router::components::A;
 
 use super::icon::{Glyph, Icon};
 use super::logo::Logo;
+use super::task_item::DRAG_TYPE;
 use super::theme::ThemeSwitch;
 use crate::store::Store;
 use crate::time::today;
@@ -44,7 +45,15 @@ const MAIN: [Item; 5] = [
     },
 ];
 
+/// Task id carried by a drag from a task row.
+fn dragged_task(e: &leptos::ev::DragEvent) -> Option<uuid::Uuid> {
+    e.data_transfer()?.get_data(DRAG_TYPE).ok()?.parse().ok()
+}
+
 fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
+    // Dropping a task on "Heute" moves it to today.
+    let drop_ok = it.href == "/";
+    let over = RwSignal::new(false);
     // Small counters: tasks for today on "Heute", open tasks on "Aufgaben".
     let count = move || -> usize {
         store.tasks.with(|t| match it.href {
@@ -58,13 +67,28 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
         })
     };
     view! {
-        <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item">
-            <Icon glyph=it.icon size=18 />
-            <span class="nav-label">{it.label}</span>
-            <Show when=move || { count() > 0 }>
-                <span class="nav-count">{count}</span>
-            </Show>
-        </A>
+        <div
+            class="nav-drop"
+            class:drop-over=move || over.get()
+            on:dragover=move |e| if drop_ok { e.prevent_default(); over.set(true); }
+            on:dragleave=move |_| over.set(false)
+            on:drop=move |e| {
+                over.set(false);
+                if let (true, Some(id)) = (drop_ok, dragged_task(&e)) {
+                    e.prevent_default();
+                    let time = store.tasks.with_untracked(|ts| ts.iter().find(|t| t.meta.id == id).and_then(|t| t.due_time));
+                    store.set_due(id, Some(today()), time);
+                }
+            }
+        >
+            <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item">
+                <Icon glyph=it.icon size=18 />
+                <span class="nav-label">{it.label}</span>
+                <Show when=move || { count() > 0 }>
+                    <span class="nav-count">{count}</span>
+                </Show>
+            </A>
+        </div>
     }
 }
 
@@ -99,23 +123,10 @@ pub fn Sidebar() -> impl IntoView {
                     {move || store
                         .areas()
                         .into_iter()
-                        .map(|name| {
-                            let n = name.clone();
-                            let count = Signal::derive(move || {
-                                store.tasks.with(|t| open_tasks(t, Some(&n)).len())
-                            });
-                            view! {
-                                <li class="area-item">
-                                    <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
-                                    <span class="flex-1">{name.clone()}</span>
-                                    <Show when=move || count.get() != 0>
-                                        <span class="nav-count">{count}</span>
-                                    </Show>
-                                </li>
-                            }
-                        })
+                        .map(|name| view! { <CategoryFolder name=name /> })
                         .collect_view()}
                 </ul>
+                <p class="area-hint">"Aufgaben hierher ziehen, um sie einzuordnen."</p>
             </details>
 
             <div class="sidebar-bottom">
@@ -135,5 +146,83 @@ pub fn Sidebar() -> impl IntoView {
                 </div>
             </div>
         </aside>
+    }
+}
+
+/// One category in the sidebar: a folder you can open to see its tasks,
+/// click to filter, and drop tasks onto.
+#[component]
+fn CategoryFolder(name: String) -> impl IntoView {
+    let store = Store::get();
+    let open = RwSignal::new(false);
+    let over = RwSignal::new(false);
+    let n = name.clone();
+    let tasks = Memo::new(move |_| {
+        store.tasks.with(|t| {
+            open_tasks(t, Some(&n))
+                .into_iter()
+                .map(|t| (t.meta.id, t.title.clone()))
+                .collect::<Vec<_>>()
+        })
+    });
+    let count = move || tasks.with(Vec::len);
+    let href = format!(
+        "{BASE}/aufgaben?kategorie={}",
+        js_sys::encode_uri_component(&name)
+    );
+    let drop_name = name.clone();
+
+    view! {
+        <li
+            class="folder"
+            class:drop-over=move || over.get()
+            on:dragover=move |e| { e.prevent_default(); over.set(true); }
+            on:dragleave=move |_| over.set(false)
+            on:drop=move |e| {
+                e.prevent_default();
+                over.set(false);
+                if let Some(id) = dragged_task(&e) {
+                    store.add_category(id, &drop_name);
+                    open.set(true);
+                }
+            }
+        >
+            <div class="area-item">
+                <button
+                    type="button"
+                    class="folder-toggle"
+                    class:open=move || open.get()
+                    aria-expanded=move || open.get().to_string()
+                    aria-label=format!("{name} auf- oder zuklappen")
+                    disabled=move || count() == 0
+                    on:click=move |_| open.update(|o| *o = !*o)
+                >
+                    <Icon glyph=Glyph::ChevronDown size=14 />
+                </button>
+                <A href=href attr:class="folder-link">
+                    <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
+                    <span class="flex-1 truncate">{name.clone()}</span>
+                </A>
+                <Show when=move || count() != 0>
+                    <span class="nav-count">{count}</span>
+                </Show>
+            </div>
+            <Show when=move || { open.get() && count() > 0 }>
+                <ul class="folder-tasks">
+                    {move || tasks
+                        .get()
+                        .into_iter()
+                        .take(8)
+                        .map(|(id, title)| view! {
+                            <li>
+                                <button type="button" class="folder-task" on:click=move |_| store.detail.set(Some(id))>
+                                    {title}
+                                </button>
+                            </li>
+                        })
+                        .collect_view()}
+                </ul>
+            </Show>
+        </li>
     }
 }

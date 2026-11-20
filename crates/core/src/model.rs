@@ -58,6 +58,14 @@ pub struct LogEntry {
     pub text: String,
 }
 
+/// A sub-step of a task ("Schritte" in Microsoft To Do).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct Step {
+    pub id: Uuid,
+    pub text: String,
+    pub done: bool,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Task {
     pub meta: Meta,
@@ -80,6 +88,8 @@ pub struct Task {
     /// XP granted on completion, so it can be taken back when reopened.
     #[serde(default)]
     pub xp_awarded: u32,
+    #[serde(default)]
+    pub steps: Vec<Step>,
 }
 
 impl Task {
@@ -99,6 +109,7 @@ impl Task {
             done_at: None,
             done_on: None,
             xp_awarded: 0,
+            steps: Vec::new(),
         }
     }
 }

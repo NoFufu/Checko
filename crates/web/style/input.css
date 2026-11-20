@@ -113,8 +113,8 @@ button { font: inherit; color: inherit; }
   background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto;
 }
 .sidebar-brand { display: flex; align-items: center; padding: 0.35rem 0.6rem 0.15rem; text-decoration: none; color: var(--text); }
-.wordmark { display: inline-flex; align-items: baseline; font-family: "Nunito", var(--font-sans); font-weight: 900; font-size: 2.1rem; line-height: 1; letter-spacing: -0.035em; color: var(--logo-ink); }
-.wordmark-k { height: 0.74em; width: auto; margin: 0 0.01em 0 0.04em; overflow: visible; }
+.wordmark { display: inline-flex; align-items: baseline; font-family: "Nunito", var(--font-sans); font-weight: 900; font-size: 2.5rem; line-height: 1; letter-spacing: -0.04em; -webkit-text-stroke: 0.025em currentColor; color: var(--logo-ink); }
+.wordmark-k { height: 0.73em; width: auto; margin: 0 -0.04em 0 -0.03em; overflow: visible; }
 .wordmark-check { stroke: var(--green); }
 
 .sidebar-search {
@@ -352,9 +352,8 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .urgency:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
 .urgency-1 { --dot: #e5484d; }
 .urgency-2 { --dot: #f08c3a; }
-.urgency-3 { --dot: #5b9bd5; }
-.urgency-4 { --dot: transparent; }
-.urgency-4::after { box-shadow: inset 0 0 0 2px var(--border-strong); }
+.urgency-3 { --dot: #e8c547; }
+.urgency-4 { --dot: #4caf7a; }
 .segment .area-dot { display: inline-block; margin-right: 0.4rem; vertical-align: 0.05em; }
 
 /* ---------- Quick-add parsing ---------- */
@@ -419,6 +418,74 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .search-results ul { margin: 0; padding: 0; list-style: none; }
 .search-hit { display: flex; align-items: center; gap: 0.7rem; width: 100%; padding: 0.5rem; border: 0; border-radius: 0.6rem; background: transparent; text-align: left; cursor: pointer; }
 .search-hit:hover, .search-hit:focus-visible { background: var(--panel-soft); outline: 0; }
+
+/* ---------- Category blocks ---------- */
+.cat-chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.05rem 0.5rem; border-radius: 0.45rem; border: 1px solid var(--border-strong); background: var(--panel); font-size: 0.75rem; font-weight: 600; color: var(--text); cursor: pointer; transition: background 0.15s, transform 0.15s; }
+.cat-chip:hover { background: var(--panel-soft); transform: translateY(-1px); }
+.cat-chip:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.cat-chip .area-dot { width: 0.45rem; height: 0.45rem; }
+.meta-item.all-done { color: var(--icon-accent); }
+.task-row[draggable="true"] { cursor: grab; }
+.task-row.selected { background: var(--panel-soft); box-shadow: inset 3px 0 0 var(--green); }
+.task-title { cursor: pointer; }
+.task-title:hover { text-decoration: underline; text-decoration-color: var(--border-strong); text-underline-offset: 3px; }
+
+/* ---------- Sidebar folders + drop targets ---------- */
+.folder { border-radius: 0.5rem; transition: background 0.15s, box-shadow 0.15s; }
+.folder .area-item { padding: 0.15rem 0.3rem 0.15rem 0; gap: 0.25rem; }
+.folder-toggle { display: grid; place-items: center; width: 1.4rem; height: 1.4rem; padding: 0; border: 0; border-radius: 0.35rem; background: transparent; color: var(--muted); cursor: pointer; transform: rotate(-90deg); transition: transform 0.2s; }
+.folder-toggle.open { transform: none; }
+.folder-toggle:disabled { opacity: 0.3; cursor: default; }
+.folder-toggle:hover:not(:disabled) { background: var(--panel-soft); }
+.folder-link { display: flex; flex: 1; min-width: 0; align-items: center; gap: 0.55rem; padding: 0.2rem 0.3rem; border-radius: 0.4rem; color: inherit; text-decoration: none; }
+.folder-link:hover { color: var(--text); background: var(--panel-soft); }
+.folder-tasks { margin: 0.1rem 0 0.35rem 1.65rem; padding: 0 0 0 0.6rem; list-style: none; border-left: 1px dashed var(--border-strong); animation: rowIn 0.2s ease both; }
+.folder-task { display: block; width: 100%; padding: 0.2rem 0.4rem; border: 0; border-radius: 0.35rem; background: transparent; text-align: left; font-size: 0.82rem; color: var(--muted); cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folder-task:hover { background: var(--panel-soft); color: var(--text); }
+.drop-over { background: rgb(101 169 130 / 0.15) !important; box-shadow: inset 0 0 0 2px var(--green); border-radius: 0.55rem; }
+.area-hint { margin: 0.4rem 0.6rem 0; font-size: 0.72rem; color: var(--muted); }
+
+/* ---------- Task detail drawer ---------- */
+.drawer-backdrop { position: fixed; inset: 0; z-index: 65; background: rgb(13 13 16 / 0.25); animation: fadeIn 0.15s ease both; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 66; width: min(28rem, 100%); overflow-y: auto; padding: 1.1rem 1.2rem 1.5rem; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -20px 0 50px -20px rgb(0 0 0 / 0.35); animation: drawerIn 0.28s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes drawerIn { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.drawer-head { display: flex; align-items: center; gap: 0.7rem; padding-bottom: 0.9rem; border-bottom: 1px solid var(--border); }
+.drawer-title { flex: 1; min-width: 0; font: inherit; font-size: 1.15rem; font-weight: 700; border: 1px solid transparent; border-radius: 0.5rem; padding: 0.3rem 0.45rem; background: transparent; color: var(--text); outline: 0; }
+.drawer-title:hover { border-color: var(--border); }
+.drawer-title:focus { border-color: var(--green); }
+.drawer-section { padding: 0.9rem 0; border-bottom: 1px solid var(--border); }
+.drawer-label { margin-bottom: 0.5rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--muted); }
+.urgency-picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.35rem; }
+.urgency-option { display: flex; align-items: center; gap: 0.3rem; padding: 0.35rem 0.4rem; border-radius: 0.55rem; border: 1px solid var(--border); background: var(--panel); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+.urgency-option .urgency { width: 1rem; height: 1rem; pointer-events: none; }
+.urgency-option.active { border-color: var(--text); box-shadow: var(--shadow-sm); }
+.quick-dates { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.field input[type="time"] { font: inherit; font-size: 0.85rem; color: var(--text); padding: 0.4rem 0.6rem; border-radius: 0.55rem; border: 1px solid var(--border); background: var(--panel); }
+.cat-editor { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.cat-chip-edit { display: inline-flex; align-items: center; }
+.cat-remove { display: grid; place-items: center; width: 1.3rem; height: 1.3rem; margin-left: 0.1rem; padding: 0; border: 0; border-radius: 999px; background: transparent; color: var(--muted); cursor: pointer; font-size: 0.95rem; }
+.cat-remove:hover { background: var(--panel-soft); color: var(--text); }
+.cat-add input { width: 9rem; font: inherit; font-size: 0.8rem; padding: 0.2rem 0.5rem; border-radius: 0.45rem; border: 1px dashed var(--border-strong); background: transparent; color: var(--text); outline: 0; }
+.cat-add input:focus { border-style: solid; border-color: var(--green); }
+.steps { margin: 0; padding: 0; list-style: none; }
+.step { display: flex; align-items: center; gap: 0.55rem; padding: 0.3rem 0.2rem; }
+.step input { accent-color: var(--green); width: 1rem; height: 1rem; }
+.step.done span { text-decoration: line-through; color: var(--muted); }
+.step-add { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.3rem; padding: 0.35rem 0.4rem; border-radius: 0.5rem; color: var(--icon-accent); }
+.step-add input { flex: 1; font: inherit; font-size: 0.9rem; border: 0; outline: 0; background: transparent; color: var(--text); }
+.step-add:focus-within { background: var(--panel-soft); }
+.drawer-notes { min-height: 7rem; width: 100%; }
+.drawer-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 0.9rem; }
+
+/* ---------- Category legend (Today) ---------- */
+.legend ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0.35rem; }
+.legend-item { display: block; padding: 0.45rem 0.5rem; border-radius: 0.55rem; color: inherit; text-decoration: none; transition: background 0.15s; }
+.legend-item:hover { background: var(--panel-soft); }
+.legend-row { display: flex; align-items: center; gap: 0.55rem; font-size: 0.9rem; }
+.legend-value { font-size: 0.8rem; color: var(--muted); }
+.legend-pct { min-width: 2.6rem; text-align: right; font-size: 0.75rem; color: var(--muted); }
+.legend-bar { display: block; height: 0.3rem; margin-top: 0.35rem; border-radius: 999px; background: var(--panel-soft); overflow: hidden; }
+.legend-bar span { display: block; height: 100%; border-radius: inherit; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
 
 /* ---------- Toast ---------- */
 .toast-host { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 60; pointer-events: none; }

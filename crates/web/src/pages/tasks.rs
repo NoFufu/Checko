@@ -1,5 +1,6 @@
 use checko_core::{done_tasks, open_tasks, trashed_tasks};
 use leptos::prelude::*;
+use leptos_router::hooks::use_query_map;
 
 use crate::components::{
     area_filter::AreaFilter,
@@ -23,6 +24,14 @@ pub fn TasksPage() -> impl IntoView {
     let view_tab = RwSignal::new(View::Open);
     // None = all areas
     let area = RwSignal::new(None::<String>);
+    // "?kategorie=Bad" (from a category block or the sidebar) sets the filter.
+    let query = use_query_map();
+    Effect::new(move |_| {
+        if let Some(k) = query.with(|q| q.get("kategorie")) {
+            area.set(Some(k));
+            view_tab.set(View::Open);
+        }
+    });
 
     let open_count = move || store.tasks.with(|t| open_tasks(t, None).len());
     let done_count = move || store.tasks.with(|t| done_tasks(t, None).len());

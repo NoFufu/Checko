@@ -1,15 +1,18 @@
 use std::time::Duration;
 
 use checko_core::{Priority, Task, TaskStatus};
-
-use crate::ui::{area_color, priority_class, priority_name};
 use leptos::prelude::*;
+use leptos_router::hooks::use_navigate;
 
 use super::icon::{Glyph, Icon};
 use crate::store::Store;
 use crate::time::{due_label, today};
+use crate::ui::{area_color, priority_class, priority_name};
 
-fn next_priority(p: Priority) -> Priority {
+/// MIME type used when dragging a task onto a category or "Heute".
+pub const DRAG_TYPE: &str = "application/x-checko-task";
+
+pub fn next_priority(p: Priority) -> Priority {
     match p {
         Priority::P4 => Priority::P3,
         Priority::P3 => Priority::P2,
@@ -18,7 +21,33 @@ fn next_priority(p: Priority) -> Priority {
     }
 }
 
-/// One task row. `trash` switches the actions to restore / delete forever.
+/// Clickable category block ("#Bad"); opens the task list filtered by it.
+#[component]
+pub fn CategoryChip(name: String) -> impl IntoView {
+    let navigate = use_navigate();
+    let target = format!(
+        "{}/aufgaben?kategorie={}",
+        crate::BASE,
+        js_sys::encode_uri_component(&name)
+    );
+    view! {
+        <button
+            type="button"
+            class="cat-chip"
+            title=format!("Alle Aufgaben in „{name}“")
+            on:click=move |e| {
+                e.stop_propagation();
+                navigate(&target, Default::default());
+            }
+        >
+            <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
+            {name.clone()}
+        </button>
+    }
+}
+
+/// One task row. Click opens the detail panel; drag it onto a category or
+/// "Heute" in the sidebar. `trash` switches the actions to restore / delete.
 #[component]
 pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     let store = Store::get();
@@ -29,21 +58,15 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     let overdue = task.is_overdue(today);
     // Briefly show the check animation before the row moves away.
     let checking = RwSignal::new(false);
-    let editing = RwSignal::new(false);
-    let draft = RwSignal::new(task.title.clone());
 
-    let toggle = move |_| {
+    let toggle = move |e: leptos::ev::MouseEvent| {
+        e.stop_propagation();
         if done {
             store.reopen(id);
         } else {
             checking.set(true);
             set_timeout(move || store.complete(id), Duration::from_millis(420));
         }
-    };
-
-    let save_title = move || {
-        store.rename(id, draft.get_untracked());
-        editing.set(false);
     };
 
     let due = task.due.map(|d| {
@@ -53,23 +76,28 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
         }
         label
     });
-    // Tags already readable in the title ("… für Küche und Bad") are not repeated.
-    let lower_title = task.title.to_lowercase();
-    let tags: Vec<String> = task
-        .tags
-        .iter()
-        .filter(|t| {
-            !lower_title
-                .split_whitespace()
-                .any(|w| w == t.to_lowercase())
-        })
-        .cloned()
-        .collect();
-    let area = task.area.clone();
+    let categories: Vec<String> = task.categories().into_iter().map(str::to_string).collect();
+    let (steps_done, steps_total) = task.step_progress();
+    let has_notes = !task.notes.trim().is_empty();
     let title = task.title.clone();
 
+    let on_drag = move |e: leptos::ev::DragEvent| {
+        if let Some(dt) = e.data_transfer() {
+            let _ = dt.set_data(DRAG_TYPE, &id.to_string());
+            let _ = dt.set_data("text/plain", &id.to_string());
+            dt.set_effect_allowed("copyMove");
+        }
+    };
+
     view! {
-        <li class="task-row" class:done=done class:checking=move || checking.get()>
+        <li
+            class="task-row"
+            class:done=done
+            class:checking=move || checking.get()
+            class:selected=move || store.detail.get() == Some(id)
+            draggable=(!trash).then_some("true")
+            on:dragstart=on_drag
+        >
             {(!trash).then(|| view! {
                 <button
                     type="button"
@@ -86,36 +114,15 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
             })}
 
             <div class="task-body">
-                <Show
-                    when=move || editing.get()
-                    fallback=move || {
-                        let title = title.clone();
-                        view! {
-                            <button
-                                type="button"
-                                class="task-title"
-                                title="Klicken zum Bearbeiten – #Kategorie, Datum und !1 werden erkannt"
-                                disabled=trash || done
-                                on:click=move |_| editing.set(true)
-                            >
-                                {title}
-                            </button>
-                        }
-                    }
+                <button
+                    type="button"
+                    class="task-title"
+                    title="Details öffnen"
+                    disabled=trash
+                    on:click=move |_| store.detail.set(Some(id))
                 >
-                    <input
-                        class="task-title-input"
-                        aria-label="Titel bearbeiten"
-                        autofocus=true
-                        bind:value=draft
-                        on:keydown=move |ev| match ev.key().as_str() {
-                            "Enter" => save_title(),
-                            "Escape" => editing.set(false),
-                            _ => {}
-                        }
-                        on:blur=move |_| save_title()
-                    />
-                </Show>
+                    {title}
+                </button>
                 <div class="task-meta">
                     {due.map(|d| view! {
                         <span class="meta-item" class:overdue=overdue>
@@ -123,16 +130,16 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                             {d}
                         </span>
                     })}
-                    {tags
-                        .into_iter()
-                        .map(|t| view! { <span class="meta-item">"#" {t}</span> })
-                        .collect_view()}
-                    {area.map(|a| view! {
-                        <span class="meta-item">
-                            <span class="area-dot" style=format!("background:{}", area_color(&a))></span>
-                            {a}
+                    {(steps_total > 0).then(|| view! {
+                        <span class="meta-item" class:all-done=steps_done == steps_total>
+                            <Icon glyph=Glyph::Tasks size=13 />
+                            {format!("{steps_done}/{steps_total}")}
                         </span>
                     })}
+                    {has_notes.then(|| view! {
+                        <span class="meta-item" title="Hat Notizen"><Icon glyph=Glyph::Notes size=13 /></span>
+                    })}
+                    {categories.into_iter().map(|c| view! { <CategoryChip name=c /> }).collect_view()}
                 </div>
             </div>
 

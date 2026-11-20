@@ -75,6 +75,8 @@ pub struct Store {
     pub toast: RwSignal<Option<Toast>>,
     /// The Strg+K quick-add dialog.
     pub quick_add_open: RwSignal<bool>,
+    /// Task shown in the detail panel.
+    pub detail: RwSignal<Option<Uuid>>,
 }
 
 impl Store {
@@ -87,6 +89,7 @@ impl Store {
             shopping: RwSignal::new(load(SHOPPING_KEY)),
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
+            detail: RwSignal::new(None),
         };
         Effect::new(move |_| store.tasks.with(|t| save(TASKS_KEY, t)));
         Effect::new(move |_| store.profile.with(|p| save(PROFILE_KEY, p)));
@@ -124,7 +127,8 @@ impl Store {
         self.toast.set(None);
     }
 
-    fn edit(&self, id: Uuid, f: impl FnOnce(&mut Task)) {
+    /// Change a task in place.
+    pub fn edit(&self, id: Uuid, f: impl FnOnce(&mut Task)) {
         self.tasks.update(|ts| {
             if let Some(t) = ts.iter_mut().find(|t| t.meta.id == id) {
                 f(t);
@@ -179,6 +183,23 @@ impl Store {
             if *t != before {
                 t.meta.updated_at = now();
             }
+        });
+    }
+
+    pub fn add_category(&self, id: Uuid, c: &str) {
+        self.edit(id, |t| t.add_category(c, now()));
+    }
+
+    pub fn remove_category(&self, id: Uuid, c: &str) {
+        self.edit(id, |t| t.remove_category(c, now()));
+    }
+
+    /// Move the due date (None removes it, and the time with it).
+    pub fn set_due(&self, id: Uuid, due: Option<NaiveDate>, time: Option<NaiveTime>) {
+        self.edit(id, |t| {
+            t.due = due;
+            t.due_time = if due.is_some() { time } else { None };
+            t.meta.updated_at = now();
         });
     }
 

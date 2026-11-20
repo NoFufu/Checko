@@ -9,7 +9,9 @@ use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
-use components::{quick_add::QuickAddDialog, sidebar::Sidebar, toast::ToastHost};
+use components::{
+    quick_add::QuickAddDialog, sidebar::Sidebar, task_detail::TaskDetail, toast::ToastHost,
+};
 use pages::{
     calendar::CalendarPage, notes::NotesPage, settings::SettingsPage, shopping::ShoppingPage,
     tasks::TasksPage, today::TodayPage,
@@ -52,6 +54,7 @@ fn App() -> impl IntoView {
             </div>
             <ToastHost />
             <QuickAddDialog />
+            <TaskDetail />
         </Router>
     }
 }

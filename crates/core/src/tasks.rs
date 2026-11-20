@@ -3,7 +3,7 @@
 use chrono::{DateTime, Datelike, Duration, NaiveDate, Utc};
 use uuid::Uuid;
 
-use crate::{xp_for_task, LogEntry, Profile, Task, TaskStatus};
+use crate::{xp_for_task, LogEntry, Profile, Step, Task, TaskStatus};
 
 /// Default life areas a task can belong to.
 pub const AREAS: [&str; 3] = ["Arbeit", "Privat", "Gesundheit"];
@@ -14,16 +14,121 @@ pub fn all_areas(tasks: &[Task]) -> Vec<String> {
     let mut custom: Vec<String> = tasks
         .iter()
         .filter(|t| !t.is_deleted())
-        .filter_map(|t| t.area.clone())
+        .flat_map(|t| {
+            t.categories()
+                .into_iter()
+                .map(str::to_string)
+                .collect::<Vec<_>>()
+        })
         .filter(|a| !out.iter().any(|o| o.eq_ignore_ascii_case(a)))
         .collect();
     custom.sort_by_key(|a| a.to_lowercase());
-    custom.dedup();
+    custom.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
     out.extend(custom);
     out
 }
 
+/// Open and done counts per category (for the overview with progress bars).
+pub fn category_stats(tasks: &[Task]) -> Vec<(String, usize, usize)> {
+    all_areas(tasks)
+        .into_iter()
+        .map(|c| {
+            let mine = tasks
+                .iter()
+                .filter(|t| !t.is_deleted() && t.has_category(&c));
+            let (mut open, mut done) = (0, 0);
+            for t in mine {
+                if t.status == TaskStatus::Done {
+                    done += 1;
+                } else {
+                    open += 1;
+                }
+            }
+            (c, open, done)
+        })
+        .filter(|(_, o, d)| o + d > 0)
+        .collect()
+}
+
 impl Task {
+    /// All categories of the task: the main one plus any further #tags.
+    pub fn categories(&self) -> Vec<&str> {
+        self.area
+            .iter()
+            .chain(self.tags.iter())
+            .map(String::as_str)
+            .collect()
+    }
+
+    pub fn has_category(&self, c: &str) -> bool {
+        self.categories().iter().any(|x| x.eq_ignore_ascii_case(c))
+    }
+
+    /// Add a category (the first one becomes the main category).
+    pub fn add_category(&mut self, c: &str, now: DateTime<Utc>) {
+        let c = c.trim().trim_start_matches('#').trim();
+        if c.is_empty() || self.has_category(c) {
+            return;
+        }
+        if self.area.is_none() {
+            self.area = Some(c.to_string());
+        } else {
+            self.tags.push(c.to_string());
+        }
+        self.meta.updated_at = now;
+    }
+
+    pub fn remove_category(&mut self, c: &str, now: DateTime<Utc>) {
+        if self
+            .area
+            .as_deref()
+            .is_some_and(|a| a.eq_ignore_ascii_case(c))
+        {
+            // promote the next tag to main category
+            self.area = if self.tags.is_empty() {
+                None
+            } else {
+                Some(self.tags.remove(0))
+            };
+        } else {
+            self.tags.retain(|t| !t.eq_ignore_ascii_case(c));
+        }
+        self.meta.updated_at = now;
+    }
+
+    pub fn add_step(&mut self, text: &str, now: DateTime<Utc>) {
+        let text = text.trim();
+        if text.is_empty() {
+            return;
+        }
+        self.steps.push(Step {
+            id: Uuid::now_v7(),
+            text: text.to_string(),
+            done: false,
+        });
+        self.meta.updated_at = now;
+    }
+
+    pub fn toggle_step(&mut self, id: Uuid, now: DateTime<Utc>) {
+        if let Some(s) = self.steps.iter_mut().find(|s| s.id == id) {
+            s.done = !s.done;
+            self.meta.updated_at = now;
+        }
+    }
+
+    pub fn remove_step(&mut self, id: Uuid, now: DateTime<Utc>) {
+        self.steps.retain(|s| s.id != id);
+        self.meta.updated_at = now;
+    }
+
+    /// (done, total) steps.
+    pub fn step_progress(&self) -> (usize, usize) {
+        (
+            self.steps.iter().filter(|s| s.done).count(),
+            self.steps.len(),
+        )
+    }
+
     fn touch(&mut self, now: DateTime<Utc>, text: &str) {
         self.meta.updated_at = now;
         self.log.push(LogEntry {
@@ -130,7 +235,7 @@ pub fn reopen_task(tasks: &mut [Task], profile: &mut Profile, id: Uuid, now: Dat
 }
 
 fn matches_area(t: &Task, area: Option<&str>) -> bool {
-    area.is_none_or(|a| t.area.as_deref() == Some(a))
+    area.is_none_or(|a| t.has_category(a))
 }
 
 /// Open tasks: in progress first, then priority, then due date (none last), then oldest.
@@ -287,6 +392,39 @@ mod tests {
             all_areas(&[a, b, c]),
             ["Arbeit", "Privat", "Gesundheit", "Auto", "Küche"]
         );
+    }
+
+    #[test]
+    fn multiple_categories() {
+        let now = Utc::now();
+        let mut t = task("Lampe austauschen", Priority::P4, None);
+        t.add_category("#Bad", now);
+        t.add_category("Küche", now);
+        t.add_category("bad", now); // duplicate
+        assert_eq!(t.categories(), ["Bad", "Küche"]);
+        let tasks = vec![t.clone()];
+        assert_eq!(open_tasks(&tasks, Some("küche")).len(), 1);
+        assert_eq!(
+            category_stats(&tasks),
+            [("Bad".to_string(), 1, 0), ("Küche".to_string(), 1, 0)]
+        );
+        t.remove_category("Bad", now);
+        assert_eq!(t.categories(), ["Küche"]);
+        assert_eq!(t.area.as_deref(), Some("Küche"));
+    }
+
+    #[test]
+    fn steps() {
+        let now = Utc::now();
+        let mut t = task("Umzug", Priority::P4, None);
+        t.add_step("Kartons kaufen", now);
+        t.add_step("  ", now);
+        t.add_step("Helfer fragen", now);
+        let id = t.steps[0].id;
+        t.toggle_step(id, now);
+        assert_eq!(t.step_progress(), (1, 2));
+        t.remove_step(id, now);
+        assert_eq!(t.step_progress(), (0, 1));
     }
 
     #[test]

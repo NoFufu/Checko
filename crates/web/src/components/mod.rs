@@ -11,6 +11,7 @@ pub mod quick_add;
 pub mod sidebar;
 #[allow(dead_code)]
 pub mod spotlight_card;
+pub mod task_detail;
 pub mod task_form;
 pub mod task_item;
 pub mod theme;
