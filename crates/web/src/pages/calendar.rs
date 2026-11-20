@@ -211,7 +211,7 @@ fn ItemChip(item: CalendarItem) -> impl IntoView {
             class="cal-chip"
             class:task=is_task
             class:done=item.done
-            draggable="true"
+            draggable=crate::ui::fine_pointer().then_some("true")
             title=item.title.clone()
             style=format!("--c:{color}")
             on:dragstart=move |e| {

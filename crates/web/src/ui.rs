@@ -73,3 +73,11 @@ pub fn category_icon(name: &str) -> String {
         .map(|c| c.to_uppercase().collect())
         .unwrap_or_default()
 }
+
+/// True on devices with a mouse/trackpad. Drag & drop is only enabled there,
+/// because on touch screens it gets in the way of tapping.
+pub fn fine_pointer() -> bool {
+    web_sys::window()
+        .and_then(|w| w.match_media("(pointer: fine)").ok().flatten())
+        .is_some_and(|m| m.matches())
+}

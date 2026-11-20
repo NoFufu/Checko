@@ -97,7 +97,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
             class:done=done
             class:checking=move || checking.get()
             class:selected=move || store.detail.get() == Some(id)
-            draggable=(!trash).then_some("true")
+            draggable=(!trash && crate::ui::fine_pointer()).then_some("true")
             on:dragstart=on_drag
             on:click=move |_| if !trash { store.detail.set(Some(id)) }
         >

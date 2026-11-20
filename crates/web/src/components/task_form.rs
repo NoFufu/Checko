@@ -167,7 +167,7 @@ pub fn TaskForm(
                     <span class="sr-only">"Erkannt: " {recognised_words}</span>
                 </div>
             </Show>
-            <div class="task-form-options">
+            <div class="task-form-options" class:collapsed=move || title.get().trim().is_empty()>
                 <label class="field">
                     <span class="sr-only">"Dringlichkeit"</span>
                     <select bind:value=priority aria-label="Dringlichkeit">

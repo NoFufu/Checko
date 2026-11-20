@@ -45,6 +45,7 @@ fn App() -> impl IntoView {
             <div class="app-shell" class:detail-open=move || store.detail.get().is_some()>
                 <Sidebar />
                 <main class="app-main">
+                    <components::topbar::MobileHeader />
                     <Routes fallback=|| view! { <p class="p-8">"Seite nicht gefunden."</p> }>
                         <Route path=path!("/") view=TodayPage />
                         <Route path=path!("/aufgaben") view=TasksPage />
