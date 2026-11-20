@@ -8,6 +8,21 @@ use crate::{xp_for_task, LogEntry, Profile, Task, TaskStatus};
 /// Default life areas a task can belong to.
 pub const AREAS: [&str; 3] = ["Arbeit", "Privat", "Gesundheit"];
 
+/// All categories: the defaults first, then any custom ones used by tasks.
+pub fn all_areas(tasks: &[Task]) -> Vec<String> {
+    let mut out: Vec<String> = AREAS.iter().map(|a| a.to_string()).collect();
+    let mut custom: Vec<String> = tasks
+        .iter()
+        .filter(|t| !t.is_deleted())
+        .filter_map(|t| t.area.clone())
+        .filter(|a| !out.iter().any(|o| o.eq_ignore_ascii_case(a)))
+        .collect();
+    custom.sort_by_key(|a| a.to_lowercase());
+    custom.dedup();
+    out.extend(custom);
+    out
+}
+
 impl Task {
     fn touch(&mut self, now: DateTime<Utc>, text: &str) {
         self.meta.updated_at = now;
@@ -258,6 +273,20 @@ mod tests {
         tasks[1].complete(now, day(20));
         tasks[2].complete(now, day(13)); // last week
         assert_eq!(done_this_week(&tasks, day(20)), [1, 0, 0, 0, 1, 0, 0]);
+    }
+
+    #[test]
+    fn areas_include_custom() {
+        let mut a = task("x", Priority::P4, None);
+        a.area = Some("Küche".into());
+        let mut b = task("y", Priority::P4, None);
+        b.area = Some("Küche".into());
+        let mut c = task("z", Priority::P4, None);
+        c.area = Some("Auto".into());
+        assert_eq!(
+            all_areas(&[a, b, c]),
+            ["Arbeit", "Privat", "Gesundheit", "Auto", "Küche"]
+        );
     }
 
     #[test]

@@ -6,8 +6,9 @@ use super::logo::Logo;
 use super::theme::ThemeSwitch;
 use crate::store::Store;
 use crate::time::today;
+use crate::ui::area_color;
 use crate::BASE;
-use checko_core::{open_tasks, today_tasks, AREAS};
+use checko_core::{open_tasks, today_tasks};
 
 struct Item {
     href: &'static str,
@@ -42,15 +43,6 @@ const MAIN: [Item; 5] = [
         icon: Glyph::Shopping,
     },
 ];
-
-fn area_color(area: &str) -> &'static str {
-    match area {
-        "Arbeit" => "var(--lavender)",
-        "Privat" => "var(--green)",
-        "Gesundheit" => "var(--peach)",
-        _ => "var(--muted)",
-    }
-}
 
 fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
     // Small counters: tasks for today on "Heute", open tasks on "Aufgaben".
@@ -96,21 +88,23 @@ pub fn Sidebar() -> impl IntoView {
 
             <details class="nav-section nav-collapsible" open>
                 <summary class="nav-heading-row">
-                    "Bereiche"
+                    "Kategorien"
                     <Icon glyph=Glyph::ChevronDown size=16 />
                 </summary>
                 <ul class="area-list">
-                    {AREAS
-                        .iter()
+                    {move || store
+                        .areas()
+                        .into_iter()
                         .map(|name| {
-                            let count = move || {
-                                store.tasks.with(|t| open_tasks(t, Some(name)).len())
-                            };
+                            let n = name.clone();
+                            let count = Signal::derive(move || {
+                                store.tasks.with(|t| open_tasks(t, Some(&n)).len())
+                            });
                             view! {
                                 <li class="area-item">
-                                    <span class="area-dot" style=format!("background:{}", area_color(name))></span>
-                                    <span class="flex-1">{*name}</span>
-                                    <Show when=move || count() != 0>
+                                    <span class="area-dot" style=format!("background:{}", area_color(&name))></span>
+                                    <span class="flex-1">{name.clone()}</span>
+                                    <Show when=move || count.get() != 0>
                                         <span class="nav-count">{count}</span>
                                     </Show>
                                 </li>

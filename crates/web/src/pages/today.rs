@@ -1,7 +1,8 @@
-use checko_core::{done_this_week, level_for_xp, open_tasks, today_tasks, AREAS};
+use checko_core::{done_this_week, level_for_xp, open_tasks, today_tasks};
 use leptos::prelude::*;
 
 use crate::components::{
+    area_filter::AreaFilter,
     icon::{Glyph, Icon},
     task_form::TaskForm,
     task_item::TaskItem,
@@ -10,17 +11,13 @@ use crate::components::{
 use crate::store::Store;
 use crate::time::{greeting, today, today_label, weekday_index};
 
-const FILTERS: [&str; 4] = ["Alle", AREAS[0], AREAS[1], AREAS[2]];
 const WEEK: [&str; 7] = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 #[component]
 pub fn TodayPage() -> impl IntoView {
     let store = Store::get();
-    let filter = RwSignal::new(0usize);
-    let area = Signal::derive(move || match filter.get() {
-        0 => None,
-        i => Some(FILTERS[i].to_string()),
-    });
+    let filter = RwSignal::new(None::<String>);
+    let area = Signal::derive(move || filter.get());
     let today_list = move || {
         let a = area.get();
         store.tasks.with(|t| {
@@ -60,26 +57,7 @@ pub fn TodayPage() -> impl IntoView {
             </section>
 
             <div class="toolbar">
-                <div class="segmented" role="tablist" aria-label="Bereich filtern">
-                    {FILTERS
-                        .iter()
-                        .enumerate()
-                        .map(|(i, name)| {
-                            view! {
-                                <button
-                                    type="button"
-                                    role="tab"
-                                    class="segment"
-                                    class:active=move || filter.get() == i
-                                    aria-selected=move || (filter.get() == i).to_string()
-                                    on:click=move |_| filter.set(i)
-                                >
-                                    {*name}
-                                </button>
-                            }
-                        })
-                        .collect_view()}
-                </div>
+                <AreaFilter area=filter />
                 <button type="button" class="btn btn-outline" title="Zeitraum wählen kommt später">
                     <Icon glyph=Glyph::Calendar size=16 />
                     "Heute"

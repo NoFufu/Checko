@@ -5,7 +5,9 @@
 
 use std::time::Duration;
 
-use checko_core::{complete_task, reopen_task, Priority, Profile, Task};
+use checko_core::{
+    all_areas, complete_task, parse_quick_add, reopen_task, Priority, Profile, Task,
+};
 use chrono::{NaiveDate, NaiveTime};
 use leptos::prelude::*;
 use serde::{de::DeserializeOwned, Serialize};
@@ -133,14 +135,37 @@ impl Store {
         self.tasks.update(|ts| ts.push(t));
     }
 
-    pub fn rename(&self, id: Uuid, title: String) {
-        let title = title.trim().to_string();
-        if title.is_empty() {
+    /// All categories (defaults + custom ones in use), reactive.
+    pub fn areas(&self) -> Vec<String> {
+        self.tasks.with(|t| all_areas(t))
+    }
+
+    /// Rename a task. "#Küche", "morgen", "!1" in the new text are applied too.
+    pub fn rename(&self, id: Uuid, text: String) {
+        if text.trim().is_empty() {
             return;
         }
+        let areas = self.tasks.with_untracked(|t| all_areas(t));
+        let p = parse_quick_add(&text, today(), &areas);
         self.edit(id, |t| {
-            if t.title != title {
-                t.title = title;
+            let before = t.clone();
+            t.title = p.title;
+            if p.area.is_some() {
+                t.area = p.area;
+            }
+            if let Some(pr) = p.priority {
+                t.priority = pr;
+            }
+            if p.due.is_some() {
+                t.due = p.due;
+                t.due_time = p.time;
+            }
+            for tag in p.tags {
+                if !t.tags.contains(&tag) {
+                    t.tags.push(tag);
+                }
+            }
+            if *t != before {
                 t.meta.updated_at = now();
             }
         });
@@ -150,14 +175,6 @@ impl Store {
         self.edit(id, |t| {
             t.priority = p;
             t.meta.updated_at = now();
-        });
-    }
-
-    pub fn toggle_started(&self, id: Uuid) {
-        self.edit(id, |t| match t.status {
-            checko_core::TaskStatus::Planned => t.start(now()),
-            checko_core::TaskStatus::InProgress => t.pause(now()),
-            checko_core::TaskStatus::Done => {}
         });
     }
 

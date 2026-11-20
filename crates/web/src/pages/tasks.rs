@@ -1,7 +1,8 @@
-use checko_core::{done_tasks, open_tasks, trashed_tasks, AREAS};
+use checko_core::{done_tasks, open_tasks, trashed_tasks};
 use leptos::prelude::*;
 
 use crate::components::{
+    area_filter::AreaFilter,
     icon::{Glyph, Icon},
     task_form::TaskForm,
     task_item::TaskItem,
@@ -85,34 +86,7 @@ pub fn TasksPage() -> impl IntoView {
                     {tab(View::Trash, "Papierkorb", Box::new(trash_count))}
                 </div>
                 <Show when=move || view_tab.get() != View::Trash>
-                    <div class="segmented" role="tablist" aria-label="Bereich filtern">
-                        <button
-                            type="button"
-                            class="segment"
-                            class:active=move || area.get().is_none()
-                            on:click=move |_| area.set(None)
-                        >
-                            "Alle"
-                        </button>
-                        {AREAS
-                            .iter()
-                            .map(|a| {
-                                let a = a.to_string();
-                                let a2 = a.clone();
-                                let a3 = a.clone();
-                                view! {
-                                    <button
-                                        type="button"
-                                        class="segment"
-                                        class:active=move || area.get().as_deref() == Some(a.as_str())
-                                        on:click=move |_| area.set(Some(a2.clone()))
-                                    >
-                                        {a3}
-                                    </button>
-                                }
-                            })
-                            .collect_view()}
-                    </div>
+                    <AreaFilter area=area />
                 </Show>
                 <Show when=move || { view_tab.get() == View::Trash && trash_count() > 0 }>
                     <button

@@ -6,14 +6,15 @@
 //!   "24.11.", "24.11.2026", "24.11.26" – optional preceded by "am", "bis", "ab"
 //! - times: "14:00", "9:30", "14 uhr", "14uhr", "um 14", "um 14:30"
 //! - priority: "!1" … "!4" or "p1" … "p4"
-//! - area / tags: "#arbeit" (known area) or any other "#tag"
+//! - category: the first "#wort" files the task under that area (an existing
+//!   one, matched case-insensitively, or a new one); further "#wörter" are tags
 //!
 //! Only the first date and the first time are taken; everything that is not
 //! recognised stays in the title.
 
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime, Weekday};
 
-use crate::{Priority, AREAS};
+use crate::Priority;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TokenKind {
@@ -53,6 +54,12 @@ const WEEKDAYS: [(&str, Weekday); 7] = [
     ("sonntag", Weekday::Sun),
 ];
 
+/// Small words after which a "#tag" is read as part of the sentence.
+const CONNECTORS: [&str; 24] = [
+    "und", "oder", "für", "im", "in", "ins", "am", "an", "ans", "auf", "aus", "bei", "beim", "mit",
+    "nach", "von", "vom", "zu", "zum", "zur", "der", "die", "das", "den",
+];
+
 /// Words that may introduce a date or time and are dropped together with it.
 const DATE_PREFIX: [&str; 3] = ["am", "bis", "ab"];
 
@@ -62,6 +69,14 @@ fn norm(w: &str) -> String {
         .to_lowercase()
         .replace("ae", "ä")
         .replace("ue", "ü")
+}
+
+fn capitalize(w: &str) -> String {
+    let mut c = w.chars();
+    match c.next() {
+        Some(f) => f.to_uppercase().chain(c).collect(),
+        None => String::new(),
+    }
 }
 
 fn weekday(w: &str) -> Option<Weekday> {
@@ -179,11 +194,14 @@ fn time_at(words: &[String], i: usize) -> Option<(NaiveTime, usize)> {
     None
 }
 
-pub fn parse_quick_add(input: &str, today: NaiveDate) -> ParsedTask {
+/// `areas` are the categories that already exist, so "#arbeit" maps to "Arbeit".
+pub fn parse_quick_add(input: &str, today: NaiveDate, areas: &[String]) -> ParsedTask {
     let raw: Vec<&str> = input.split_whitespace().collect();
     let words: Vec<String> = raw.iter().map(|w| norm(w)).collect();
     let mut out = ParsedTask::default();
-    let mut title: Vec<&str> = Vec::new();
+    // (word, came from a #tag). Tags inside a sentence keep their word
+    // ("Lampe für #Küche kaufen" -> "Lampe für Küche kaufen").
+    let mut title: Vec<(&str, bool)> = Vec::new();
     let mut i = 0;
 
     while i < words.len() {
@@ -204,21 +222,30 @@ pub fn parse_quick_add(input: &str, today: NaiveDate) -> ParsedTask {
 
         if let Some(tag) = w.strip_prefix('#').filter(|t| !t.is_empty()) {
             let tag_raw = raw[i].trim_start_matches('#').trim_end_matches([',', ';']);
-            match AREAS.iter().find(|a| a.to_lowercase() == tag) {
-                Some(a) if out.area.is_none() => {
-                    out.area = Some(a.to_string());
-                    out.tokens.push(Token {
-                        kind: TokenKind::Area,
-                        text: original(i, 1),
-                    });
-                }
-                _ => {
-                    out.tags.push(tag_raw.to_string());
-                    out.tokens.push(Token {
-                        kind: TokenKind::Tag,
-                        text: original(i, 1),
-                    });
-                }
+            // Keep the word when it is part of the sentence ("für #Küche").
+            let keep = title
+                .last()
+                .is_some_and(|(w, tag)| !tag && CONNECTORS.contains(&w.to_lowercase().as_str()));
+            if keep {
+                title.push((tag_raw, true));
+            }
+            if out.area.is_none() {
+                let area = areas
+                    .iter()
+                    .find(|a| a.to_lowercase() == tag)
+                    .cloned()
+                    .unwrap_or_else(|| capitalize(tag_raw));
+                out.area = Some(area);
+                out.tokens.push(Token {
+                    kind: TokenKind::Area,
+                    text: original(i, 1),
+                });
+            } else {
+                out.tags.push(tag_raw.to_string());
+                out.tokens.push(Token {
+                    kind: TokenKind::Tag,
+                    text: original(i, 1),
+                });
             }
             i += 1;
             continue;
@@ -250,7 +277,7 @@ pub fn parse_quick_add(input: &str, today: NaiveDate) -> ParsedTask {
             }
         }
 
-        title.push(raw[i]);
+        title.push((raw[i], false));
         i += 1;
     }
 
@@ -258,7 +285,13 @@ pub fn parse_quick_add(input: &str, today: NaiveDate) -> ParsedTask {
     if out.time.is_some() && out.due.is_none() {
         out.due = Some(today);
     }
-    out.title = title.join(" ").trim().to_string();
+    out.title = title
+        .iter()
+        .map(|(w, _)| *w)
+        .collect::<Vec<_>>()
+        .join(" ")
+        .trim()
+        .to_string();
     if out.title.is_empty() {
         out.title = input.trim().to_string();
     }
@@ -280,7 +313,8 @@ mod tests {
         NaiveTime::from_hms_opt(h, m, 0)
     }
     fn p(s: &str) -> ParsedTask {
-        parse_quick_add(s, today())
+        let areas: Vec<String> = crate::AREAS.iter().map(|a| a.to_string()).collect();
+        parse_quick_add(s, today(), &areas)
     }
 
     #[test]
@@ -347,6 +381,17 @@ mod tests {
         assert_eq!(r.tags, vec!["projekt-x"]);
         assert_eq!(r.priority, Some(Priority::P2));
         assert_eq!(r.title, "Bericht");
+    }
+
+    #[test]
+    fn new_categories() {
+        let r = p("Neue Wandleuchte für #küche und #Bad");
+        assert_eq!(r.area.as_deref(), Some("Küche"));
+        assert_eq!(r.tags, vec!["Bad"]);
+        assert_eq!(r.title, "Neue Wandleuchte für küche und Bad");
+        assert_eq!(p("Milch kaufen #privat").title, "Milch kaufen");
+        assert_eq!(p("#Küche Lampe kaufen").title, "Lampe kaufen");
+        assert_eq!(p("x #PRIVAT").area.as_deref(), Some("Privat"));
     }
 
     #[test]

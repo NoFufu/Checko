@@ -1,3 +1,4 @@
+pub mod area_filter;
 // Visual effects kept for later use.
 #[allow(dead_code)]
 pub mod blur_text;

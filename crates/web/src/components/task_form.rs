@@ -1,4 +1,6 @@
-use checko_core::{parse_quick_add, Priority, TokenKind, AREAS};
+use checko_core::{parse_quick_add, Priority, TokenKind};
+
+use crate::ui::priority_name;
 use leptos::{html, prelude::*};
 
 use super::icon::{Glyph, Icon};
@@ -6,8 +8,8 @@ use crate::store::{NewTask, Store};
 use crate::time::{due_label, today};
 
 const PLACEHOLDERS: [&str; 4] = [
-    "Zahnarzt morgen 14:00 #gesundheit !1",
-    "Milch und Eier kaufen #privat",
+    "Zahnarzt morgen 14:00 #Gesundheit !1",
+    "Wandleuchte kaufen #Küche",
     "Steuererklärung bis Freitag !2",
     "Wochenendtrip planen nächste Woche",
 ];
@@ -18,15 +20,6 @@ fn parse_priority(v: &str) -> Priority {
         "2" => Priority::P2,
         "3" => Priority::P3,
         _ => Priority::P4,
-    }
-}
-
-fn priority_name(p: Priority) -> &'static str {
-    match p {
-        Priority::P1 => "P1 · Dringend",
-        Priority::P2 => "P2 · Hoch",
-        Priority::P3 => "P3 · Mittel",
-        Priority::P4 => "P4 · Normal",
     }
 }
 
@@ -68,7 +61,8 @@ pub fn TaskForm(
         });
     }
 
-    let parsed = Memo::new(move |_| parse_quick_add(&title.get(), today()));
+    let areas = Memo::new(move |_| store.areas());
+    let parsed = Memo::new(move |_| areas.with(|a| parse_quick_add(&title.get(), today(), a)));
     let placeholder = PLACEHOLDERS[(js_sys::Math::random() * 4.0) as usize % 4];
 
     let submit = move |ev: leptos::ev::SubmitEvent| {
@@ -116,7 +110,7 @@ pub fn TaskForm(
             chips.push((Glyph::Level, priority_name(pr).to_string(), "chip-prio"));
         }
         if let Some(a) = p.area.clone() {
-            chips.push((Glyph::Pin, a, "chip-area"));
+            chips.push((Glyph::Pin, format!("Kategorie: {a}"), "chip-area"));
         }
         for t in &p.tags {
             chips.push((Glyph::Notes, format!("#{t}"), "chip-tag"));
@@ -154,7 +148,7 @@ pub fn TaskForm(
                 when=has_tokens
                 fallback=|| view! {
                     <p id="quick-add-hint" class="parse-hint">
-                        "Tipp: „morgen 14 Uhr“, „Freitag“, „24.12.“, „#arbeit“ oder „!1“ direkt mitschreiben."
+                        "Tipp: „morgen 14 Uhr“, „Freitag“, „24.12.“, „#Küche“ (Kategorie) oder „!1“ (dringend) direkt mitschreiben."
                     </p>
                 }
             >
@@ -176,19 +170,23 @@ pub fn TaskForm(
             </Show>
             <div class="task-form-options">
                 <label class="field">
-                    <span class="sr-only">"Priorität"</span>
-                    <select bind:value=priority aria-label="Priorität">
-                        <option value="1">"P1 · Dringend"</option>
-                        <option value="2">"P2 · Hoch"</option>
-                        <option value="3">"P3 · Mittel"</option>
-                        <option value="4">"P4 · Normal"</option>
+                    <span class="sr-only">"Dringlichkeit"</span>
+                    <select bind:value=priority aria-label="Dringlichkeit">
+                        <option value="1">"🔴 Dringend"</option>
+                        <option value="2">"🟠 Hoch"</option>
+                        <option value="3">"🔵 Mittel"</option>
+                        <option value="4">"⚪ Normal"</option>
                     </select>
                 </label>
                 <label class="field">
-                    <span class="sr-only">"Bereich"</span>
-                    <select bind:value=area_sel aria-label="Bereich">
-                        <option value="">"Kein Bereich"</option>
-                        {AREAS.iter().map(|a| view! { <option value=*a>{*a}</option> }).collect_view()}
+                    <span class="sr-only">"Kategorie"</span>
+                    <select bind:value=area_sel aria-label="Kategorie">
+                        <option value="">"Keine Kategorie"</option>
+                        {move || areas
+                            .get()
+                            .into_iter()
+                            .map(|a| view! { <option value=a.clone()>{a.clone()}</option> })
+                            .collect_view()}
                     </select>
                 </label>
                 <label class="field">

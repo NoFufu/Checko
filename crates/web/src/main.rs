@@ -2,6 +2,7 @@ mod components;
 mod pages;
 mod store;
 mod time;
+mod ui;
 
 use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};

@@ -1,29 +1,13 @@
 use std::time::Duration;
 
 use checko_core::{Priority, Task, TaskStatus};
+
+use crate::ui::{area_color, priority_class, priority_name};
 use leptos::prelude::*;
 
 use super::icon::{Glyph, Icon};
 use crate::store::Store;
 use crate::time::{due_label, today};
-
-fn priority_class(p: Priority) -> &'static str {
-    match p {
-        Priority::P1 => "prio prio-1",
-        Priority::P2 => "prio prio-2",
-        Priority::P3 => "prio prio-3",
-        Priority::P4 => "prio prio-4",
-    }
-}
-
-fn priority_label(p: Priority) -> &'static str {
-    match p {
-        Priority::P1 => "P1",
-        Priority::P2 => "P2",
-        Priority::P3 => "P3",
-        Priority::P4 => "P4",
-    }
-}
 
 fn next_priority(p: Priority) -> Priority {
     match p {
@@ -34,22 +18,12 @@ fn next_priority(p: Priority) -> Priority {
     }
 }
 
-fn area_color(area: &str) -> &'static str {
-    match area {
-        "Arbeit" => "var(--lavender)",
-        "Privat" => "var(--green)",
-        "Gesundheit" => "var(--peach)",
-        _ => "var(--muted)",
-    }
-}
-
 /// One task row. `trash` switches the actions to restore / delete forever.
 #[component]
 pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     let store = Store::get();
     let id = task.meta.id;
     let done = task.status == TaskStatus::Done;
-    let started = task.status == TaskStatus::InProgress;
     let priority = task.priority;
     let today = today();
     let overdue = task.is_overdue(today);
@@ -79,12 +53,23 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
         }
         label
     });
-    let tags = task.tags.clone();
+    // Tags already readable in the title ("… für Küche und Bad") are not repeated.
+    let lower_title = task.title.to_lowercase();
+    let tags: Vec<String> = task
+        .tags
+        .iter()
+        .filter(|t| {
+            !lower_title
+                .split_whitespace()
+                .any(|w| w == t.to_lowercase())
+        })
+        .cloned()
+        .collect();
     let area = task.area.clone();
     let title = task.title.clone();
 
     view! {
-        <li class="task-row" class:done=done class:checking=move || checking.get() class:started=started>
+        <li class="task-row" class:done=done class:checking=move || checking.get()>
             {(!trash).then(|| view! {
                 <button
                     type="button"
@@ -109,7 +94,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                             <button
                                 type="button"
                                 class="task-title"
-                                title="Zum Umbenennen klicken"
+                                title="Klicken zum Bearbeiten – #Kategorie, Datum und !1 werden erkannt"
                                 disabled=trash || done
                                 on:click=move |_| editing.set(true)
                             >
@@ -132,7 +117,6 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                     />
                 </Show>
                 <div class="task-meta">
-                    {started.then(|| view! { <span class="status-chip">"In Arbeit"</span> })}
                     {due.map(|d| view! {
                         <span class="meta-item" class:overdue=overdue>
                             <Icon glyph=Glyph::Calendar size=13 />
@@ -179,24 +163,11 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                         <button
                             type="button"
                             class=priority_class(priority)
-                            title="Priorität ändern"
+                            title=format!("Dringlichkeit: {} (klicken zum Ändern)", priority_name(priority))
+                            aria-label=format!("Dringlichkeit: {}", priority_name(priority))
                             disabled=done
                             on:click=move |_| store.set_priority(id, next_priority(priority))
-                        >
-                            {priority_label(priority)}
-                        </button>
-                        {(!done).then(|| view! {
-                            <button
-                                type="button"
-                                class="row-btn"
-                                class:active=started
-                                title=if started { "Pausieren" } else { "Beginnen" }
-                                aria-label=if started { "Pausieren" } else { "Beginnen" }
-                                on:click=move |_| store.toggle_started(id)
-                            >
-                                <Icon glyph=if started { Glyph::Pause } else { Glyph::Play } size=16 />
-                            </button>
-                        })}
+                        ></button>
                         <button
                             type="button"
                             class="row-btn"
