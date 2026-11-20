@@ -15,10 +15,10 @@ pub fn Topbar(title: &'static str, icon: Glyph) -> impl IntoView {
                 <button type="button" class="btn-icon" aria-label="Benachrichtigungen" title="Erinnerungen kommen in Phase 6">
                     <Icon glyph=Glyph::Bell size=18 />
                 </button>
-                <button type="button" class="btn btn-primary" title="Anlegen kommt in Phase 1">
+                <a class="btn btn-primary" href=format!("{}/aufgaben", crate::BASE)>
                     <Icon glyph=Glyph::Add size=16 />
                     "Neu"
-                </button>
+                </a>
             </div>
         </header>
     }

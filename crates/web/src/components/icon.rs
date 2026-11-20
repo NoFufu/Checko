@@ -19,6 +19,10 @@ pub enum Glyph {
     Monitor,
     ChevronDown,
     Clock,
+    Play,
+    Pause,
+    Trash,
+    Undo,
 }
 
 #[component]
@@ -40,6 +44,10 @@ pub fn Icon(glyph: Glyph, #[prop(default = 24)] size: u32) -> impl IntoView {
         Glyph::Moon => "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z",
         Glyph::Monitor => "M4 5h16v10H4zM9 19h6m-3-4v4",
         Glyph::ChevronDown => "M6 9l6 6 6-6",
+        Glyph::Play => "M8 5.5v13l10-6.5-10-6.5Z",
+        Glyph::Pause => "M9 5.5v13M15 5.5v13",
+        Glyph::Trash => "M4.5 7h15M10 11v6m4-6v6M6.5 7l.8 11.2A2 2 0 0 0 9.3 20h5.4a2 2 0 0 0 2-1.8L17.5 7M9.5 7V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v2",
+        Glyph::Undo => "M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11",
         Glyph::Clock => "M12 7v5l3 2m6-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     };
 

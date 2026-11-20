@@ -1,12 +1,13 @@
 mod components;
 mod pages;
+mod store;
 mod time;
 
 use leptos::prelude::*;
 use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
-use components::sidebar::Sidebar;
+use components::{sidebar::Sidebar, toast::ToastHost};
 use pages::{
     calendar::CalendarPage, notes::NotesPage, settings::SettingsPage, shopping::ShoppingPage,
     tasks::TasksPage, today::TodayPage,
@@ -31,6 +32,7 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
+    store::Store::provide();
     view! {
         <Router base=BASE>
             <div class="app-shell">
@@ -46,6 +48,7 @@ fn App() -> impl IntoView {
                     </Routes>
                 </main>
             </div>
+            <ToastHost />
         </Router>
     }
 }

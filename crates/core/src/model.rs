@@ -71,6 +71,12 @@ pub struct Task {
     pub remind_at: Option<DateTime<Utc>>,
     pub log: Vec<LogEntry>,
     pub done_at: Option<DateTime<Utc>>,
+    /// Local calendar day the task was completed (for streaks and week stats).
+    #[serde(default)]
+    pub done_on: Option<NaiveDate>,
+    /// XP granted on completion, so it can be taken back when reopened.
+    #[serde(default)]
+    pub xp_awarded: u32,
 }
 
 impl Task {
@@ -87,13 +93,9 @@ impl Task {
             remind_at: None,
             log: Vec::new(),
             done_at: None,
+            done_on: None,
+            xp_awarded: 0,
         }
-    }
-
-    pub fn complete(&mut self, now: DateTime<Utc>) {
-        self.status = TaskStatus::Done;
-        self.done_at = Some(now);
-        self.meta.updated_at = now;
     }
 }
 
@@ -117,6 +119,7 @@ pub struct ShoppingItem {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
 pub struct Profile {
     pub xp: u32,
     pub streak_days: u32,
@@ -131,11 +134,13 @@ mod tests {
     #[test]
     fn completing_a_task_sets_status_and_date() {
         let now = Utc::now();
+        let today = now.date_naive();
         let mut t = Task::new("Milch kaufen", now);
         assert_eq!(t.status, TaskStatus::Planned);
-        t.complete(now);
+        t.complete(now, today);
         assert_eq!(t.status, TaskStatus::Done);
         assert_eq!(t.done_at, Some(now));
+        assert_eq!(t.done_on, Some(today));
     }
 
     #[test]

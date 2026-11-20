@@ -1,34 +1,40 @@
-use std::time::Duration;
-
-use checko_core::level_for_xp;
+use checko_core::{done_this_week, level_for_xp, open_tasks, today_tasks, AREAS};
 use leptos::prelude::*;
 
 use crate::components::{
     icon::{Glyph, Icon},
+    task_form::TaskForm,
+    task_item::TaskItem,
     topbar::Topbar,
 };
-use crate::time::{greeting, today_label, weekday_index};
+use crate::store::Store;
+use crate::time::{greeting, today, today_label, weekday_index};
 
-const PLACEHOLDERS: [&str; 4] = [
-    "Zahnarzt morgen 14:00 #gesundheit",
-    "Milch und Eier einkaufen",
-    "Steuererklärung bis Freitag !1",
-    "Idee: Wochenendtrip planen",
-];
-
-const FILTERS: [&str; 4] = ["Alle", "Arbeit", "Privat", "Gesundheit"];
+const FILTERS: [&str; 4] = ["Alle", AREAS[0], AREAS[1], AREAS[2]];
 const WEEK: [&str; 7] = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
 #[component]
 pub fn TodayPage() -> impl IntoView {
-    // Rotating example placeholder in the quick-add field.
-    let ph = RwSignal::new(0usize);
-    let _ = set_interval_with_handle(
-        move || ph.update(|i| *i = (*i + 1) % PLACEHOLDERS.len()),
-        Duration::from_millis(3000),
-    );
+    let store = Store::get();
     let filter = RwSignal::new(0usize);
-    let progress = level_for_xp(0);
+    let area = Signal::derive(move || match filter.get() {
+        0 => None,
+        i => Some(FILTERS[i].to_string()),
+    });
+    let today_list = move || {
+        let a = area.get();
+        store.tasks.with(|t| {
+            today_tasks(t, a.as_deref(), today())
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+    };
+    let week = move || store.tasks.with(|t| done_this_week(t, today()));
+    let week_total = move || week().iter().sum::<u32>();
+    let progress = move || store.profile.with(|p| level_for_xp(p.xp));
+    let streak = move || store.profile.with(|p| p.current_streak(today()));
+    let open_count = move || store.tasks.with(|t| open_tasks(t, None).len());
     let today = weekday_index();
 
     view! {
@@ -85,16 +91,19 @@ pub fn TodayPage() -> impl IntoView {
                 <div class="dash-main">
                     <SectionHead icon=Glyph::Tasks title="Heute fällig" />
                     <section class="panel">
-                        <form class="quick-add" on:submit=|ev| ev.prevent_default()>
-                            <Icon glyph=Glyph::Add size=18 />
-                            <input
-                                type="text"
-                                aria-label="Schnell hinzufügen"
-                                placeholder=move || PLACEHOLDERS[ph.get()]
-                            />
-                            <kbd>"Enter"</kbd>
-                        </form>
-                        <p class="empty-line">"Noch keine Aufgaben für heute. Ein perfekter Start!"</p>
+                        <TaskForm due_today=true area=area />
+                        <Show
+                            when=move || !today_list().is_empty()
+                            fallback=|| view! { <p class="empty-line">"Für heute ist nichts fällig. Ein perfekter Start!"</p> }
+                        >
+                            <ul class="task-list mt-2">
+                                <For
+                                    each=today_list
+                                    key=|t| (t.meta.id, t.meta.updated_at)
+                                    children=|t| view! { <TaskItem task=t /> }
+                                />
+                            </ul>
+                        </Show>
                     </section>
 
                     <SectionHead icon=Glyph::Level title="Fortschritt" />
@@ -102,15 +111,20 @@ pub fn TodayPage() -> impl IntoView {
                         <section class="panel">
                             <p class="metric-label">"Erledigt diese Woche"</p>
                             <p class="metric-sub">"Aufgaben pro Tag"</p>
-                            <p class="metric-value">"0" <span class="metric-unit">"Aufgaben"</span></p>
+                            <p class="metric-value">{week_total} <span class="metric-unit">"Aufgaben"</span></p>
                             <div class="week-bars" aria-hidden="true">
                                 {WEEK
                                     .iter()
                                     .enumerate()
                                     .map(|(i, d)| {
+                                        let height = move || {
+                                            let w = week();
+                                            let max = (*w.iter().max().unwrap_or(&0)).max(1) as f32;
+                                            format!("height:{}%", 6.0 + w[i] as f32 / max * 94.0)
+                                        };
                                         view! {
-                                            <div class="week-col">
-                                                <span class="week-bar" class:today=i == today></span>
+                                            <div class="week-col" title=move || format!("{}: {} erledigt", d, week()[i])>
+                                                <span class="week-bar" class:today=i == today class:filled=move || { week()[i] > 0 } style=height></span>
                                                 <span class="week-day" class:today=i == today>{*d}</span>
                                             </div>
                                         }
@@ -121,11 +135,16 @@ pub fn TodayPage() -> impl IntoView {
                         <section class="panel">
                             <p class="metric-label">"Dein Level"</p>
                             <p class="metric-sub">"XP für erledigte Aufgaben"</p>
-                            <p class="metric-value">{progress.level} <span class="metric-unit">"Level"</span></p>
+                            <p class="metric-value">{move || progress().level} <span class="metric-unit">"Level"</span></p>
                             <div class="xp-bar mt-5">
-                                <div class="xp-fill" style=format!("width:{}%", progress.percent().max(2.0))></div>
+                                <div class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></div>
                             </div>
-                            <p class="metric-foot">{progress.current} " / " {progress.needed} " XP bis Level " {progress.level + 1}</p>
+                            <p class="metric-foot">
+                                {move || {
+                                    let p = progress();
+                                    format!("{} / {} XP bis Level {}", p.current, p.needed, p.level + 1)
+                                }}
+                            </p>
                         </section>
                     </div>
                 </div>
@@ -144,10 +163,10 @@ pub fn TodayPage() -> impl IntoView {
 
                     <SectionHead icon=Glyph::Streak title="Schnellstatistik" />
                     <div class="stat-grid">
-                        <Stat icon=Glyph::Streak value="0" label="Tage Streak" />
-                        <Stat icon=Glyph::Tasks value="0" label="Offen" />
-                        <Stat icon=Glyph::Shopping value="0" label="Einkäufe" />
-                        <Stat icon=Glyph::Pin value="0" label="Angepinnt" />
+                        <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
+                        <Stat icon=Glyph::Tasks value=Signal::derive(move || open_count().to_string()) label="Offen" />
+                        <Stat icon=Glyph::Shopping value=Signal::stored("0".to_string()) label="Einkäufe" />
+                        <Stat icon=Glyph::Pin value=Signal::stored("0".to_string()) label="Angepinnt" />
                     </div>
                 </aside>
             </div>
@@ -166,7 +185,7 @@ fn SectionHead(icon: Glyph, title: &'static str) -> impl IntoView {
 }
 
 #[component]
-fn Stat(icon: Glyph, value: &'static str, label: &'static str) -> impl IntoView {
+fn Stat(icon: Glyph, #[prop(into)] value: Signal<String>, label: &'static str) -> impl IntoView {
     view! {
         <section class="panel stat">
             <span class="list-icon"><Icon glyph=icon size=16 /></span>

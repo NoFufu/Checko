@@ -102,8 +102,8 @@ checko/
 ## 5. Roadmap
 | Phase | Inhalt | Ergebnis |
 |---|---|---|
-| **0 – Setup** | Workspace, Leptos + Trunk + Tailwind, Aurora‑Hintergrund, Dock‑Navigation, leere Seiten | `trunk serve` zeigt die App |
-| **1 – To‑Do** | Aufgaben anlegen/erledigen/löschen, Prioritäten, Bereiche, Spring‑Check, Undo, localStorage | Erste nutzbare App |
+| ✅ **0 – Setup** | Workspace, Leptos + Trunk + Tailwind, Aurora‑Hintergrund, Dock‑Navigation, leere Seiten | `trunk serve` zeigt die App |
+| ✅ **1 – To‑Do** | Aufgaben anlegen/erledigen/löschen, Prioritäten, Bereiche, Spring‑Check, Undo, localStorage | Erste nutzbare App |
 | **2 – Quick‑Add & Heute** | Parser („morgen 14:00 #arbeit !1“), Heute‑Dashboard (Bento), Morgen‑Plan | Tägliche Nutzung möglich |
 | **3 – Einkauf & Notizen** | Einkaufsliste mit Kategorien, Markdown‑Notizen, globale Suche | Alle Hauptmodule |
 | **4 – Gamification** | XP, Level, Streaks, Achievements, Axolotl‑Reaktionen, Konfetti, Themes | Spielerisch 🎉 |

@@ -3,7 +3,10 @@ use leptos_router::components::A;
 
 use super::icon::{Glyph, Icon};
 use super::theme::ThemeSwitch;
+use crate::store::Store;
+use crate::time::today;
 use crate::{asset, BASE};
+use checko_core::{open_tasks, today_tasks, AREAS};
 
 struct Item {
     href: &'static str,
@@ -39,18 +42,31 @@ const MAIN: [Item; 5] = [
     },
 ];
 
-/// Life areas used to group tasks (colour dot + name). Editable later.
-const AREAS: [(&str, &str); 3] = [
-    ("Arbeit", "var(--lavender)"),
-    ("Privat", "var(--green)"),
-    ("Gesundheit", "var(--peach)"),
-];
+fn area_color(area: &str) -> &'static str {
+    match area {
+        "Arbeit" => "var(--lavender)",
+        "Privat" => "var(--green)",
+        "Gesundheit" => "var(--peach)",
+        _ => "var(--muted)",
+    }
+}
 
-fn nav_link(it: &'static Item) -> impl IntoView {
+fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
+    // Small counters: tasks for today on "Heute", open tasks on "Aufgaben".
+    let count = move || -> usize {
+        store.tasks.with(|t| match it.href {
+            "/" => today_tasks(t, None, today()).len(),
+            "/aufgaben" => open_tasks(t, None).len(),
+            _ => 0,
+        })
+    };
     view! {
         <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item">
             <Icon glyph=it.icon size=18 />
             <span class="nav-label">{it.label}</span>
+            <Show when=move || { count() > 0 }>
+                <span class="nav-count">{count}</span>
+            </Show>
         </A>
     }
 }
@@ -59,6 +75,7 @@ fn nav_link(it: &'static Item) -> impl IntoView {
 /// On small screens only the main links are shown, as a bottom bar.
 #[component]
 pub fn Sidebar() -> impl IntoView {
+    let store = Store::get();
     view! {
         <aside class="sidebar" aria-label="Seitenleiste">
             <a href=format!("{BASE}/") class="sidebar-brand">
@@ -77,7 +94,7 @@ pub fn Sidebar() -> impl IntoView {
 
             <nav class="nav-section" aria-label="Hauptnavigation">
                 <p class="nav-heading">"Übersicht"</p>
-                {MAIN.iter().map(nav_link).collect_view()}
+                {MAIN.iter().map(|it| nav_link(it, store)).collect_view()}
             </nav>
 
             <details class="nav-section nav-collapsible" open>
@@ -88,11 +105,17 @@ pub fn Sidebar() -> impl IntoView {
                 <ul class="area-list">
                     {AREAS
                         .iter()
-                        .map(|(name, color)| {
+                        .map(|name| {
+                            let count = move || {
+                                store.tasks.with(|t| open_tasks(t, Some(name)).len())
+                            };
                             view! {
                                 <li class="area-item">
-                                    <span class="area-dot" style=format!("background:{color}")></span>
-                                    {*name}
+                                    <span class="area-dot" style=format!("background:{}", area_color(name))></span>
+                                    <span class="flex-1">{*name}</span>
+                                    <Show when=move || count() != 0>
+                                        <span class="nav-count">{count}</span>
+                                    </Show>
                                 </li>
                             }
                         })

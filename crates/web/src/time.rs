@@ -49,3 +49,31 @@ pub fn today_label() -> String {
         MONTHS[d.get_month() as usize]
     )
 }
+
+/// Current instant (browser clock).
+pub fn now() -> chrono::DateTime<chrono::Utc> {
+    chrono::DateTime::from_timestamp_millis(js_sys::Date::now() as i64).unwrap_or_default()
+}
+
+/// Today's date in the user's local time zone.
+pub fn today() -> chrono::NaiveDate {
+    let d = js_sys::Date::new_0();
+    chrono::NaiveDate::from_ymd_opt(d.get_full_year() as i32, d.get_month() + 1, d.get_date())
+        .unwrap_or_default()
+}
+
+/// Short, friendly label for a due date: "Heute", "Morgen", "Montag", "3. Dez.".
+pub fn due_label(due: chrono::NaiveDate, today: chrono::NaiveDate) -> String {
+    use chrono::Datelike;
+    const SHORT_MONTHS: [&str; 12] = [
+        "Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.",
+        "Dez.",
+    ];
+    match (due - today).num_days() {
+        0 => "Heute".into(),
+        1 => "Morgen".into(),
+        -1 => "Gestern".into(),
+        2..=6 => WEEKDAYS[due.weekday().num_days_from_sunday() as usize].into(),
+        _ => format!("{}. {}", due.day(), SHORT_MONTHS[due.month0() as usize]),
+    }
+}

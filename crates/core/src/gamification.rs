@@ -1,14 +1,13 @@
 //! XP and levels. Pure functions so they are easy to test.
 
-use crate::{Priority, Task};
+use chrono::NaiveDate;
 
-/// XP earned for completing a task: priority weight × 10, +50 % if on time.
-pub fn xp_for_task(task: &Task) -> u32 {
+use crate::{Priority, Profile, Task};
+
+/// XP earned for completing a task on `done_on`: priority weight × 10, +50 % if on time.
+pub fn xp_for_task(task: &Task, done_on: NaiveDate) -> u32 {
     let base = task.priority.weight() * 10;
-    let on_time = match (task.due, task.done_at) {
-        (Some(due), Some(done)) => done.date_naive() <= due,
-        _ => false,
-    };
+    let on_time = task.due.is_some_and(|due| done_on <= due);
     if on_time {
         base + base / 2
     } else {
@@ -49,6 +48,32 @@ pub fn level_for_xp(mut xp: u32) -> LevelProgress {
     }
 }
 
+impl Profile {
+    /// Add XP for something done on `today` and keep the daily streak up to date.
+    pub fn add_xp(&mut self, xp: u32, today: NaiveDate) {
+        self.xp += xp;
+        match self.last_active {
+            Some(d) if d == today => {}
+            Some(d) if d.succ_opt() == Some(today) => self.streak_days += 1,
+            _ => self.streak_days = 1,
+        }
+        self.last_active = Some(today);
+    }
+
+    /// Take XP back (e.g. a task was reopened). The streak stays.
+    pub fn remove_xp(&mut self, xp: u32) {
+        self.xp = self.xp.saturating_sub(xp);
+    }
+
+    /// Streak as it stands today: it breaks if yesterday had no activity.
+    pub fn current_streak(&self, today: NaiveDate) -> u32 {
+        match self.last_active {
+            Some(d) if d == today || d.succ_opt() == Some(today) => self.streak_days,
+            _ => 0,
+        }
+    }
+}
+
 /// Small helper used by the UI for previews.
 pub fn xp_for_priority(p: Priority) -> u32 {
     p.weight() * 10
@@ -71,12 +96,31 @@ mod tests {
     #[test]
     fn on_time_bonus() {
         let now = Utc::now();
+        let today = now.date_naive();
         let mut t = Task::new("x", now);
         t.priority = Priority::P1;
-        t.due = Some((now + Duration::days(1)).date_naive());
-        t.complete(now);
-        assert_eq!(xp_for_task(&t), 60);
-        t.due = Some((now - Duration::days(1)).date_naive());
-        assert_eq!(xp_for_task(&t), 40);
+        t.due = Some(today + Duration::days(1));
+        assert_eq!(xp_for_task(&t, today), 60);
+        t.due = Some(today - Duration::days(1));
+        assert_eq!(xp_for_task(&t, today), 40);
+        t.due = None;
+        assert_eq!(xp_for_task(&t, today), 40);
+    }
+
+    #[test]
+    fn streaks() {
+        let d = |n| NaiveDate::from_ymd_opt(2026, 11, n).unwrap();
+        let mut p = Profile::default();
+        p.add_xp(10, d(1));
+        p.add_xp(10, d(1));
+        assert_eq!((p.xp, p.streak_days), (20, 1));
+        p.add_xp(10, d(2));
+        assert_eq!(p.streak_days, 2);
+        assert_eq!(p.current_streak(d(3)), 2);
+        assert_eq!(p.current_streak(d(4)), 0);
+        p.add_xp(10, d(5));
+        assert_eq!(p.streak_days, 1);
+        p.remove_xp(100);
+        assert_eq!(p.xp, 0);
     }
 }
