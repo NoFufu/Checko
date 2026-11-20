@@ -5,6 +5,7 @@ use leptos::prelude::*;
 
 use crate::components::{
     blur_text::BlurText,
+    icon::{Glyph, Icon},
     mascot::{Mascot, Mood},
     spotlight_card::SpotlightCard,
 };
@@ -41,7 +42,7 @@ pub fn TodayPage() -> impl IntoView {
             <div>
                 <p class="text-sm font-bold uppercase tracking-widest text-muted">{today_label()}</p>
                 <h1 class="page-title mt-2">
-                    <BlurText text=format!("{}! 👋", greeting()) />
+                    <BlurText text=format!("{}!", greeting()) />
                 </h1>
                 <p class="mt-2 text-lg text-muted">"Schön, dass du da bist. Was steht heute an?"</p>
             </div>
@@ -51,7 +52,7 @@ pub fn TodayPage() -> impl IntoView {
         </section>
 
         <form class="quick-add mt-8" on:submit=|ev| ev.prevent_default()>
-            <span class="text-xl">"＋"</span>
+            <Icon glyph=Glyph::Add size=22 />
             <input
                 type="text"
                 aria-label="Schnell hinzufügen"
@@ -62,12 +63,12 @@ pub fn TodayPage() -> impl IntoView {
 
         <div class="bento mt-8">
             <SpotlightCard class="bento-wide">
-                <CardHead icon="✅" title="Heute fällig" />
+                <CardHead icon=Glyph::Tasks title="Heute fällig" />
                 <EmptyState text="Noch keine Aufgaben – ein perfekter Start! Füge oben etwas hinzu." />
             </SpotlightCard>
 
             <SpotlightCard>
-                <CardHead icon="⭐" title="Dein Level" />
+                <CardHead icon=Glyph::Level title="Dein Level" />
                 <p class="mt-3 text-4xl font-black">"Level " {progress.level}</p>
                 <div class="xp-bar mt-4">
                     <div class="xp-fill" style=format!("width:{}%", progress.percent().max(3.0))></div>
@@ -76,23 +77,23 @@ pub fn TodayPage() -> impl IntoView {
             </SpotlightCard>
 
             <SpotlightCard>
-                <CardHead icon="📅" title="Nächste Termine" />
+                <CardHead icon=Glyph::Calendar title="Nächste Termine" />
                 <EmptyState text="Dein Kalender ist frei. Zeit für dich!" />
             </SpotlightCard>
 
             <SpotlightCard>
-                <CardHead icon="🔥" title="Streak" />
+                <CardHead icon=Glyph::Streak title="Streak" />
                 <p class="mt-3 text-4xl font-black">"0 Tage"</p>
                 <p class="mt-2 text-sm text-muted">"Erledige heute eine Aufgabe, um deine Serie zu starten."</p>
             </SpotlightCard>
 
             <SpotlightCard>
-                <CardHead icon="🛒" title="Einkaufsliste" />
+                <CardHead icon=Glyph::Shopping title="Einkaufsliste" />
                 <EmptyState text="Kühlschrank voll? Liste leer." />
             </SpotlightCard>
 
             <SpotlightCard>
-                <CardHead icon="📝" title="Angepinnt" />
+                <CardHead icon=Glyph::Pin title="Angepinnt" />
                 <EmptyState text="Pinne wichtige Notizen an, dann landen sie hier." />
             </SpotlightCard>
         </div>
@@ -100,10 +101,10 @@ pub fn TodayPage() -> impl IntoView {
 }
 
 #[component]
-fn CardHead(icon: &'static str, title: &'static str) -> impl IntoView {
+fn CardHead(icon: Glyph, title: &'static str) -> impl IntoView {
     view! {
         <h2 class="flex items-center gap-2 text-sm font-extrabold uppercase tracking-wider text-muted">
-            <span class="text-lg">{icon}</span>
+            <Icon glyph=icon size=18 />
             {title}
         </h2>
     }

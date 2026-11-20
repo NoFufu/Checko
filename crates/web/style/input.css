@@ -7,6 +7,7 @@
 :root {
   --green: #65a982;
   --green-strong: #4f9470;
+  --icon-accent: #357455;
   --lavender: #a48cd9;
   --peach: #f4a587;
   --ink: #251e2e;
@@ -21,6 +22,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #17131d;
+    --icon-accent: #92cfac;
     --surface: rgb(40 33 50 / 0.6);
     --surface-border: rgb(255 255 255 / 0.08);
     --text: #f3eff7;
@@ -120,7 +122,12 @@ body { margin: 0; font-family: var(--font-sans); -webkit-font-smoothing: antiali
   position: relative; display: grid; place-items: center; width: 3.1rem; height: 3.1rem; border-radius: 1rem;
   text-decoration: none; transition: transform 0.2s cubic-bezier(.34,1.56,.64,1), background 0.2s; transform-origin: bottom;
 }
-.dock-icon { font-size: 1.55rem; }
+.checko-icon { display: block; flex: none; }
+.module-icon { color: var(--icon-accent); }
+.dock-item { color: var(--muted); }
+.dock-item:hover, .dock-item[aria-current="page"], .quick-add > .checko-icon {
+  color: var(--icon-accent);
+}
 .dock-item:hover { transform: scale(1.35) translateY(-4px); }
 .dock-item:hover + .dock-item, .dock-item:has(+ .dock-item:hover) { transform: scale(1.15); }
 .dock-item[aria-current="page"] { background: rgb(101 169 130 / 0.22); }
