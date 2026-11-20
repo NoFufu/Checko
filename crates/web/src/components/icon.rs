@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 
+// Some glyphs are kept for upcoming features (e.g. search).
+#[allow(dead_code)]
 #[derive(Clone, Copy)]
 pub enum Glyph {
     Today,

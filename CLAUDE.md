@@ -35,6 +35,11 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Aktivitäts‑Log + Undo, Papierkorb statt hartem Löschen, Bestätigung vor Löschen.
 - Globale Suche über alle Module.
 
+## Zusammenarbeit
+- Claude ist für das gesamte Projekt zuständig (Code, Optik, CSS) und darf frühere Arbeit von Codex ändern oder ersetzen.
+- Codex liefert nur noch Grafiken (`assets/**`, siehe `AGENTS.md`). NoFufu kann Grafiken auch direkt an Claude schicken, Claude legt sie ab und pusht sie.
+- Fertige Phasen landen in `main`; GitHub Pages veröffentlicht automatisch unter https://nofufu.github.io/Checko/.
+
 ## Arbeitsweise
 - Arbeite in **kleinen, lauffähigen Schritten**; nach jedem Schritt muss `cargo build`, `cargo clippy -- -D warnings` und `cargo test` grün sein.
 - Schreibe Tests für jede Logik im `core` (vor allem Parser, XP, Wiederholungen).
@@ -44,4 +49,4 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Commits klein und beschreibend (Conventional Commits).
 
 ## Aktuelle Aufgabe
-<hier Phase/Modul eintragen, z. B. „Phase 0: Workspace aufsetzen, Leptos + Tailwind + Tauri 2 Desktop mit einer leeren Heute‑Seite mit Aurora‑Hintergrund“>
+Phase 0–2 sind fertig (Grundgerüst, Aufgaben, Quick‑Add‑Parser + Strg+K). Als Nächstes: Phase 3 – Einkaufsliste, Notizen, globale Suche.

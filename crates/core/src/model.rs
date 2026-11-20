@@ -1,4 +1,4 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -68,6 +68,9 @@ pub struct Task {
     pub area: Option<String>,
     pub tags: Vec<String>,
     pub due: Option<NaiveDate>,
+    /// Optional time of day for the due date (local time).
+    #[serde(default)]
+    pub due_time: Option<NaiveTime>,
     pub remind_at: Option<DateTime<Utc>>,
     pub log: Vec<LogEntry>,
     pub done_at: Option<DateTime<Utc>>,
@@ -90,6 +93,7 @@ impl Task {
             area: None,
             tags: Vec::new(),
             due: None,
+            due_time: None,
             remind_at: None,
             log: Vec::new(),
             done_at: None,

@@ -2,10 +2,11 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 
 use super::icon::{Glyph, Icon};
+use super::logo::Logo;
 use super::theme::ThemeSwitch;
 use crate::store::Store;
 use crate::time::today;
-use crate::{asset, BASE};
+use crate::BASE;
 use checko_core::{open_tasks, today_tasks, AREAS};
 
 struct Item {
@@ -78,17 +79,13 @@ pub fn Sidebar() -> impl IntoView {
     let store = Store::get();
     view! {
         <aside class="sidebar" aria-label="Seitenleiste">
-            <a href=format!("{BASE}/") class="sidebar-brand">
-                <span class="brand-mark"><img src=asset("brand/icon.png") alt="" /></span>
-                <span>
-                    <span class="brand-name">"Checko"</span>
-                    <span class="brand-sub">"Organizer"</span>
-                </span>
+            <a href=format!("{BASE}/") class="sidebar-brand" aria-label="Checko Startseite">
+                <Logo />
             </a>
 
-            <button type="button" class="sidebar-search" title="Suche kommt in einer späteren Phase">
-                <Icon glyph=Glyph::Search size=16 />
-                <span>"Suchen"</span>
+            <button type="button" class="sidebar-search" on:click=move |_| store.quick_add_open.set(true)>
+                <Icon glyph=Glyph::Add size=16 />
+                <span>"Neue Aufgabe"</span>
                 <kbd>"Strg K"</kbd>
             </button>
 

@@ -1,81 +1,41 @@
 # Übergabe an Codex – Checko
 
-> Codex liest diese Datei automatisch. Sie legt fest, **wer was im Projekt bearbeitet**, damit sich Codex und Claude nicht gegenseitig den Code überschreiben.
+> Codex liest diese Datei automatisch. Sie legt fest, **wer was im Projekt bearbeitet**.
 
 ## Rollen
 
 | Wer | Verantwortlich für |
 |---|---|
-| **Claude** | Code und Logik: Datenmodelle, Speicherung, Zustand, Routing, Funktionen der Seiten, Sync, KI, Build und CI |
-| **Codex** | Optik: CSS und Animationen, Icons, Grafiken, Farben, Abstände, rein visuelle Komponenten |
+| **Claude** | Das komplette Projekt: Code, Logik, Optik/CSS, Komponenten, Build, CI. Claude darf auch frühere Arbeit von Codex ändern oder ersetzen. |
+| **Codex** | Nur **Grafiken**: Logo, Icons als Bilddateien, Illustrationen, Maskottchen‑Bilder |
 
-Der Besitzer des Projekts (NoFufu) entscheidet bei Unklarheiten. Im Zweifel: **nicht ändern, sondern im Pull Request nachfragen.**
+Der Besitzer des Projekts (NoFufu) entscheidet bei Unklarheiten.
 
 ## Was Codex ändern darf ✅
 
-- `crates/web/style/**` (Tailwind‑Eingabe, eigene CSS‑Klassen, Animationen)
-- `assets/**` (Logo, Icons, Maskottchen‑Bilder)
-- Rein visuelle Komponenten:
-  - `crates/web/src/components/topbar.rs` (nur Aussehen)
-  - `crates/web/src/components/icon.rs`
-  - `crates/web/src/components/blur_text.rs`
-  - `crates/web/src/components/spotlight_card.rs`
-  - `crates/web/src/components/mascot.rs` (nur Darstellung, die `Mood`‑Varianten bleiben)
-- In allen anderen `.rs`‑Dateien **nur**:
-  - Werte von `class=`‑Attributen
-  - sichtbare Texte (Beschriftungen, Hinweise)
-  - Icon‑Namen beim Aufruf von `<Icon …/>`
-- In `crates/web/index.html`: Schriftarten, Meta‑Tags, Favicon
+- Nur Dateien unter `assets/**` (Bilder: SVG, PNG, WebP).
+- Neue Grafiken dürfen dazukommen. Bestehende Dateinamen bitte nicht umbenennen oder löschen, weil der Code sie lädt:
+  - `assets/brand/favicon.svg` (Browser‑Icon). Das Logo selbst ist als Schriftzug im Code gebaut (`crates/web/src/components/logo.rs`), damit es im Dunkelmodus hell wird.
+  - `assets/mascot/*.webp` (Sprite‑Streifen, je Bild 160 × 160 px pro Frame, nebeneinander)
 
 ## Was Codex NICHT ändern darf ⛔
 
-- `crates/core/**` (Modelle, XP/Level, Parser, Tests)
-- Logik in `crates/web/src/**`: Signale, Event‑Handler (`on:…`), Speicherung, Routen, Funktionen, Props, Modulstruktur, neue oder gelöschte Seiten
-- `crates/web/src/main.rs`
-- `Cargo.toml`, `Cargo.lock`, `package.json`, `package-lock.json`, `crates/web/Trunk.toml`
-- `.github/**` (CI und Veröffentlichung auf GitHub Pages)
-- `CLAUDE.md`, `docs/PLAN.md`, diese Datei `AGENTS.md`
-- Keine neuen Abhängigkeiten (Crates oder npm‑Pakete)
+Alles außerhalb von `assets/**`, insbesondere:
 
-Braucht eine Design‑Idee neue Logik (z. B. Wisch‑Geste, Drag & Drop, Konfetti beim Abhaken):
-→ im Pull Request beschreiben oder in `docs/design-requests.md` eintragen. Claude baut die Logik, Codex stylt sie danach.
+- `crates/**` (Rust‑Code, CSS in `crates/web/style/`, `index.html`)
+- `Cargo.toml`, `Cargo.lock`, `package.json`, `package-lock.json`, `Trunk.toml`
+- `.github/**`, `docs/**`, `CLAUDE.md`, `README.md`, diese Datei
 
-## CSS‑Klassen, auf die sich der Code verlässt
-
-Diese Klassen dürfen **neu gestaltet, aber nicht umbenannt oder gelöscht** werden:
-
-- Layout: `app-shell`, `app-main`, `page`, `sidebar`, `sidebar-brand`, `brand-mark`, `brand-name`, `brand-sub`, `sidebar-search`, `sidebar-bottom`, `nav-section`, `nav-heading`, `nav-heading-row`, `nav-collapsible`, `nav-item`, `nav-label`, `area-list`, `area-item`, `area-dot`, `profile-card`, `profile-row`, `profile-name`, `profile-sub`, `avatar`, `theme-switch`, `theme-option` (+ `active`)
-- Bausteine: `topbar`, `crumb`, `btn`, `btn-primary`, `btn-outline`, `btn-lg`, `btn-icon`, `panel`, `chip`, `segmented`, `segment` (+ `active`), `toolbar`, `section-head`, `quick-add`, `empty-line`, `empty-panel`, `empty-icon`, `list-panel`, `list-empty`, `list-icon`, `text-muted`, `checko-icon`, `module-icon`
-- Heute‑Seite: `hero`, `hero-text`, `hero-kicker`, `hero-title`, `hero-sub`, `hero-art`, `hero-sun`, `hill`, `hill-1`, `hill-2`, `hill-3`, `sky-top`, `sky-bottom`, `dash-grid`, `dash-main`, `dash-side`, `metric-grid`, `metric-label`, `metric-sub`, `metric-value`, `metric-unit`, `metric-foot`, `week-bars`, `week-col`, `week-bar`, `week-day` (+ `today`), `xp-bar`, `xp-fill`, `stat-grid`, `stat`, `stat-value`, `stat-label`
-- Aufgaben: `page-head`, `page-h1`, `task-form`, `task-form-options`, `field`, `task-list`, `task-row` (+ `done`, `checking`, `started`), `check` (+ `checked`), `spark`, `task-body`, `task-title`, `task-title-input`, `task-meta`, `meta-item` (+ `overdue`), `status-chip`, `task-actions`, `row-btn` (+ `active`), `prio`, `prio-1` … `prio-4`, `btn-sm`, `btn-danger`, `count`, `nav-count`, `week-bar.filled`, `toast-host`, `toast`, `toast-undo`, `toast-close`
-- Für später aufgehoben: `blur-word`, `mascot`, `spotlight`
-
-Das Farbschema wird über `<html data-theme="light|dark|system">` gesteuert (aus Rust und einem kleinen Skript in `index.html`). Die Farb‑Tokens stehen als CSS‑Variablen oben in `input.css`. Die CSS‑Variablen `--x`/`--y` (Spotlight) und `--size`/`--frames`/`--dur` (Maskottchen) werden aus Rust gesetzt und müssen erhalten bleiben. Neue Klassen dürfen jederzeit dazukommen.
+Soll eine neue Grafik irgendwo in der App erscheinen: Datei ablegen und im Pull Request beschreiben, wo sie hin soll. Claude baut sie dann ein.
 
 ## Arbeitsablauf
 
-1. **Vor dem Start** die offenen Branches prüfen. Gibt es einen `claude/*`‑ oder `phase-*`‑Branch, der dieselben Dateien ändert: warten oder nur CSS/Assets anfassen.
-2. Immer auf einem eigenen Branch `codex/<thema>` arbeiten, nie direkt auf `main`.
-3. Kleine Pull Requests mit **einem** Thema. Screenshots von vorher/nachher anhängen.
-4. Vor dem Pull Request muss alles grün sein:
-   ```bash
-   cargo fmt --all --check
-   cargo clippy --workspace --target wasm32-unknown-unknown -- -D warnings
-   cd crates/web && trunk build
-   ```
-5. Den eigenen Pull Request nicht selbst mergen. Das macht NoFufu.
+1. Immer auf einem eigenen Branch `codex/<thema>` arbeiten, nie direkt auf `main`.
+2. Kleine Pull Requests mit einem Thema, mit Vorschaubild der Grafik.
+3. Den eigenen Pull Request nicht selbst mergen. Das macht NoFufu.
 
-## Design‑Vorgaben (Kurzfassung)
+## Stil der Grafiken
 
-- Farben aus dem Logo: Grün `#65a982`, Lavendel `#a48cd9`, Pfirsich `#f4a587`, Tinte `#251e2e`. Als CSS‑Variablen in `crates/web/style/input.css`.
-- Hell‑ und Dunkelmodus müssen beide funktionieren.
-- Ruhig und aufgeräumt: helle, neutrale Flächen, feine Rahmen, schwarze Hauptknöpfe, Schrift Inter. Markenfarben nur als Akzent.
-- Animationen 150–300 ms mit Federwirkung. `prefers-reduced-motion` respektieren.
-- Kontrast mindestens WCAG AA. Fokus‑Rahmen für die Tastaturbedienung nicht entfernen.
-- Vorbilder: reactbits.dev und ui.aceternity.com, nachgebaut in CSS (kein React). Details stehen in `docs/PLAN.md`.
-
-## Projektstand
-
-- Phase 0 ist fertig: Grundgerüst mit Seitenleiste links (wie ein Dashboard: Suche, Übersicht, Bereiche, Einstellungen, Profilkarte mit Hell/Dunkel/System), Kopfzeile, Heute‑Seite mit Begrüßung, Kennzahlen und Schnellstatistik. Auf dem Handy wird die Seitenleiste zur Leiste unten. Das Maskottchen ist vorerst ausgeblendet.
-- Phase 1 ist fertig: Aufgaben anlegen, abhaken (XP, Streak), umbenennen, Priorität, Bereich, Fälligkeit, „In Arbeit“, Papierkorb mit Rückgängig. Daten liegen im Browser (`localStorage`, Logik in `crates/web/src/store.rs`).
-- **Als Nächstes baut Claude Phase 2: Quick‑Add‑Parser** (z. B. „Zahnarzt morgen 14:00 #gesundheit !1“). Währenddessen bitte `task_form.rs` und `crates/core/**` nicht anfassen.
+- Markenfarben aus dem Logo: Grün `#65a982`, Lavendel `#a48cd9`, Pfirsich `#f4a587`, Tinte `#251e2e`.
+- Freundlich, rund, klare Formen. Die Grafiken müssen auf hellem und dunklem Hintergrund gut aussehen (transparenter Hintergrund).
+- Icons in der App sind Linien‑Icons (24 × 24, Strichstärke 1,75, runde Enden).

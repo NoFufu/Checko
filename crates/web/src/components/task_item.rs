@@ -72,7 +72,14 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
         editing.set(false);
     };
 
-    let due = task.due.map(|d| due_label(d, today));
+    let due = task.due.map(|d| {
+        let mut label = due_label(d, today);
+        if let Some(t) = task.due_time {
+            label.push_str(&format!(" · {}", t.format("%H:%M")));
+        }
+        label
+    });
+    let tags = task.tags.clone();
     let area = task.area.clone();
     let title = task.title.clone();
 
@@ -132,6 +139,10 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                             {d}
                         </span>
                     })}
+                    {tags
+                        .into_iter()
+                        .map(|t| view! { <span class="meta-item">"#" {t}</span> })
+                        .collect_view()}
                     {area.map(|a| view! {
                         <span class="meta-item">
                             <span class="area-dot" style=format!("background:{}", area_color(&a))></span>

@@ -1,15 +1,15 @@
-use checko_core::{Priority, AREAS};
+use checko_core::{parse_quick_add, Priority, TokenKind, AREAS};
 use leptos::{html, prelude::*};
 
 use super::icon::{Glyph, Icon};
 use crate::store::{NewTask, Store};
-use crate::time::today;
+use crate::time::{due_label, today};
 
 const PLACEHOLDERS: [&str; 4] = [
-    "Zahnarzt anrufen",
-    "Milch und Eier einkaufen",
-    "Steuererklärung abgeben",
-    "Wochenendtrip planen",
+    "Zahnarzt morgen 14:00 #gesundheit !1",
+    "Milch und Eier kaufen #privat",
+    "Steuererklärung bis Freitag !2",
+    "Wochenendtrip planen nächste Woche",
 ];
 
 fn parse_priority(v: &str) -> Priority {
@@ -21,47 +21,118 @@ fn parse_priority(v: &str) -> Priority {
     }
 }
 
-/// Add-task form: title plus optional priority, area and due date.
+fn priority_name(p: Priority) -> &'static str {
+    match p {
+        Priority::P1 => "P1 · Dringend",
+        Priority::P2 => "P2 · Hoch",
+        Priority::P3 => "P3 · Mittel",
+        Priority::P4 => "P4 · Normal",
+    }
+}
+
+/// Add-task form. Typing "morgen 14:00 #arbeit !1" fills date, time, area and
+/// priority automatically; the selects are a fallback for mouse users.
 /// `due_today` pre-fills the date with today (used on the Today page).
 #[component]
 pub fn TaskForm(
     #[prop(optional)] due_today: bool,
     #[prop(optional)] autofocus: bool,
     #[prop(optional, into)] area: Signal<Option<String>>,
+    /// Called after a task was added (e.g. to close a dialog).
+    #[prop(optional)]
+    on_added: Option<Callback<()>>,
 ) -> impl IntoView {
     let store = Store::get();
     let input = NodeRef::<html::Input>::new();
     let title = RwSignal::new(String::new());
     let priority = RwSignal::new("4".to_string());
     let area_sel = RwSignal::new(String::new());
-    let due = RwSignal::new(if due_today {
-        today().to_string()
-    } else {
-        String::new()
-    });
+    let default_due = move || {
+        if due_today {
+            today().to_string()
+        } else {
+            String::new()
+        }
+    };
+    let due = RwSignal::new(default_due());
     // Follow the page filter: adding while "Arbeit" is selected files it under Arbeit.
     Effect::new(move |_| area_sel.set(area.get().unwrap_or_default()));
 
+    // `autofocus` alone is ignored by browsers once something else has focus
+    // (e.g. the button that opened the dialog), so focus explicitly.
+    if autofocus {
+        Effect::new(move |_| {
+            if let Some(el) = input.get() {
+                let _ = el.focus();
+            }
+        });
+    }
+
+    let parsed = Memo::new(move |_| parse_quick_add(&title.get(), today()));
     let placeholder = PLACEHOLDERS[(js_sys::Math::random() * 4.0) as usize % 4];
 
     let submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
-        let t = title.get_untracked();
-        if t.trim().is_empty() {
+        if title.get_untracked().trim().is_empty() {
             return;
         }
+        let p = parsed.get_untracked();
         store.add(NewTask {
-            title: t,
-            priority: parse_priority(&priority.get_untracked()),
-            area: Some(area_sel.get_untracked()).filter(|a| !a.is_empty()),
-            due: due.get_untracked().parse().ok(),
+            title: p.title,
+            priority: p
+                .priority
+                .unwrap_or_else(|| parse_priority(&priority.get_untracked())),
+            area: p
+                .area
+                .or_else(|| Some(area_sel.get_untracked()).filter(|a| !a.is_empty())),
+            due: p.due.or_else(|| due.get_untracked().parse().ok()),
+            time: p.time,
+            tags: p.tags,
         });
         title.set(String::new());
         priority.set("4".into());
         area_sel.set(area.get_untracked().unwrap_or_default());
-        if let Some(el) = input.get() {
+        due.set(default_due());
+        if let Some(cb) = on_added {
+            cb.run(());
+        } else if let Some(el) = input.get() {
             let _ = el.focus();
         }
+    };
+
+    // Chips that show what was recognised, e.g. "📅 Morgen · 14:00".
+    let preview = move || {
+        let p = parsed.get();
+        let today = today();
+        let mut chips = Vec::new();
+        if let Some(d) = p.due {
+            let mut label = due_label(d, today);
+            if let Some(t) = p.time {
+                label.push_str(&format!(" · {}", t.format("%H:%M")));
+            }
+            chips.push((Glyph::Calendar, label, "chip-date"));
+        }
+        if let Some(pr) = p.priority {
+            chips.push((Glyph::Level, priority_name(pr).to_string(), "chip-prio"));
+        }
+        if let Some(a) = p.area.clone() {
+            chips.push((Glyph::Pin, a, "chip-area"));
+        }
+        for t in &p.tags {
+            chips.push((Glyph::Notes, format!("#{t}"), "chip-tag"));
+        }
+        chips
+    };
+    let has_tokens = move || !parsed.with(|p| p.tokens.is_empty());
+    let recognised_words = move || {
+        parsed.with(|p| {
+            p.tokens
+                .iter()
+                .filter(|t| t.kind != TokenKind::Tag)
+                .map(|t| t.text.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
     };
 
     view! {
@@ -72,12 +143,37 @@ pub fn TaskForm(
                     node_ref=input
                     type="text"
                     aria-label="Neue Aufgabe"
+                    aria-describedby="quick-add-hint"
                     placeholder=placeholder
                     autofocus=autofocus
                     bind:value=title
                 />
                 <kbd>"Enter"</kbd>
             </div>
+            <Show
+                when=has_tokens
+                fallback=|| view! {
+                    <p id="quick-add-hint" class="parse-hint">
+                        "Tipp: „morgen 14 Uhr“, „Freitag“, „24.12.“, „#arbeit“ oder „!1“ direkt mitschreiben."
+                    </p>
+                }
+            >
+                <div id="quick-add-hint" class="parse-preview" aria-live="polite">
+                    <span class="parse-title">
+                        {move || parsed.with(|p| p.title.clone())}
+                    </span>
+                    {move || preview()
+                        .into_iter()
+                        .map(|(g, label, class)| view! {
+                            <span class=format!("parse-chip {class}")>
+                                <Icon glyph=g size=13 />
+                                {label}
+                            </span>
+                        })
+                        .collect_view()}
+                    <span class="sr-only">"Erkannt: " {recognised_words}</span>
+                </div>
+            </Show>
             <div class="task-form-options">
                 <label class="field">
                     <span class="sr-only">"Priorität"</span>

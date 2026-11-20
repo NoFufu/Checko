@@ -6,7 +6,7 @@
 use std::time::Duration;
 
 use checko_core::{complete_task, reopen_task, Priority, Profile, Task};
-use chrono::NaiveDate;
+use chrono::{NaiveDate, NaiveTime};
 use leptos::prelude::*;
 use serde::{de::DeserializeOwned, Serialize};
 use uuid::Uuid;
@@ -55,6 +55,8 @@ pub struct NewTask {
     pub priority: Priority,
     pub area: Option<String>,
     pub due: Option<NaiveDate>,
+    pub time: Option<NaiveTime>,
+    pub tags: Vec<String>,
 }
 
 #[derive(Clone, Copy)]
@@ -62,6 +64,8 @@ pub struct Store {
     pub tasks: RwSignal<Vec<Task>>,
     pub profile: RwSignal<Profile>,
     pub toast: RwSignal<Option<Toast>>,
+    /// The Strg+K quick-add dialog.
+    pub quick_add_open: RwSignal<bool>,
 }
 
 impl Store {
@@ -71,6 +75,7 @@ impl Store {
             tasks: RwSignal::new(load(TASKS_KEY)),
             profile: RwSignal::new(load(PROFILE_KEY)),
             toast: RwSignal::new(None),
+            quick_add_open: RwSignal::new(false),
         };
         Effect::new(move |_| store.tasks.with(|t| save(TASKS_KEY, t)));
         Effect::new(move |_| store.profile.with(|p| save(PROFILE_KEY, p)));
@@ -123,6 +128,8 @@ impl Store {
         t.priority = new.priority;
         t.area = new.area;
         t.due = new.due;
+        t.due_time = new.time;
+        t.tags = new.tags;
         self.tasks.update(|ts| ts.push(t));
     }
 
