@@ -44,7 +44,7 @@ pub fn Dock() -> impl IntoView {
                 .iter()
                 .map(|it| {
                     view! {
-                        <A href=it.href exact=true attr:class="dock-item" attr:aria-label=it.label>
+                        <A href=format!("{}{}", crate::BASE, it.href) exact=true attr:class="dock-item" attr:aria-label=it.label>
                             <span class="dock-icon">{it.icon}</span>
                             <span class="dock-tooltip">{it.label}</span>
                         </A>

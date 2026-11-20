@@ -42,7 +42,8 @@ pub fn Mascot(
     let style = move || {
         let (file, frames, ms) = mood.get().sprite();
         format!(
-            "--size:{size}px;--frames:{frames};--dur:{ms}ms;background-image:url(/assets/mascot/{file}.webp)"
+            "--size:{size}px;--frames:{frames};--dur:{ms}ms;background-image:url({})",
+            crate::asset(&format!("mascot/{file}.webp"))
         )
     };
     view! { <div class=format!("mascot {class}") style=style role="img" aria-label="Axolotl-Maskottchen"></div> }
