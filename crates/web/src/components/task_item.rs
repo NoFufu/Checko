@@ -97,6 +97,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
             class:selected=move || store.detail.get() == Some(id)
             draggable=(!trash).then_some("true")
             on:dragstart=on_drag
+            on:click=move |_| if !trash { store.detail.set(Some(id)) }
         >
             {(!trash).then(|| view! {
                 <button
@@ -119,7 +120,6 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                     class="task-title"
                     title="Details öffnen"
                     disabled=trash
-                    on:click=move |_| store.detail.set(Some(id))
                 >
                     {title}
                 </button>
@@ -173,14 +173,14 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                             title=format!("Dringlichkeit: {} (klicken zum Ändern)", priority_name(priority))
                             aria-label=format!("Dringlichkeit: {}", priority_name(priority))
                             disabled=done
-                            on:click=move |_| store.set_priority(id, next_priority(priority))
+                            on:click=move |e| { e.stop_propagation(); store.set_priority(id, next_priority(priority)) }
                         ></button>
                         <button
                             type="button"
                             class="row-btn"
                             title="In den Papierkorb"
                             aria-label="In den Papierkorb"
-                            on:click=move |_| store.trash(id)
+                            on:click=move |e| { e.stop_propagation(); store.trash(id) }
                         >
                             <Icon glyph=Glyph::Trash size=16 />
                         </button>

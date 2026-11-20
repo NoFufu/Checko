@@ -142,6 +142,9 @@ pub fn TodayPage() -> impl IntoView {
                     <SectionHead icon=Glyph::Pin title="Kategorien" />
                     <CategoryLegend />
 
+                    <SectionHead icon=Glyph::Level title="Erfolge" />
+                    <AchievementGrid />
+
                     <SectionHead icon=Glyph::Streak title="Schnellstatistik" />
                     <div class="stat-grid">
                         <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
@@ -152,6 +155,46 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
         </div>
+    }
+}
+
+/// All achievements; reached ones in colour, others greyed out.
+#[component]
+fn AchievementGrid() -> impl IntoView {
+    let store = Store::get();
+    let unlocked = move |id: &str| {
+        store
+            .profile
+            .with(|p| p.achievements.iter().any(|a| a == id))
+    };
+    let count = move || store.profile.with(|p| p.achievements.len());
+    view! {
+        <section class="panel">
+            <p class="text-sm text-muted mb-3">
+                {move || format!("{} von {} freigeschaltet", count(), checko_core::ACHIEVEMENTS.len())}
+            </p>
+            <ul class="badge-grid">
+                {checko_core::ACHIEVEMENTS
+                    .iter()
+                    .map(|a| {
+                        let id = a.id;
+                        view! {
+                            <li
+                                class="badge"
+                                class:locked=move || !unlocked(id)
+                                title=format!("{} – {}", a.title, a.description)
+                            >
+                                <span class="badge-emoji" aria-hidden="true">{a.emoji}</span>
+                                <span class="badge-title">{a.title}</span>
+                                <span class="sr-only">
+                                    {move || if unlocked(id) { "freigeschaltet" } else { "noch gesperrt" }}
+                                </span>
+                            </li>
+                        }
+                    })
+                    .collect_view()}
+            </ul>
+        </section>
     }
 }
 

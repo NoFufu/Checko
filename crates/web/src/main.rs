@@ -10,7 +10,8 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
 use components::{
-    quick_add::QuickAddDialog, sidebar::Sidebar, task_detail::TaskDetail, toast::ToastHost,
+    celebrate::CelebrationHost, quick_add::QuickAddDialog, sidebar::Sidebar,
+    task_detail::TaskDetail, toast::ToastHost,
 };
 use pages::{
     calendar::CalendarPage, notes::NotesPage, settings::SettingsPage, shopping::ShoppingPage,
@@ -36,10 +37,10 @@ fn main() {
 
 #[component]
 fn App() -> impl IntoView {
-    store::Store::provide();
+    let store = store::Store::provide();
     view! {
         <Router base=BASE>
-            <div class="app-shell">
+            <div class="app-shell" class:detail-open=move || store.detail.get().is_some()>
                 <Sidebar />
                 <main class="app-main">
                     <Routes fallback=|| view! { <p class="p-8">"Seite nicht gefunden."</p> }>
@@ -55,6 +56,7 @@ fn App() -> impl IntoView {
             <ToastHost />
             <QuickAddDialog />
             <TaskDetail />
+            <CelebrationHost />
         </Router>
     }
 }

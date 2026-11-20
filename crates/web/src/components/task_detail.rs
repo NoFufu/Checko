@@ -35,7 +35,7 @@ pub fn TaskDetail() -> impl IntoView {
     view! {
         <Show when=move || task().is_some()>
             <div class="drawer-backdrop" on:click=move |_| close()></div>
-            <aside class="drawer" role="dialog" aria-modal="true" aria-label="Aufgabe bearbeiten">
+            <aside class="drawer" role="complementary" aria-label="Aufgabe bearbeiten">
                 {move || task().map(|t| view! { <DetailBody task=t /> })}
             </aside>
         </Show>

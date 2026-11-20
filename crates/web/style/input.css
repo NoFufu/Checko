@@ -452,6 +452,13 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .area-hint { margin: 0.4rem 0.6rem 0; font-size: 0.72rem; color: var(--muted); }
 
 /* ---------- Task detail drawer ---------- */
+/* Desktop: the panel is docked on the right (like Microsoft To Do), the list stays usable. */
+@media (min-width: 1100px) {
+  .drawer-backdrop { display: none; }
+  .app-shell.detail-open .app-main { margin-right: 26rem; }
+  .drawer { width: 26rem !important; box-shadow: none !important; z-index: 30 !important; }
+}
+.task-row { cursor: pointer; }
 .drawer-backdrop { position: fixed; inset: 0; z-index: 65; background: rgb(13 13 16 / 0.25); animation: fadeIn 0.15s ease both; }
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 66; width: min(28rem, 100%); overflow-y: auto; padding: 1.1rem 1.2rem 1.5rem; background: var(--panel); border-left: 1px solid var(--border); box-shadow: -20px 0 50px -20px rgb(0 0 0 / 0.35); animation: drawerIn 0.28s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes drawerIn { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -492,6 +499,27 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .legend-pct { min-width: 2.6rem; text-align: right; font-size: 0.75rem; color: var(--muted); }
 .legend-bar { display: block; height: 0.3rem; margin-top: 0.35rem; border-radius: 999px; background: var(--panel-soft); overflow: hidden; }
 .legend-bar span { display: block; height: 100%; border-radius: inherit; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+
+/* ---------- Achievements ---------- */
+.badge-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; margin: 0; padding: 0; list-style: none; }
+.badge { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; padding: 0.55rem 0.25rem; border-radius: 0.7rem; border: 1px solid var(--border); background: var(--panel-soft); text-align: center; transition: transform 0.2s cubic-bezier(.34,1.56,.64,1); }
+.badge:not(.locked):hover { transform: translateY(-2px) scale(1.04); }
+.badge-emoji { font-size: 1.5rem; line-height: 1; }
+.badge-title { font-size: 0.66rem; font-weight: 600; line-height: 1.2; }
+.badge.locked { opacity: 0.45; }
+.badge.locked .badge-emoji { filter: grayscale(1); }
+
+/* ---------- Celebration overlay ---------- */
+.celebration { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 1rem; background: rgb(13 13 16 / 0.35); backdrop-filter: blur(3px); animation: fadeIn 0.2s ease both; }
+.celebration-card { position: relative; z-index: 1; width: min(22rem, 100%); padding: 1.75rem 1.5rem 1.4rem; border-radius: 1.25rem; background: var(--panel); border: 1px solid var(--border); text-align: center; box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.4); animation: celebrateIn 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+@keyframes celebrateIn { from { opacity: 0; transform: scale(0.7) translateY(20px); } to { opacity: 1; transform: none; } }
+.celebration-emoji { font-size: 3.5rem; line-height: 1; animation: wobble 1.2s ease-in-out 0.3s both; }
+@keyframes wobble { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-12deg) scale(1.1); } 50% { transform: rotate(10deg); } 75% { transform: rotate(-5deg); } }
+.celebration-kicker { margin-top: 0.75rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--icon-accent); }
+.celebration-title { margin: 0.2rem 0 0.3rem; font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; }
+.confetti-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.confetti { position: absolute; top: -12px; width: 9px; height: 14px; border-radius: 2px; opacity: 0.9; animation: confettiFall 2.4s cubic-bezier(.25,.6,.4,1) both; }
+@keyframes confettiFall { to { top: 105%; transform: translateX(40px) rotate(540deg); opacity: 0.6; } }
 
 /* ---------- Toast ---------- */
 .toast-host { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 60; pointer-events: none; }

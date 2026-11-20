@@ -58,4 +58,4 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - `run`: App starten und Screenshots machen.
 
 ## Aktuelle Aufgabe
-Phase 0–3 sind fertig (Grundgerüst, Aufgaben, Quick‑Add, Einkauf, Notizen, Suche in Strg+K). Als Nächstes: Phase 4 – Gamification (Achievements, Level‑Up‑Moment, Themes, Maskottchen optional).
+Phase 0–3 fertig. Phase 4 läuft: Erfolge (12 Abzeichen) und Level‑Up‑Feier sind drin. Offen in Phase 4: freischaltbare Themes, Fokus‑Modus (Spielelemente aus), Maskottchen (wartet auf Entscheidung von NoFufu).

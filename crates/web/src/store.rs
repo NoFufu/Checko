@@ -55,6 +55,13 @@ pub enum Undo {
     ShoppingClear(Vec<Uuid>),
 }
 
+/// A moment worth celebrating (shown as a full-screen overlay).
+#[derive(Clone, PartialEq)]
+pub enum Celebration {
+    LevelUp(u32),
+    Achievement(&'static checko_core::Achievement),
+}
+
 /// What a new task starts with.
 #[derive(Clone)]
 pub struct NewTask {
@@ -77,6 +84,8 @@ pub struct Store {
     pub quick_add_open: RwSignal<bool>,
     /// Task shown in the detail panel.
     pub detail: RwSignal<Option<Uuid>>,
+    /// Celebrations waiting to be shown (first one is visible).
+    pub celebrations: RwSignal<Vec<Celebration>>,
 }
 
 impl Store {
@@ -90,13 +99,75 @@ impl Store {
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
             detail: RwSignal::new(None),
+            celebrations: RwSignal::new(Vec::new()),
         };
         Effect::new(move |_| store.tasks.with(|t| save(TASKS_KEY, t)));
         Effect::new(move |_| store.profile.with(|p| save(PROFILE_KEY, p)));
         Effect::new(move |_| store.notes.with(|n| save(NOTES_KEY, n)));
         Effect::new(move |_| store.shopping.with(|s| save(SHOPPING_KEY, s)));
+        store.watch_progress();
         provide_context(store);
         store
+    }
+
+    /// Watch for level-ups and newly reached achievements.
+    fn watch_progress(&self) {
+        let store = *self;
+        // Level-ups: remember the level and celebrate when it grows.
+        let last_level = StoredValue::new(
+            store
+                .profile
+                .with_untracked(|p| checko_core::level_for_xp(p.xp).level),
+        );
+        Effect::new(move |_| {
+            let level = store
+                .profile
+                .with(|p| checko_core::level_for_xp(p.xp).level);
+            if level > last_level.get_value() {
+                store
+                    .celebrations
+                    .update(|c| c.push(Celebration::LevelUp(level)));
+            }
+            last_level.set_value(level);
+        });
+        // Achievements: check whenever data changes.
+        Effect::new(move |_| {
+            let hour = js_sys::Date::new_0().get_hours();
+            let mut new = Vec::new();
+            store.tasks.with(|tasks| {
+                store.notes.with(|notes| {
+                    store.shopping.with(|shopping| {
+                        let snapshot_profile = store.profile.get_untracked();
+                        let snap = checko_core::Snapshot {
+                            tasks,
+                            notes,
+                            shopping,
+                            profile: &snapshot_profile,
+                            today: today(),
+                            hour,
+                        };
+                        let mut p = snapshot_profile.clone();
+                        new = checko_core::unlock_new(&mut p, &snap);
+                        if !new.is_empty() {
+                            store.profile.set(p);
+                        }
+                    })
+                })
+            });
+            if !new.is_empty() {
+                store
+                    .celebrations
+                    .update(|c| c.extend(new.into_iter().map(Celebration::Achievement)));
+            }
+        });
+    }
+
+    pub fn dismiss_celebration(&self) {
+        self.celebrations.update(|c| {
+            if !c.is_empty() {
+                c.remove(0);
+            }
+        });
     }
 
     pub fn get() -> Self {
