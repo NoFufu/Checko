@@ -29,9 +29,9 @@ pub fn CelebrationHost() -> impl IntoView {
 
     view! {
         {move || current().map(|c| {
-            let (emoji, kicker, title, text) = match c {
-                Celebration::LevelUp(l) => ("⭐".to_string(), "Level‑Up!".to_string(), format!("Level {l}"), "Stark! Weiter so.".to_string()),
-                Celebration::Achievement(a) => (a.emoji.to_string(), "Erfolg freigeschaltet".to_string(), a.title.to_string(), a.description.to_string()),
+            let (emoji, medal, kicker, title, text) = match c {
+                Celebration::LevelUp(l) => ("⭐".to_string(), None, "Level‑Up!".to_string(), format!("Level {l}"), "Stark! Weiter so.".to_string()),
+                Celebration::Achievement(a) => (a.emoji.to_string(), Some(crate::ui::achievement_icon(a.id)), "Erfolg freigeschaltet".to_string(), a.title.to_string(), a.description.to_string()),
             };
             let confetti = (0..28)
                 .map(|i| {
@@ -51,7 +51,10 @@ pub fn CelebrationHost() -> impl IntoView {
                 <div class="celebration" role="status" aria-live="polite">
                     <div class="confetti-layer" aria-hidden="true">{confetti}</div>
                     <div class="celebration-card">
-                        <div class="celebration-emoji" aria-hidden="true">{emoji}</div>
+                        {match medal {
+                            Some(src) => view! { <img class="celebration-medal" src=src alt="" width="128" height="128" /> }.into_any(),
+                            None => view! { <div class="celebration-emoji" aria-hidden="true">{emoji}</div> }.into_any(),
+                        }}
                         <p class="celebration-kicker">{kicker}</p>
                         <h2 class="celebration-title">{title}</h2>
                         <p class="text-muted">{text}</p>

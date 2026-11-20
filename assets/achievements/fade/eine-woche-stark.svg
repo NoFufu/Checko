@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Eine Woche stark</title>
+  <defs>
+    <linearGradient id="eine-woche-stark" x2="0" y2="1">
+      <stop offset="0" stop-color="#eabbe9"/>
+      <stop offset="0.48" stop-color="#c478c4"/>
+      <stop offset="1" stop-color="#793568"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#eine-woche-stark)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path d="M35 90c-8-5-8-13-4-22 7-16 19-34 32-40 9-5 18 0 19 8 1 7-5 12-11 10l-7-3c-6 6-9 15-10 26 8-7 18-12 27-11 13 0 21 11 20 22-2 14-17 18-35 18-12 0-24-3-31-8Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><path d="M35 90c-8-5-8-13-4-22 7-16 19-34 32-40 9-5 18 0 19 8 1 7-5 12-11 10l-7-3c-6 6-9 15-10 26 8-7 18-12 27-11 13 0 21 11 20 22-2 14-17 18-35 18-12 0-24-3-31-8Z"/></g>
+</svg>

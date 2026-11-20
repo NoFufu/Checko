@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Dranbleiben</title>
+  <defs>
+    <linearGradient id="dranbleiben" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffada1"/>
+      <stop offset="0.48" stop-color="#f06470"/>
+      <stop offset="1" stop-color="#a62d55"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#dranbleiben)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path d="M61 26c18 10 24 25 20 41 5-2 8-6 10-12 16 19 9 43-16 49 8-8 7-17-1-24-6-6-8-11-8-16-13 14-21 26-9 40-23-6-31-22-25-40 6-17 27-22 29-38Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><path d="M61 26c18 10 24 25 20 41 5-2 8-6 10-12 16 19 9 43-16 49 8-8 7-17-1-24-6-6-8-11-8-16-13 14-21 26-9 40-23-6-31-22-25-40 6-17 27-22 29-38Z"/></g>
+</svg>

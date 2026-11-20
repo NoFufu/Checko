@@ -81,3 +81,23 @@ pub fn fine_pointer() -> bool {
         .and_then(|w| w.match_media("(pointer: fine)").ok().flatten())
         .is_some_and(|m| m.matches())
 }
+
+/// Medal image for an achievement (graphics in assets/achievements/fade/).
+pub fn achievement_icon(id: &str) -> String {
+    let file = match id {
+        "first-task" => "erster-haken",
+        "ten-tasks" => "in-fahrt",
+        "fifty-tasks" => "profi",
+        "urgent" => "feuerwehr",
+        "on-time-5" => "puenktlich",
+        "early-bird" => "fruehaufsteher",
+        "streak-3" => "dranbleiben",
+        "streak-7" => "eine-woche-stark",
+        "level-5" => "level-5",
+        "organizer" => "ordnung-muss-sein",
+        "shopper" => "einkaufsheld",
+        "writer" => "notizbuch",
+        _ => "erster-haken",
+    };
+    crate::asset(&format!("achievements/fade/{file}.svg"))
+}

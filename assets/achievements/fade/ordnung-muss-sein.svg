@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Ordnung muss sein</title>
+  <defs>
+    <linearGradient id="ordnung-muss-sein" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe5a1"/>
+      <stop offset="0.48" stop-color="#edb74f"/>
+      <stop offset="1" stop-color="#aa7028"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#ordnung-muss-sein)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path fill-rule="evenodd" d="M31 40a7 7 0 0 1 7-7h16l10 10h29a7 7 0 0 1 7 8l-5 38a7 7 0 0 1-7 6H39a8 8 0 0 1-8-8Zm8 28 8-10h43a3 3 0 0 0 0-6H47c-4 0-8 3-8 7Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><path fill-rule="evenodd" d="M31 40a7 7 0 0 1 7-7h16l10 10h29a7 7 0 0 1 7 8l-5 38a7 7 0 0 1-7 6H39a8 8 0 0 1-8-8Zm8 28 8-10h43a3 3 0 0 0 0-6H47c-4 0-8 3-8 7Z"/></g>
+</svg>

@@ -273,7 +273,7 @@ fn AchievementGrid() -> impl IntoView {
                                 class:locked=move || !unlocked(id)
                                 title=format!("{} – {}", a.title, a.description)
                             >
-                                <span class="badge-emoji" aria-hidden="true">{a.emoji}</span>
+                                <img class="badge-medal" src=crate::ui::achievement_icon(a.id) alt="" width="128" height="128" loading="lazy" />
                                 <span class="badge-title">{a.title}</span>
                                 <span class="sr-only">
                                     {move || if unlocked(id) { "freigeschaltet" } else { "noch gesperrt" }}

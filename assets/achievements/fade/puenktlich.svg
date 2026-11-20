@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Pünktlich</title>
+  <defs>
+    <linearGradient id="puenktlich" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd5a1"/>
+      <stop offset="0.48" stop-color="#f78a87"/>
+      <stop offset="1" stop-color="#aa3275"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#puenktlich)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="64" cy="67" r="25"/><path d="M64 54v14l10 5M46 87l-7 9m43-9 7 9"/></g><path d="M32 51c-7-12 7-25 18-17 2 2 3 4 3 6L34 53Zm64 0c7-12-7-25-18-17-2 2-3 4-3 6l19 13Z"/></g>
+  <g color="#fff6e5" fill="currentColor"><g fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><circle cx="64" cy="67" r="25"/><path d="M64 54v14l10 5M46 87l-7 9m43-9 7 9"/></g><path d="M32 51c-7-12 7-25 18-17 2 2 3 4 3 6L34 53Zm64 0c7-12-7-25-18-17-2 2-3 4-3 6l19 13Z"/></g>
+</svg>

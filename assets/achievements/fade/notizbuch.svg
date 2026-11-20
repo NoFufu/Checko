@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <title>Notizbuch</title>
+  <defs>
+    <linearGradient id="notizbuch" x2="0" y2="1">
+      <stop offset="0" stop-color="#c4d0ff"/>
+      <stop offset="0.48" stop-color="#829fe6"/>
+      <stop offset="1" stop-color="#405e9a"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="58.5" fill="url(#notizbuch)" stroke="#fff6e5" stroke-width="4.5"/>
+  <g color="#39274a" fill="currentColor" opacity=".12" transform="translate(0 3)"><path fill-rule="evenodd" d="M48 33h39a9 9 0 0 1 9 9v44a9 9 0 0 1-9 9H48a8 8 0 0 1-8-8V41a8 8 0 0 1 8-8Zm10 23h23a3 3 0 0 0 0-6H58a3 3 0 0 0 0 6Zm0 13h19a3 3 0 0 0 0-6H58a3 3 0 0 0 0 6Z"/><path d="M32 46h14M32 58h14M32 70h14M32 82h14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></g>
+  <g color="#fff6e5" fill="currentColor"><path fill-rule="evenodd" d="M48 33h39a9 9 0 0 1 9 9v44a9 9 0 0 1-9 9H48a8 8 0 0 1-8-8V41a8 8 0 0 1 8-8Zm10 23h23a3 3 0 0 0 0-6H58a3 3 0 0 0 0 6Zm0 13h19a3 3 0 0 0 0-6H58a3 3 0 0 0 0 6Z"/><path d="M32 46h14M32 58h14M32 70h14M32 82h14" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/></g>
+</svg>
