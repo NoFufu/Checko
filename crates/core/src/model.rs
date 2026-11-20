@@ -144,6 +144,8 @@ pub struct Profile {
     pub streak_days: u32,
     pub last_active: Option<NaiveDate>,
     pub achievements: Vec<String>,
+    /// Last change (for sync between devices).
+    pub updated_at: Option<DateTime<Utc>>,
 }
 
 #[cfg(test)]

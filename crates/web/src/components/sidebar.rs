@@ -138,8 +138,18 @@ pub fn Sidebar() -> impl IntoView {
                     <div class="profile-row">
                         <span class="avatar">"Du"</span>
                         <span class="min-w-0">
-                            <span class="profile-name">"Mein Checko"</span>
-                            <span class="profile-sub">"Lokal gespeichert"</span>
+                            <span class="profile-name">{move || crate::sync::Sync::get().config.with(|c| c.username.clone()).unwrap_or_else(|| "Mein Checko".into())}</span>
+                            <span class="profile-sub">
+                                {move || {
+                                    let sync = crate::sync::Sync::get();
+                                    match sync.status.get() {
+                                        crate::sync::SyncStatus::Off => "Lokal gespeichert".to_string(),
+                                        crate::sync::SyncStatus::Syncing => "Synchronisiere …".to_string(),
+                                        crate::sync::SyncStatus::Error(_) => "Sync-Fehler".to_string(),
+                                        crate::sync::SyncStatus::Idle => "Synchronisiert".to_string(),
+                                    }
+                                }}
+                            </span>
                         </span>
                     </div>
                     <ThemeSwitch />

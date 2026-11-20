@@ -1,0 +1,24 @@
+# Render Blueprint: creates the free Checko sync server.
+# Render → New → Blueprint → pick this repository.
+services:
+  - type: web
+    name: checko-server
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - crates/server/**
+        - crates/core/**
+        - Cargo.toml
+        - Cargo.lock
+        - Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        sync: false # paste the Neon connection string in the Render dashboard
+      - key: ALLOWED_ORIGINS
+        value: https://nofufu.github.io
+      - key: ALLOW_REGISTRATION
+        value: "true" # set to "false" after you created your account

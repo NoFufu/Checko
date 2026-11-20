@@ -26,14 +26,14 @@ fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
 }
 
-fn load<T: DeserializeOwned + Default>(key: &str) -> T {
+pub fn load<T: DeserializeOwned + Default>(key: &str) -> T {
     storage()
         .and_then(|s| s.get_item(key).ok().flatten())
         .and_then(|raw| serde_json::from_str(&raw).ok())
         .unwrap_or_default()
 }
 
-fn save<T: Serialize>(key: &str, value: &T) {
+pub fn save<T: Serialize>(key: &str, value: &T) {
     if let (Some(s), Ok(raw)) = (storage(), serde_json::to_string(value)) {
         let _ = s.set_item(key, &raw);
     }
@@ -155,6 +155,7 @@ impl Store {
                         let mut p = snapshot_profile.clone();
                         new = checko_core::unlock_new(&mut p, &snap);
                         if !new.is_empty() {
+                            p.updated_at = Some(now());
                             store.profile.set(p);
                         }
                     })
@@ -292,7 +293,10 @@ impl Store {
         let mut xp = 0;
         let profile = self.profile;
         self.tasks.update(|ts| {
-            profile.update(|p| xp = complete_task(ts, p, id, now(), today()));
+            profile.update(|p| {
+                xp = complete_task(ts, p, id, now(), today());
+                p.updated_at = Some(now());
+            });
         });
         if xp > 0 {
             self.notify(format!("Erledigt! +{xp} XP"), Some(Undo::Complete(id)));
@@ -301,8 +305,12 @@ impl Store {
 
     pub fn reopen(&self, id: Uuid) {
         let profile = self.profile;
-        self.tasks
-            .update(|ts| profile.update(|p| reopen_task(ts, p, id, now())));
+        self.tasks.update(|ts| {
+            profile.update(|p| {
+                reopen_task(ts, p, id, now());
+                p.updated_at = Some(now());
+            })
+        });
     }
 
     pub fn trash(&self, id: Uuid) {
@@ -316,11 +324,17 @@ impl Store {
 
     /// Permanently remove a task from the trash.
     pub fn purge(&self, id: Uuid) {
+        crate::sync::tombstone("task", id);
         self.tasks.update(|ts| ts.retain(|t| t.meta.id != id));
     }
 
     pub fn empty_trash(&self) {
-        self.tasks.update(|ts| ts.retain(|t| !t.is_deleted()));
+        self.tasks.update(|ts| {
+            for t in ts.iter().filter(|t| t.is_deleted()) {
+                crate::sync::tombstone("task", t.meta.id);
+            }
+            ts.retain(|t| !t.is_deleted())
+        });
     }
 
     // ---------- Calendar ----------
@@ -385,6 +399,7 @@ impl Store {
                 .is_some_and(Note::is_empty)
         });
         if empty {
+            crate::sync::tombstone("note", id);
             self.notes.update(|ns| ns.retain(|n| n.meta.id != id));
             return;
         }
@@ -427,6 +442,7 @@ impl Store {
     }
 
     pub fn remove_shopping(&self, id: Uuid) {
+        crate::sync::tombstone("shopping", id);
         self.shopping
             .update(|items| items.retain(|i| i.meta.id != id));
     }

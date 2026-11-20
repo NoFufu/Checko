@@ -1,0 +1,6 @@
+target
+node_modules
+crates/web/dist
+crates/web/style/output.css
+docs/screenshots
+.git

@@ -1,0 +1,17 @@
+[package]
+name = "checko-server"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "tls-rustls", "postgres", "uuid", "chrono", "json"] }
+tower-http = { version = "0.6", features = ["cors"] }
+argon2 = "0.5"
+rand = "0.8"
+serde.workspace = true
+serde_json = "1"
+uuid = { workspace = true }
+chrono = { workspace = true, features = ["clock"] }
+hex = "0.4"

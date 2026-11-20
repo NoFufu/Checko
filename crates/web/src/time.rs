@@ -77,3 +77,15 @@ pub fn due_label(due: chrono::NaiveDate, today: chrono::NaiveDate) -> String {
         _ => format!("{}. {}", due.day(), SHORT_MONTHS[due.month0() as usize]),
     }
 }
+
+/// "20.11. 14:03" in the browser's local time.
+pub fn local_label(t: chrono::DateTime<chrono::Utc>) -> String {
+    let d = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(t.timestamp_millis() as f64));
+    format!(
+        "{:02}.{:02}. {:02}:{:02}",
+        d.get_date(),
+        d.get_month() + 1,
+        d.get_hours(),
+        d.get_minutes()
+    )
+}

@@ -32,6 +32,7 @@ jobs:
         working-directory: crates/web
         env:
           CHECKO_BASE: /${{ github.event.repository.name }}
+          CHECKO_SERVER_URL: ${{ vars.CHECKO_SERVER_URL }}
         run: |
           trunk build --release --public-url "/${{ github.event.repository.name }}/"
           cp dist/index.html dist/404.html

@@ -42,7 +42,7 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Der Link zur App steht immer ganz oben in der `README.md` und muss dort bleiben.
 
 ## Arbeitsweise
-- Arbeite in **kleinen, lauffähigen Schritten**; nach jedem Schritt muss `cargo build`, `cargo clippy -- -D warnings` und `cargo test` grün sein.
+- Arbeite in **kleinen, lauffähigen Schritten**; nach jedem Schritt müssen `cargo test -p checko-core`, `cargo clippy -p checko-web --target wasm32-unknown-unknown -- -D warnings` und `cargo clippy -p checko-core -p checko-server --all-targets -- -D warnings` grün sein.
 - Schreibe Tests für jede Logik im `core` (vor allem Parser, XP, Wiederholungen).
 - Erkläre kurz auf **Deutsch**, was du gemacht hast und wie ich es starte (`trunk serve`).
 - Keine Platzhalter‑„TODO“-Implementierungen ohne Hinweis; keine unnötigen Abhängigkeiten.
@@ -58,4 +58,4 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - `run`: App starten und Screenshots machen.
 
 ## Aktuelle Aufgabe
-Phase 0–3 fertig, Phase 4 teilweise (Erfolge, Level‑Up; Themes/Fokus‑Modus/Maskottchen zurückgestellt). Phase 6 Schritt 1 fertig: Kalender (Monat, Agenda, Termine mit Wiederholung, Drag & Drop), wiederkehrende Aufgaben. Wiederholungen sind eine eigene kleine Regel in `core/calendar.rs` statt der `rrule`‑Crate. Offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2), Sync (Phase 5, wartet auf Hosting‑Entscheidung).
+Phase 0–3 fertig, Phase 4 teilweise (Erfolge, Level‑Up; Themes/Fokus‑Modus/Maskottchen zurückgestellt). Phase 5 Code fertig: Sync‑Server `crates/server` (Axum + Postgres/Neon, Render‑Blueprint `render.yaml`, Keep‑awake‑Ping), Client `crates/web/src/sync.rs`, Anleitung `docs/SYNC-SETUP.md` – Hosting richtet NoFufu selbst ein. Phase 6 Schritt 1 fertig (Kalender, Wiederholungen; eigene Regel in `core/calendar.rs` statt `rrule`). Offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2).

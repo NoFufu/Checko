@@ -29,7 +29,8 @@ Dann <[http://127.0.0.1:8080](https://nofufu.github.io/Checko/)> öffnen.
 
 ```bash
 cargo test -p checko-core
-cargo clippy --workspace --target wasm32-unknown-unknown -- -D warnings
+cargo clippy -p checko-web --target wasm32-unknown-unknown -- -D warnings
+cargo clippy -p checko-core -p checko-server --all-targets -- -D warnings
 ```
 
 ## Aufbau
@@ -38,7 +39,8 @@ cargo clippy --workspace --target wasm32-unknown-unknown -- -D warnings
 |---|---|
 | `crates/core` | Datenmodelle, XP/Level‑Logik (pure Rust, getestet) |
 | `crates/web` | Leptos‑Web‑App: Seiten, Komponenten, Tailwind‑Styles |
+| `crates/server` | Sync‑Server (Axum + Postgres), läuft auf Render |
 | `assets/` | Logo, Icon, Axolotl‑Sprites |
 | `docs/` | Plan, Master‑Prompt, Screenshots |
 
-Mehr im [Plan](docs/PLAN.md).
+Synchronisieren einrichten: [docs/SYNC-SETUP.md](docs/SYNC-SETUP.md) · Mehr im [Plan](docs/PLAN.md).

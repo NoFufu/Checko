@@ -2,6 +2,7 @@ mod components;
 mod markdown;
 mod pages;
 mod store;
+mod sync;
 mod time;
 mod ui;
 
@@ -38,6 +39,7 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     let store = store::Store::provide();
+    sync::Sync::provide(store);
     view! {
         <Router base=BASE>
             <div class="app-shell" class:detail-open=move || store.detail.get().is_some()>
