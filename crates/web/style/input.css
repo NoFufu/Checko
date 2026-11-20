@@ -510,7 +510,8 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .badge.locked .badge-emoji { filter: grayscale(1); }
 
 /* ---------- Celebration overlay ---------- */
-.celebration { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 1rem; background: rgb(13 13 16 / 0.35); backdrop-filter: blur(3px); animation: fadeIn 0.2s ease both; }
+.celebration { position: fixed; inset: 0; z-index: 90; display: grid; place-items: start center; padding: 6vh 1rem 1rem; pointer-events: none; animation: fadeIn 0.2s ease both; }
+.celebration-card { pointer-events: auto; }
 .celebration-card { position: relative; z-index: 1; width: min(22rem, 100%); padding: 1.75rem 1.5rem 1.4rem; border-radius: 1.25rem; background: var(--panel); border: 1px solid var(--border); text-align: center; box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.4); animation: celebrateIn 0.5s cubic-bezier(.34,1.56,.64,1) both; }
 @keyframes celebrateIn { from { opacity: 0; transform: scale(0.7) translateY(20px); } to { opacity: 1; transform: none; } }
 .celebration-emoji { font-size: 3.5rem; line-height: 1; animation: wobble 1.2s ease-in-out 0.3s both; }

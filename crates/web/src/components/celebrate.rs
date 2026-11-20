@@ -48,9 +48,9 @@ pub fn CelebrationHost() -> impl IntoView {
                 })
                 .collect_view();
             view! {
-                <div class="celebration" role="status" aria-live="polite" on:click=move |_| store.dismiss_celebration()>
+                <div class="celebration" role="status" aria-live="polite">
                     <div class="confetti-layer" aria-hidden="true">{confetti}</div>
-                    <div class="celebration-card" on:click=|e| e.stop_propagation()>
+                    <div class="celebration-card">
                         <div class="celebration-emoji" aria-hidden="true">{emoji}</div>
                         <p class="celebration-kicker">{kicker}</p>
                         <h2 class="celebration-title">{title}</h2>
