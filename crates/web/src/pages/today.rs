@@ -143,8 +143,8 @@ pub fn TodayPage() -> impl IntoView {
                     <div class="stat-grid">
                         <Stat icon=Glyph::Streak value=Signal::derive(move || streak().to_string()) label="Tage Streak" />
                         <Stat icon=Glyph::Tasks value=Signal::derive(move || open_count().to_string()) label="Offen" />
-                        <Stat icon=Glyph::Shopping value=Signal::stored("0".to_string()) label="Einkäufe" />
-                        <Stat icon=Glyph::Pin value=Signal::stored("0".to_string()) label="Angepinnt" />
+                        <Stat icon=Glyph::Shopping value=Signal::derive(move || store.shopping.with(|s| checko_core::open_count(s)).to_string()) label="Einkäufe" />
+                        <Stat icon=Glyph::Pin value=Signal::derive(move || store.notes.with(|n| n.iter().filter(|n| n.pinned && n.meta.deleted_at.is_none()).count()).to_string()) label="Angepinnt" />
                     </div>
                 </aside>
             </div>

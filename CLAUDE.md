@@ -49,5 +49,13 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Halte dich an den Plan in `docs/PLAN.md`; frage nach, wenn eine Entscheidung offen ist, statt zu raten.
 - Commits klein und beschreibend (Conventional Commits).
 
+## Skills, die wir nutzen
+- `frontend-design` / `impeccable`: bei neuen Seiten und größeren Design‑Änderungen.
+- `design:accessibility-review`: nach jeder Phase kurz prüfen (Kontrast, Tastatur, Screenreader).
+- `design:ux-copy`: Texte, Leer‑Zustände, Fehlermeldungen.
+- `design:design-critique`: wenn NoFufu einen Screenshot zur Bewertung schickt.
+- `code-review` und `simplify`: vor dem Merge einer Phase nach `main`.
+- `run`: App starten und Screenshots machen.
+
 ## Aktuelle Aufgabe
-Phase 0–2 sind fertig (Grundgerüst, Aufgaben, Quick‑Add‑Parser + Strg+K). Als Nächstes: Phase 3 – Einkaufsliste, Notizen, globale Suche.
+Phase 0–3 sind fertig (Grundgerüst, Aufgaben, Quick‑Add, Einkauf, Notizen, Suche in Strg+K). Als Nächstes: Phase 4 – Gamification (Achievements, Level‑Up‑Moment, Themes, Maskottchen optional).

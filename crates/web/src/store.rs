@@ -6,7 +6,8 @@
 use std::time::Duration;
 
 use checko_core::{
-    all_areas, complete_task, parse_quick_add, reopen_task, Priority, Profile, Task,
+    all_areas, complete_task, parse_quick_add, reopen_task, Note, Priority, Profile, ShoppingItem,
+    Task,
 };
 use chrono::{NaiveDate, NaiveTime};
 use leptos::prelude::*;
@@ -17,6 +18,8 @@ use crate::time::{now, today};
 
 const TASKS_KEY: &str = "checko.tasks.v1";
 const PROFILE_KEY: &str = "checko.profile.v1";
+const NOTES_KEY: &str = "checko.notes.v1";
+const SHOPPING_KEY: &str = "checko.shopping.v1";
 
 fn storage() -> Option<web_sys::Storage> {
     web_sys::window()?.local_storage().ok().flatten()
@@ -44,10 +47,12 @@ pub struct Toast {
     pub id: u32,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Undo {
     Trash(Uuid),
     Complete(Uuid),
+    NoteTrash(Uuid),
+    ShoppingClear(Vec<Uuid>),
 }
 
 /// What a new task starts with.
@@ -65,6 +70,8 @@ pub struct NewTask {
 pub struct Store {
     pub tasks: RwSignal<Vec<Task>>,
     pub profile: RwSignal<Profile>,
+    pub notes: RwSignal<Vec<Note>>,
+    pub shopping: RwSignal<Vec<ShoppingItem>>,
     pub toast: RwSignal<Option<Toast>>,
     /// The Strg+K quick-add dialog.
     pub quick_add_open: RwSignal<bool>,
@@ -76,11 +83,15 @@ impl Store {
         let store = Store {
             tasks: RwSignal::new(load(TASKS_KEY)),
             profile: RwSignal::new(load(PROFILE_KEY)),
+            notes: RwSignal::new(load(NOTES_KEY)),
+            shopping: RwSignal::new(load(SHOPPING_KEY)),
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
         };
         Effect::new(move |_| store.tasks.with(|t| save(TASKS_KEY, t)));
         Effect::new(move |_| store.profile.with(|p| save(PROFILE_KEY, p)));
+        Effect::new(move |_| store.notes.with(|n| save(NOTES_KEY, n)));
+        Effect::new(move |_| store.shopping.with(|s| save(SHOPPING_KEY, s)));
         provide_context(store);
         store
     }
@@ -213,10 +224,113 @@ impl Store {
         self.tasks.update(|ts| ts.retain(|t| !t.is_deleted()));
     }
 
+    // ---------- Notes ----------
+
+    /// Create an empty note and return its id.
+    pub fn new_note(&self) -> Uuid {
+        let n = Note::new(now());
+        let id = n.meta.id;
+        self.notes.update(|ns| ns.push(n));
+        id
+    }
+
+    pub fn edit_note(&self, id: Uuid, f: impl FnOnce(&mut Note)) {
+        self.notes.update(|ns| {
+            if let Some(n) = ns.iter_mut().find(|n| n.meta.id == id) {
+                f(n);
+                n.meta.updated_at = now();
+            }
+        });
+    }
+
+    pub fn trash_note(&self, id: Uuid) {
+        let empty = self.notes.with_untracked(|ns| {
+            ns.iter()
+                .find(|n| n.meta.id == id)
+                .is_some_and(Note::is_empty)
+        });
+        if empty {
+            self.notes.update(|ns| ns.retain(|n| n.meta.id != id));
+            return;
+        }
+        self.notes.update(|ns| {
+            if let Some(n) = ns.iter_mut().find(|n| n.meta.id == id) {
+                n.meta.deleted_at = Some(now());
+            }
+        });
+        self.notify("Notiz gelöscht", Some(Undo::NoteTrash(id)));
+    }
+
+    // ---------- Shopping ----------
+
+    pub fn add_shopping(&self, input: &str) {
+        let input = input.trim();
+        if input.is_empty() {
+            return;
+        }
+        let item = ShoppingItem::new(input, now());
+        self.shopping.update(|items| {
+            // Re-adding something already on the list (checked) just un-checks it.
+            if let Some(existing) = items.iter_mut().find(|i| {
+                i.meta.deleted_at.is_none() && i.checked && i.name.eq_ignore_ascii_case(&item.name)
+            }) {
+                existing.checked = false;
+                existing.qty = item.qty.clone();
+                existing.meta.updated_at = now();
+            } else {
+                items.push(item);
+            }
+        });
+    }
+
+    pub fn toggle_shopping(&self, id: Uuid) {
+        self.shopping.update(|items| {
+            if let Some(i) = items.iter_mut().find(|i| i.meta.id == id) {
+                i.toggle(now());
+            }
+        });
+    }
+
+    pub fn remove_shopping(&self, id: Uuid) {
+        self.shopping
+            .update(|items| items.retain(|i| i.meta.id != id));
+    }
+
+    /// Hide all checked items (kept for "Oft gekauft" suggestions).
+    pub fn clear_checked_shopping(&self) {
+        let mut ids = Vec::new();
+        self.shopping.update(|items| {
+            for i in items
+                .iter_mut()
+                .filter(|i| i.checked && i.meta.deleted_at.is_none())
+            {
+                i.meta.deleted_at = Some(now());
+                ids.push(i.meta.id);
+            }
+        });
+        if !ids.is_empty() {
+            let n = ids.len();
+            self.notify(
+                format!("{n} erledigte Einkäufe entfernt"),
+                Some(Undo::ShoppingClear(ids)),
+            );
+        }
+    }
+
     pub fn undo(&self, undo: Undo) {
         match undo {
             Undo::Trash(id) => self.restore(id),
             Undo::Complete(id) => self.reopen(id),
+            Undo::NoteTrash(id) => self.notes.update(|ns| {
+                if let Some(n) = ns.iter_mut().find(|n| n.meta.id == id) {
+                    n.meta.deleted_at = None;
+                }
+            }),
+            Undo::ShoppingClear(ids) => self.shopping.update(|items| {
+                for i in items.iter_mut().filter(|i| ids.contains(&i.meta.id)) {
+                    i.meta.deleted_at = None;
+                }
+            }),
         }
         self.dismiss_toast();
     }

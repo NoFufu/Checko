@@ -34,10 +34,13 @@ pub fn TaskForm(
     /// Called after a task was added (e.g. to close a dialog).
     #[prop(optional)]
     on_added: Option<Callback<()>>,
+    /// Share the typed text with the parent (the Strg+K dialog searches with it).
+    #[prop(optional)]
+    text: Option<RwSignal<String>>,
 ) -> impl IntoView {
     let store = Store::get();
     let input = NodeRef::<html::Input>::new();
-    let title = RwSignal::new(String::new());
+    let title = text.unwrap_or_else(|| RwSignal::new(String::new()));
     let priority = RwSignal::new("4".to_string());
     let area_sel = RwSignal::new(String::new());
     let default_due = move || {

@@ -8,6 +8,7 @@ checko-core = { path = "../core" }
 chrono.workspace = true
 serde.workspace = true
 serde_json = "1"
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
 uuid.workspace = true
 leptos = { version = "0.8", features = ["csr"] }
 leptos_router = "0.8"

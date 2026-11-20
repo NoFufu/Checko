@@ -50,6 +50,10 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
         store.tasks.with(|t| match it.href {
             "/" => today_tasks(t, None, today()).len(),
             "/aufgaben" => open_tasks(t, None).len(),
+            "/einkauf" => store.shopping.with(|s| checko_core::open_count(s)),
+            "/notizen" => store
+                .notes
+                .with(|n| n.iter().filter(|n| n.meta.deleted_at.is_none()).count()),
             _ => 0,
         })
     };
@@ -76,8 +80,8 @@ pub fn Sidebar() -> impl IntoView {
             </a>
 
             <button type="button" class="sidebar-search" on:click=move |_| store.quick_add_open.set(true)>
-                <Icon glyph=Glyph::Add size=16 />
-                <span>"Neue Aufgabe"</span>
+                <Icon glyph=Glyph::Search size=16 />
+                <span>"Suchen / Neu"</span>
                 <kbd>"Strg K"</kbd>
             </button>
 

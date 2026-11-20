@@ -19,7 +19,7 @@ pub fn ToastHost() -> impl IntoView {
                             <div class="toast">
                                 <span>{t.text}</span>
                                 {undo.map(|u| view! {
-                                    <button type="button" class="toast-undo" on:click=move |_| store.undo(u)>
+                                    <button type="button" class="toast-undo" on:click=move |_| store.undo(u.clone())>
                                         <Icon glyph=Glyph::Undo size=14 />
                                         "Rückgängig"
                                     </button>
