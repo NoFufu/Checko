@@ -1,19 +1,15 @@
 use leptos::prelude::*;
 
-/// The "checko" wordmark: letters in the text colour (dark in light mode,
-/// light in dark mode) and the green check mark forming the arm of the "k".
+use crate::asset;
+
+/// The checko logo. Two versions of the original artwork: dark letters for the
+/// light theme and light letters for the dark theme (CSS shows the right one).
 #[component]
-pub fn Logo(#[prop(optional, into)] class: String) -> impl IntoView {
+pub fn Logo() -> impl IntoView {
     view! {
-        <span class=format!("wordmark {class}") role="img" aria-label="checko">
-            <span aria-hidden="true">"chec"</span>
-            <svg class="wordmark-k" viewBox="-16 0 88 100" aria-hidden="true">
-                // stem and lower leg in the text colour
-                <path d="M12 12 V88 M30 64 L50 88" fill="none" stroke="currentColor" stroke-width="24" stroke-linecap="round" />
-                // the check mark: starts left of the stem, ends high above the x-height
-                <path class="wordmark-check" d="M-3 56 L19 80 L60 18" fill="none" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span aria-hidden="true">"o"</span>
+        <span class="wordmark" role="img" aria-label="checko">
+            <img class="logo-for-light" src=asset("brand/logo-light.webp") alt="" width="900" height="229" />
+            <img class="logo-for-dark" src=asset("brand/logo-dark.webp") alt="" width="900" height="229" />
         </span>
     }
 }

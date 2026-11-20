@@ -113,9 +113,15 @@ button { font: inherit; color: inherit; }
   background: var(--panel); border-right: 1px solid var(--border); overflow-y: auto;
 }
 .sidebar-brand { display: flex; align-items: center; padding: 0.35rem 0.6rem 0.15rem; text-decoration: none; color: var(--text); }
-.wordmark { display: inline-flex; align-items: baseline; font-family: "Nunito", var(--font-sans); font-weight: 900; font-size: 2.5rem; line-height: 1; letter-spacing: -0.04em; -webkit-text-stroke: 0.025em currentColor; color: var(--logo-ink); }
-.wordmark-k { height: 0.73em; width: auto; margin: 0 -0.04em 0 -0.03em; overflow: visible; }
-.wordmark-check { stroke: var(--green); }
+.wordmark { display: block; width: 9.5rem; }
+.wordmark img { display: block; width: 100%; height: auto; }
+.logo-for-dark { display: none !important; }
+:root[data-theme="dark"] .logo-for-light { display: none !important; }
+:root[data-theme="dark"] .logo-for-dark { display: block !important; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .logo-for-light { display: none !important; }
+  :root:not([data-theme="light"]) .logo-for-dark { display: block !important; }
+}
 
 .sidebar-search {
   display: flex; align-items: center; gap: 0.6rem; padding: 0.5rem 0.7rem; border-radius: 0.6rem;
