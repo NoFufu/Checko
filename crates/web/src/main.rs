@@ -12,6 +12,18 @@ use pages::{
     today::TodayPage,
 };
 
+/// URL prefix when hosted in a sub-folder (e.g. GitHub Pages: "/Checko").
+/// Set at build time with `CHECKO_BASE=/Checko`.
+pub const BASE: &str = match option_env!("CHECKO_BASE") {
+    Some(b) => b,
+    None => "",
+};
+
+/// Absolute URL for a file in `assets/`.
+pub fn asset(path: &str) -> String {
+    format!("{BASE}/assets/{path}")
+}
+
 fn main() {
     console_error_panic_hook::set_once();
     leptos::mount::mount_to_body(App);
@@ -20,11 +32,11 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
     view! {
-        <Router>
+        <Router base=BASE>
             <Aurora />
             <div class="relative z-10 min-h-screen pb-32">
                 <header class="mx-auto flex max-w-6xl items-center px-4 pt-6 sm:px-8">
-                    <a href="/" class="brand"><img src="/assets/brand/icon.png" alt="" />"checko"</a>
+                    <a href=format!("{BASE}/") class="brand"><img src=asset("brand/icon.png") alt="" />"checko"</a>
                 </header>
                 <main class="mx-auto max-w-6xl px-4 pt-6 sm:px-8">
                     <Routes fallback=|| view! { <p>"Seite nicht gefunden."</p> }>
