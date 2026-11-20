@@ -20,7 +20,7 @@ Entwicklungsserver (lädt bei Änderungen automatisch neu):
 cd crates/web && trunk serve --open
 ```
 
-Dann <http://127.0.0.1:8080> öffnen.
+Dann <[http://127.0.0.1:8080](https://nofufu.github.io/Checko/)> öffnen.
 
 ## Prüfen
 
