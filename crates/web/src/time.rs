@@ -89,3 +89,9 @@ pub fn local_label(t: chrono::DateTime<chrono::Utc>) -> String {
         d.get_minutes()
     )
 }
+
+/// Current local time of day.
+pub fn now_local_time() -> chrono::NaiveTime {
+    let d = js_sys::Date::new_0();
+    chrono::NaiveTime::from_hms_opt(d.get_hours(), d.get_minutes(), 0).unwrap_or_default()
+}

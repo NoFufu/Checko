@@ -87,6 +87,57 @@ pub fn SettingsPage() -> impl IntoView {
                     <p class="text-sm text-muted mt-2">{move || format!("Server: {}", sync.config.with(|c| c.server.clone()))}</p>
                 </Show>
             </section>
+
+            <Show when=signed_in>
+                <WidgetSetup />
+            </Show>
         </div>
+    }
+}
+
+const WIDGET_TEMPLATE: &str = include_str!("../../../../docs/widget/checko-widget.js");
+
+/// Copy-ready Scriptable script with server address and token filled in.
+#[component]
+fn WidgetSetup() -> impl IntoView {
+    let sync = Sync::get();
+    let copied = RwSignal::new(false);
+    let script = move || {
+        let c = sync.config.get();
+        let app = web_sys::window()
+            .and_then(|w| w.location().origin().ok())
+            .map(|o| format!("{o}{}/", crate::BASE))
+            .unwrap_or_default();
+        WIDGET_TEMPLATE
+            .replace("__SERVER__", &c.server)
+            .replace("__TOKEN__", c.token.as_deref().unwrap_or_default())
+            .replace("__APP__", &app)
+    };
+    let copy = move |_| {
+        if let Some(w) = web_sys::window() {
+            let _ = w.navigator().clipboard().write_text(&script());
+            copied.set(true);
+        }
+    };
+    view! {
+        <section class="panel settings-section">
+            <h2 class="section-head"><Icon glyph=Glyph::Today size=18 />"iPhone-Widget"</h2>
+            <p class="text-sm text-muted">
+                "Zeigt heute fällige Aufgaben, den nächsten Termin und deinen Streak auf dem Startbildschirm – ohne die App zu öffnen. "
+                "Aktualisiert sich etwa alle 15 Minuten."
+            </p>
+            <ol class="widget-steps">
+                <li>"Die kostenlose App "<b>"Scriptable"</b>" aus dem App Store laden."</li>
+                <li>"Hier auf "<b>"„Widget-Skript kopieren“"</b>" tippen."</li>
+                <li>"In Scriptable oben rechts "<b>"+"</b>" → Text einfügen → oben den Namen "<b>"Checko"</b>" geben → Fertig."</li>
+                <li>"Startbildschirm lange drücken → "<b>"+"</b>" → "<b>"Scriptable"</b>" → mittlere Größe → Widget antippen → bei "<b>"Script"</b>" „Checko“ wählen."</li>
+            </ol>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" class="btn btn-primary" on:click=copy>
+                    {move || if copied.get() { "Kopiert ✓" } else { "Widget-Skript kopieren" }}
+                </button>
+                <span class="text-sm text-muted">"Das Skript enthält deinen Zugangsschlüssel – nicht weitergeben."</span>
+            </div>
+        </section>
     }
 }

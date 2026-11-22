@@ -303,6 +303,129 @@ async fn sync(
     Ok(Json(SyncResponse { cursor, changes }))
 }
 
+// ---------- widget ----------
+
+#[derive(Deserialize)]
+struct WidgetQuery {
+    /// Minutes east of UTC on the device (e.g. 60 in winter in Germany).
+    #[serde(default)]
+    tz: i64,
+}
+
+#[derive(Serialize)]
+struct WidgetItem {
+    title: String,
+    when: String,
+    color: String,
+    urgent: bool,
+}
+
+#[derive(Serialize)]
+struct WidgetResponse {
+    date: String,
+    today: Vec<WidgetItem>,
+    open_today: usize,
+    next: Vec<WidgetItem>,
+    streak: u32,
+    level: u32,
+}
+
+fn records<T: serde::de::DeserializeOwned>(rows: &[(String, Value)], kind: &str) -> Vec<T> {
+    rows.iter()
+        .filter(|(k, _)| k == kind)
+        .filter_map(|(_, v)| serde_json::from_value(v.clone()).ok())
+        .collect()
+}
+
+fn hhmm(t: Option<chrono::NaiveTime>) -> String {
+    t.map(|t| t.format("%H:%M").to_string()).unwrap_or_default()
+}
+
+/// Small summary for a home-screen widget (Scriptable on iPhone).
+async fn widget(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    axum::extract::Query(q): axum::extract::Query<WidgetQuery>,
+) -> ApiResult<WidgetResponse> {
+    use checko_core::{items_between, level_for_xp, today_tasks, Event, ItemKind, Profile, Task};
+    let user = user_from(&headers, &s.db).await?;
+    let rows: Vec<(String, Value)> = sqlx::query(
+        "SELECT kind, data FROM records WHERE user_id = $1 AND data IS NOT NULL AND kind IN ('task','event','profile')",
+    )
+    .bind(user)
+    .fetch_all(&s.db)
+    .await?
+    .into_iter()
+    .map(|r| (r.get("kind"), r.get("data")))
+    .collect();
+    let tasks: Vec<Task> = records(&rows, "task");
+    let events: Vec<Event> = records(&rows, "event");
+    let profile: Profile = records(&rows, "profile")
+        .into_iter()
+        .next()
+        .unwrap_or_default();
+
+    let local_now =
+        Utc::now().naive_utc() + chrono::Duration::minutes(q.tz.clamp(-14 * 60, 14 * 60));
+    let today = local_now.date();
+    let color_of = |c: Option<&str>| match c {
+        Some("Arbeit") => "#6d4aff",
+        Some("Privat") => "#16a34a",
+        Some("Gesundheit") => "#f97316",
+        Some(_) => "#3b82f6",
+        None => "#22c55e",
+    };
+
+    let due = today_tasks(&tasks, None, today);
+    let open_today = due.len();
+    let today_items = due
+        .into_iter()
+        .take(6)
+        .map(|t| WidgetItem {
+            title: t.title.clone(),
+            when: hhmm(t.due_time),
+            color: color_of(t.area.as_deref()).into(),
+            urgent: t.priority == checko_core::Priority::P1,
+        })
+        .collect();
+    let next = items_between(&events, &tasks, today, today + chrono::Duration::days(30))
+        .into_iter()
+        .filter(|i| !i.done && (i.kind == ItemKind::Event || i.start.is_some()))
+        .filter(|i| i.date > today || i.start.is_none_or(|t| t >= local_now.time()))
+        .take(3)
+        .map(|i| {
+            let days = (i.date - today).num_days();
+            let day = match days {
+                0 => "Heute".to_string(),
+                1 => "Morgen".to_string(),
+                n if n < 7 => ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+                    [chrono::Datelike::weekday(&i.date).num_days_from_monday() as usize]
+                    .to_string(),
+                _ => i.date.format("%d.%m.").to_string(),
+            };
+            let time = hhmm(i.start);
+            WidgetItem {
+                title: i.title,
+                when: if time.is_empty() {
+                    day
+                } else {
+                    format!("{day} {time}")
+                },
+                color: color_of(i.category.as_deref()).into(),
+                urgent: false,
+            }
+        })
+        .collect();
+    Ok(Json(WidgetResponse {
+        date: today.format("%d.%m.").to_string(),
+        today: today_items,
+        open_today,
+        next,
+        streak: profile.current_streak(today),
+        level: level_for_xp(profile.xp).level,
+    }))
+}
+
 async fn health(State(s): State<Shared>) -> Result<&'static str, ApiError> {
     sqlx::query("SELECT 1").execute(&s.db).await?;
     Ok("ok")
@@ -329,6 +452,7 @@ fn app(state: Shared) -> Router {
         .route("/api/login", post(login))
         .route("/api/logout", post(logout))
         .route("/api/sync", post(sync))
+        .route("/api/widget", get(widget))
         .layer(cors())
         .with_state(state)
 }

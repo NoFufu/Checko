@@ -50,7 +50,7 @@ pub fn TodayPage() -> impl IntoView {
                         </a>
                     </div>
                 </div>
-                <HeroArt />
+                <HeroUpcoming />
             </section>
 
             <div class="toolbar">
@@ -377,22 +377,108 @@ fn SectionHead(icon: Glyph, title: &'static str) -> impl IntoView {
     }
 }
 
-/// Soft layered hills in the brand colours (decorative).
+/// "Coming up": the next appointment with a countdown and a 14-day strip
+/// that shows how many free days lie in between.
 #[component]
-fn HeroArt() -> impl IntoView {
+fn HeroUpcoming() -> impl IntoView {
+    let store = Store::get();
+    const DAYS: i64 = 14;
+    let data = move || {
+        let from = today();
+        let to = from + chrono::Duration::days(DAYS - 1);
+        store.events.with(|e| {
+            store.tasks.with(|t| {
+                checko_core::items_between(e, t, from, to)
+                    .into_iter()
+                    .filter(|i| {
+                        !i.done && (i.kind == checko_core::ItemKind::Event || i.start.is_some())
+                    })
+                    .collect::<Vec<_>>()
+            })
+        })
+    };
+    let next = move || {
+        let now_t = crate::time::now_local_time();
+        data()
+            .into_iter()
+            .find(|i| i.date > today() || i.start.is_none_or(|s| s >= now_t))
+    };
     view! {
-        <svg class="hero-art" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <defs>
-                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0" class="sky-top" />
-                    <stop offset="1" class="sky-bottom" />
-                </linearGradient>
-            </defs>
-            <rect width="600" height="300" fill="url(#sky)" />
-            <circle class="hero-sun" cx="430" cy="105" r="42" />
-            <path class="hill hill-1" d="M0 190 C90 140 170 150 250 175 S420 120 600 150 V300 H0Z" />
-            <path class="hill hill-2" d="M0 225 C110 180 210 205 300 215 S470 170 600 200 V300 H0Z" />
-            <path class="hill hill-3" d="M0 260 C120 230 240 250 330 255 S500 225 600 245 V300 H0Z" />
-        </svg>
+        <div class="upnext">
+            {move || match next() {
+                Some(i) => {
+                    let days = (i.date - today()).num_days();
+                    let when = match days {
+                        0 => "Heute".to_string(),
+                        1 => "Morgen".to_string(),
+                        n => format!("in {n} Tagen"),
+                    };
+                    let detail = format!(
+                        "{}{}",
+                        crate::time::due_label(i.date, today()),
+                        i.start.map(|t| t.format(" · %H:%M Uhr").to_string()).unwrap_or_default()
+                    );
+                    let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or("#16a34a");
+                    view! {
+                        <div class="upnext-head">
+                            <span class="upnext-kicker">"Als Nächstes"</span>
+                            <span class="upnext-when" style=format!("--c:{color}")>{when}</span>
+                        </div>
+                        <p class="upnext-title">{i.title.clone()}</p>
+                        <p class="upnext-detail">{detail}</p>
+                    }
+                        .into_any()
+                }
+                None => view! {
+                    <div class="upnext-head"><span class="upnext-kicker">"Als Nächstes"</span></div>
+                    <p class="upnext-title">"Die nächsten 14 Tage sind frei"</p>
+                    <p class="upnext-detail">"Zeit für dich – oder trag etwas im Kalender ein."</p>
+                }
+                    .into_any(),
+            }}
+            <a class="upnext-strip" href=format!("{}/kalender", crate::BASE) aria-label="Zum Kalender">
+                {move || {
+                    let items = data();
+                    let next_date = next().map(|i| i.date);
+                    (0..DAYS)
+                        .map(|k| {
+                            let d = today() + chrono::Duration::days(k);
+                            let day_items: Vec<_> = items.iter().filter(|i| i.date == d).collect();
+                            let busy = !day_items.is_empty();
+                            let tip = day_items.iter().map(|i| i.title.clone()).collect::<Vec<_>>().join(", ");
+                            // free days between today and the next appointment
+                            let gap = next_date.is_some_and(|n| d > today() && d < n);
+                            let dots = day_items
+                                .iter()
+                                .take(3)
+                                .map(|i| {
+                                    let c = i.category.as_deref().map(crate::ui::area_color).unwrap_or("#16a34a");
+                                    view! { <span class="strip-dot" style=format!("background:{c}")></span> }
+                                })
+                                .collect_view();
+                            let wd = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][chrono::Datelike::weekday(&d).num_days_from_monday() as usize];
+                            view! {
+                                <span
+                                    class="strip-day"
+                                    class:today={ k == 0 }
+                                    class:busy=busy
+                                    class:gap=gap
+                                    class:next={ next_date == Some(d) }
+                                    title=tip
+                                >
+                                    <span class="strip-wd">{wd}</span>
+                                    <span class="strip-num">{chrono::Datelike::day(&d)}</span>
+                                    <span class="strip-dots">{dots}</span>
+                                </span>
+                            }
+                        })
+                        .collect_view()
+                }}
+            </a>
+            {move || {
+                let free = next().map(|i| (i.date - today()).num_days() - 1).unwrap_or(0);
+                (free > 0).then(|| view! { <p class="upnext-gap">{format!("{free} {} frei bis dahin", if free == 1 { "Tag" } else { "Tage" })}</p> })
+            }}
+        </div>
     }
 }
