@@ -133,7 +133,8 @@ fn parse_clock(w: &str) -> Option<NaiveTime> {
 
 fn priority(w: &str) -> Option<Priority> {
     match w {
-        "!1" | "p1" => Some(Priority::P1),
+        "!1" | "p1" | "!!" | "!!!" => Some(Priority::P1),
+        "!" => Some(Priority::P2),
         "!2" | "p2" => Some(Priority::P2),
         "!3" | "p3" => Some(Priority::P3),
         "!4" | "p4" => Some(Priority::P4),
@@ -496,6 +497,14 @@ mod tests {
             Some(6)
         );
         assert_eq!(p("Jede Menge Arbeit").title, "Jede Menge Arbeit");
+    }
+
+    #[test]
+    fn exclamation_marks() {
+        let r = p("Wäsche machen !");
+        assert_eq!((r.title.as_str(), r.priority), ("Wäsche machen", Some(Priority::P2)));
+        assert_eq!(p("Steuer !!").priority, Some(Priority::P1));
+        assert_eq!(p("Hallo!").title, "Hallo!");
     }
 
     #[test]

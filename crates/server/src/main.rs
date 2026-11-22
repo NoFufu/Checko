@@ -392,6 +392,8 @@ async fn widget(
         .into_iter()
         .filter(|i| !i.done && (i.kind == ItemKind::Event || i.start.is_some()))
         .filter(|i| i.date > today || i.start.is_none_or(|t| t >= local_now.time()))
+        // tasks due today are already listed under "Heute"
+        .filter(|i| !(i.kind == ItemKind::Task && i.date <= today))
         .take(3)
         .map(|i| {
             let days = (i.date - today).num_days();
@@ -416,8 +418,9 @@ async fn widget(
             }
         })
         .collect();
+    let weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][chrono::Datelike::weekday(&today).num_days_from_monday() as usize];
     Ok(Json(WidgetResponse {
-        date: today.format("%d.%m.").to_string(),
+        date: format!("{weekday}, {}", today.format("%d.%m.")),
         today: today_items,
         open_today,
         next,
