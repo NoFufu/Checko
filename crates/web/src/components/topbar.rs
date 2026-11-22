@@ -43,8 +43,7 @@ pub fn MobileHeader() -> impl IntoView {
     view! {
         <header class="mobile-header">
             <a href=format!("{}/", crate::BASE) class="mobile-logo" aria-label="Checko Startseite">
-                <img src=crate::asset("brand/app-icon.svg") alt="" width="36" height="36" class="mobile-mark" />
-                <span class="mobile-title">"Checko"</span>
+                <super::logo::Logo />
             </a>
             <div class="flex items-center gap-1">
                 <a href=format!("{}/einstellungen", crate::BASE) class="mobile-sync" title=move || dot().1 aria-label=move || dot().1>
