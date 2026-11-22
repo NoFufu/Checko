@@ -806,3 +806,8 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .badge:not(.locked):hover .badge-medal { transform: scale(1.1) rotate(-6deg); }
 .badge.locked .badge-medal { filter: grayscale(1) opacity(0.55); }
 .celebration-medal { width: 6rem; height: 6rem; margin: 0 auto; filter: drop-shadow(0 10px 16px rgb(0 0 0 / 0.25)); animation: wobble 1.2s ease-in-out 0.3s both; }
+
+/* phone header: compact app icon instead of the long wordmark */
+.mobile-logo { display: flex; align-items: center; gap: 0.55rem; color: var(--text); text-decoration: none; }
+.mobile-mark { width: 2.25rem; height: 2.25rem; border-radius: 0.65rem; box-shadow: 0 4px 10px -4px rgb(0 0 0 / 0.45); }
+.mobile-title { font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; }

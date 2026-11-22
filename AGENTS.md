@@ -15,7 +15,7 @@ Der Besitzer des Projekts (NoFufu) entscheidet bei Unklarheiten.
 
 - Nur Dateien unter `assets/**` (Bilder: SVG, PNG, WebP).
 - Neue Grafiken dürfen dazukommen. Bestehende Dateinamen bitte nicht umbenennen oder löschen, weil der Code sie lädt:
-  - `assets/brand/logo-light.webp` (dunkle Schrift, für den hellen Modus), `assets/brand/logo-dark.webp` (helle Schrift, für den Dunkelmodus), `assets/brand/favicon.svg` (Browser‑Icon). Transparenter Hintergrund.
+  - `assets/brand/logo-light.webp` (dunkle Schrift, für den hellen Modus), `assets/brand/logo-dark.webp` (helle Schrift, für den Dunkelmodus), `assets/brand/app-icon.svg` + `apple-touch-icon.png`, `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `favicon-64.png` (App‑ und Browser‑Icon). Transparenter Hintergrund.
   - `assets/mascot/*.webp` (Sprite‑Streifen, je Bild 160 × 160 px pro Frame, nebeneinander)
 
 ## Was Codex NICHT ändern darf ⛔

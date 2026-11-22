@@ -2,17 +2,27 @@
 <html lang="de">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Checko</title>
-    <meta name="theme-color" content="#65a982" />
+    <meta name="theme-color" content="#f6f6f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0d0d10" media="(prefers-color-scheme: dark)" />
     <script>try{document.documentElement.dataset.theme=localStorage.getItem("checko-theme")||"system"}catch(e){}</script>
-    <link data-trunk rel="icon" href="../../assets/brand/favicon.svg" />
+    <link data-trunk rel="icon" href="../../assets/brand/favicon-64.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Checko" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link data-trunk rel="copy-file" href="manifest.webmanifest" />
+    <link data-trunk rel="copy-file" href="sw.js" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link data-trunk rel="css" href="style/output.css" />
     <link data-trunk rel="copy-dir" href="../../assets" />
     <link data-trunk rel="rust" data-wasm-opt="z" />
+      <script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
   </head>
   <body></body>
 </html>
