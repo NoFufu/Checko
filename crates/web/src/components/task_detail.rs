@@ -5,7 +5,7 @@ use leptos::{ev, prelude::*};
 use super::icon::{Glyph, Icon};
 use super::task_item::CategoryChip;
 use crate::store::Store;
-use crate::time::{due_label, today};
+use crate::time::{due_label, long_date, today};
 use crate::ui::{priority_class, priority_name};
 
 /// Repeat options shared by tasks and events ("" = none).
@@ -84,13 +84,27 @@ fn DetailBody(task: Task) -> impl IntoView {
             .with_untracked(|ts| ts.iter().find(|t| t.meta.id == id).and_then(|t| t.due_time));
         store.set_due(id, d, time);
     };
-    let next_monday = today + Duration::days(7 - today.weekday().num_days_from_monday() as i64);
-    let due_text = task
-        .due
-        .map(|d| due_label(d, today))
-        .unwrap_or_else(|| "Kein Termin".into());
+    let mut next_monday = today + Duration::days(7 - today.weekday().num_days_from_monday() as i64);
+    if next_monday == today + Duration::days(1) {
+        // on Sundays "next week" should not be the same as "tomorrow"
+        next_monday += Duration::days(7);
+    }
     let current_due = task.due;
     let current_time = task.due_time;
+    let overdue = !done && current_due.is_some_and(|d| d < today);
+    let (when_big, when_small) = match current_due {
+        Some(d) => (due_label(d, today), long_date(d)),
+        None => (
+            "Kein Termin".to_string(),
+            "Wähle unten einen Tag".to_string(),
+        ),
+    };
+    let time_text = current_time.map(|t| t.format("%H:%M").to_string());
+    let quick = [
+        ("Heute", Some(today)),
+        ("Morgen", Some(today + Duration::days(1))),
+        ("Nächste Woche", Some(next_monday)),
+    ];
 
     view! {
         <div class="drawer-head">
@@ -105,72 +119,57 @@ fn DetailBody(task: Task) -> impl IntoView {
                     <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
             </button>
-            <input
+            <textarea
                 class="drawer-title"
+                class:done=done
+                rows="1"
                 aria-label="Titel"
                 prop:value=task.title.clone()
                 on:change=move |e| store.rename(id, event_target_value(&e))
-                on:keydown=move |e| if e.key() == "Enter" { store.rename(id, event_target_value(&e)) }
-            />
-            <button type="button" class="row-btn" aria-label="Schließen" title="Schließen (Esc)" on:click=move |_| store.detail.set(None)>
+                on:keydown=move |e| if e.key() == "Enter" {
+                    e.prevent_default();
+                    store.rename(id, event_target_value(&e));
+                }
+            ></textarea>
+            <button type="button" class="drawer-close" aria-label="Schließen" title="Schließen (Esc)" on:click=move |_| store.detail.set(None)>
                 "✕"
             </button>
         </div>
 
-        <section class="drawer-section">
-            <h3 class="drawer-label">"Dringlichkeit"</h3>
-            <div class="urgency-picker" role="radiogroup" aria-label="Dringlichkeit">
-                {PRIORITIES
-                    .iter()
-                    .map(|p| {
-                        let p = *p;
-                        let active = task.priority == p;
+        // the one thing that matters most: when is it?
+        <section class="when-card" class:overdue=overdue class:empty=current_due.is_none()>
+            <div class="when-main">
+                <span class="when-icon" aria-hidden="true"><Icon glyph=Glyph::Calendar size=20 /></span>
+                <span class="min-w-0">
+                    <span class="when-big">{when_big}</span>
+                    <span class="when-small">{when_small}</span>
+                </span>
+                {time_text.map(|t| view! { <span class="when-time">{t}</span> })}
+            </div>
+            <div class="when-quick">
+                {quick
+                    .into_iter()
+                    .map(|(label, d)| {
+                        let active = current_due == d;
                         view! {
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked=active.to_string()
-                                class="urgency-option"
-                                class:active=active
-                                on:click=move |_| store.set_priority(id, p)
-                            >
-                                <span class=priority_class(p)></span>
-                                {priority_name(p)}
-                            </button>
+                            <button type="button" class="when-chip" class:active=active on:click=move |_| move_to(d)>{label}</button>
                         }
                     })
                     .collect_view()}
             </div>
-        </section>
-
-        <section class="drawer-section">
-            <h3 class="drawer-label">"Termin · " {due_text}</h3>
-            <div class="quick-dates">
-                <button type="button" class="btn btn-outline btn-sm" on:click=move |_| move_to(Some(today))>"Heute"</button>
-                <button type="button" class="btn btn-outline btn-sm" on:click=move |_| move_to(Some(today + Duration::days(1)))>"Morgen"</button>
-                <button type="button" class="btn btn-outline btn-sm" on:click=move |_| move_to(Some(next_monday))>"Nächste Woche"</button>
-                {current_due.map(|d| view! {
-                    <button type="button" class="btn btn-outline btn-sm" on:click=move |_| move_to(Some(d + Duration::days(1)))>"+1 Tag"</button>
-                })}
-                {current_due.is_some().then(|| view! {
-                    <button type="button" class="btn btn-outline btn-sm" on:click=move |_| move_to(None)>"Entfernen"</button>
-                })}
-            </div>
-            <div class="flex flex-wrap gap-2 mt-2">
-                <label class="field">
-                    <span class="sr-only">"Datum"</span>
+            <div class="when-fields">
+                <label class="when-field">
+                    <span>"Datum"</span>
                     <input
                         type="date"
-                        aria-label="Datum"
                         prop:value=current_due.map(|d| d.to_string()).unwrap_or_default()
                         on:change=move |e| store.set_due(id, event_target_value(&e).parse().ok(), current_time)
                     />
                 </label>
-                <label class="field">
-                    <span class="sr-only">"Uhrzeit"</span>
+                <label class="when-field">
+                    <span>"Uhrzeit"</span>
                     <input
                         type="time"
-                        aria-label="Uhrzeit"
                         prop:value=current_time.map(|t| t.format("%H:%M").to_string()).unwrap_or_default()
                         on:change=move |e| {
                             let t = NaiveTime::parse_from_str(&event_target_value(&e), "%H:%M").ok();
@@ -179,14 +178,44 @@ fn DetailBody(task: Task) -> impl IntoView {
                     />
                 </label>
             </div>
+            {current_due.is_some().then(|| view! {
+                <button type="button" class="when-clear" on:click=move |_| move_to(None)>"Termin entfernen"</button>
+            })}
         </section>
 
-        <section class="drawer-section">
-            <h3 class="drawer-label">"Wiederholen"</h3>
-            <label class="field">
-                <span class="sr-only">"Wiederholen"</span>
+        // compact settings list
+        <div class="detail-list">
+            <div class="detail-row">
+                <span class="detail-label">"Dringlichkeit"</span>
+                <div class="urgency-dots" role="radiogroup" aria-label="Dringlichkeit">
+                    {PRIORITIES
+                        .iter()
+                        .map(|p| {
+                            let p = *p;
+                            let active = task.priority == p;
+                            view! {
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked=active.to_string()
+                                    aria-label=priority_name(p)
+                                    title=priority_name(p)
+                                    class="urgency-dot"
+                                    class:active=active
+                                    on:click=move |_| store.set_priority(id, p)
+                                >
+                                    <span class=priority_class(p)></span>
+                                </button>
+                            }
+                        })
+                        .collect_view()}
+                    <span class="urgency-name">{priority_name(task.priority)}</span>
+                </div>
+            </div>
+            <label class="detail-row">
+                <span class="detail-label">"Wiederholen"</span>
                 <select
-                    aria-label="Wiederholen"
+                    class="detail-select"
                     prop:value=repeat_value(task.recurrence)
                     on:change=move |e| {
                         let r = repeat_from(&event_target_value(&e));
@@ -199,7 +228,7 @@ fn DetailBody(task: Task) -> impl IntoView {
                         });
                     }
                 >
-                    <option value="">"Nicht wiederholen"</option>
+                    <option value="">"Nie"</option>
                     <option value="d">"Jeden Tag"</option>
                     <option value="w">"Jede Woche"</option>
                     <option value="2w">"Alle 2 Wochen"</option>
@@ -207,40 +236,38 @@ fn DetailBody(task: Task) -> impl IntoView {
                     <option value="y">"Jedes Jahr"</option>
                 </select>
             </label>
-            <p class="text-sm text-muted mt-1">"Beim Abhaken wird automatisch die nächste Aufgabe angelegt."</p>
-        </section>
-
-        <section class="drawer-section">
-            <h3 class="drawer-label">"Kategorien"</h3>
-            <div class="cat-editor">
-                {task
-                    .categories()
-                    .into_iter()
-                    .map(|c| {
-                        let name = c.to_string();
-                        let rm = name.clone();
-                        view! {
-                            <span class="cat-chip-edit">
-                                <CategoryChip name=name.clone() />
-                                <button type="button" class="cat-remove" aria-label=format!("{name} entfernen") on:click=move |_| store.remove_category(id, &rm)>
-                                    "×"
-                                </button>
-                            </span>
-                        }
-                    })
-                    .collect_view()}
-                <form class="cat-add" on:submit=move |e| {
-                    e.prevent_default();
-                    store.add_category(id, &new_cat.get_untracked());
-                    new_cat.set(String::new());
-                }>
-                    <input list="checko-categories" placeholder="+ Kategorie" aria-label="Kategorie hinzufügen" bind:value=new_cat />
-                    <datalist id="checko-categories">
-                        {move || store.areas().into_iter().map(|a| view! { <option value=a></option> }).collect_view()}
-                    </datalist>
-                </form>
+            <div class="detail-row detail-row-wrap">
+                <span class="detail-label">"Kategorie"</span>
+                <div class="cat-editor">
+                    {task
+                        .categories()
+                        .into_iter()
+                        .map(|c| {
+                            let name = c.to_string();
+                            let rm = name.clone();
+                            view! {
+                                <span class="cat-chip-edit">
+                                    <CategoryChip name=name.clone() />
+                                    <button type="button" class="cat-remove" aria-label=format!("{name} entfernen") on:click=move |_| store.remove_category(id, &rm)>
+                                        "×"
+                                    </button>
+                                </span>
+                            }
+                        })
+                        .collect_view()}
+                    <form class="cat-add" on:submit=move |e| {
+                        e.prevent_default();
+                        store.add_category(id, &new_cat.get_untracked());
+                        new_cat.set(String::new());
+                    }>
+                        <input list="checko-categories" placeholder="+ Neu" aria-label="Kategorie hinzufügen" bind:value=new_cat />
+                        <datalist id="checko-categories">
+                            {move || store.areas().into_iter().map(|a| view! { <option value=a></option> }).collect_view()}
+                        </datalist>
+                    </form>
+                </div>
             </div>
-        </section>
+        </div>
 
         <section class="drawer-section">
             <h3 class="drawer-label">

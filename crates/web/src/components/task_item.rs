@@ -182,7 +182,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                         ></button>
                         <button
                             type="button"
-                            class="row-btn"
+                            class="row-btn row-trash"
                             title="In den Papierkorb"
                             aria-label="In den Papierkorb"
                             on:click=move |e| { e.stop_propagation(); store.trash(id) }

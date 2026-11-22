@@ -55,11 +55,6 @@ pub fn TodayPage() -> impl IntoView {
 
             <div class="toolbar">
                 <AreaFilter area=filter />
-                <button type="button" class="btn btn-outline" title="Zeitraum wählen kommt später">
-                    <Icon glyph=Glyph::Calendar size=16 />
-                    "Heute"
-                    <Icon glyph=Glyph::ChevronDown size=16 />
-                </button>
             </div>
 
             <div class="dash-grid">

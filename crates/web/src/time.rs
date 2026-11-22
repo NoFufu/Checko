@@ -95,3 +95,14 @@ pub fn now_local_time() -> chrono::NaiveTime {
     let d = js_sys::Date::new_0();
     chrono::NaiveTime::from_hms_opt(d.get_hours(), d.get_minutes(), 0).unwrap_or_default()
 }
+
+/// e.g. "Montag, 23. November"
+pub fn long_date(d: chrono::NaiveDate) -> String {
+    use chrono::Datelike;
+    format!(
+        "{}, {}. {}",
+        WEEKDAYS[d.weekday().num_days_from_sunday() as usize],
+        d.day(),
+        MONTHS[d.month0() as usize]
+    )
+}
