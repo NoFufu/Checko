@@ -418,7 +418,8 @@ async fn widget(
             }
         })
         .collect();
-    let weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"][chrono::Datelike::weekday(&today).num_days_from_monday() as usize];
+    let weekday = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+        [chrono::Datelike::weekday(&today).num_days_from_monday() as usize];
     Ok(Json(WidgetResponse {
         date: format!("{weekday}, {}", today.format("%d.%m.")),
         today: today_items,

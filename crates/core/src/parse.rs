@@ -502,7 +502,10 @@ mod tests {
     #[test]
     fn exclamation_marks() {
         let r = p("Wäsche machen !");
-        assert_eq!((r.title.as_str(), r.priority), ("Wäsche machen", Some(Priority::P2)));
+        assert_eq!(
+            (r.title.as_str(), r.priority),
+            ("Wäsche machen", Some(Priority::P2))
+        );
         assert_eq!(p("Steuer !!").priority, Some(Priority::P1));
         assert_eq!(p("Hallo!").title, "Hallo!");
     }
