@@ -2,15 +2,13 @@ use leptos::prelude::*;
 
 use super::icon::{Glyph, Icon};
 
-/// Page header: title on the left, notifications and "Neu" on the right.
+/// Page header: theme, settings, notifications and "Neu" on the right
+/// (the page itself is already highlighted in the sidebar).
 #[component]
-pub fn Topbar(title: &'static str, icon: Glyph) -> impl IntoView {
+pub fn Topbar() -> impl IntoView {
     view! {
         <header class="topbar">
-            <div class="crumb">
-                <Icon glyph=icon size=16 />
-                <span>{title}</span>
-            </div>
+            <span></span>
             <div class="flex items-center gap-2">
                 <super::theme::ThemeSwitch />
                 <a href=format!("{}/einstellungen", crate::BASE) class="btn-icon" aria-label="Einstellungen" title="Einstellungen">

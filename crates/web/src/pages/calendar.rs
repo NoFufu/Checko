@@ -96,7 +96,7 @@ pub fn CalendarPage() -> impl IntoView {
     };
 
     view! {
-        <Topbar title="Kalender" icon=Glyph::Calendar />
+        <Topbar />
         <div class="page page-wide">
             <div class="page-head">
                 <div>

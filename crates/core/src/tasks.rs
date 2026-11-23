@@ -353,6 +353,22 @@ pub fn done_this_week(tasks: &[Task], today: NaiveDate) -> [u32; 7] {
     out
 }
 
+/// Completed tasks per day for the last `days` days, oldest first (last = today).
+pub fn done_last_days(tasks: &[Task], today: NaiveDate, days: usize) -> Vec<u32> {
+    let mut out = vec![0; days];
+    for d in tasks
+        .iter()
+        .filter(|t| !t.is_deleted())
+        .filter_map(|t| t.done_on)
+    {
+        let back = (today - d).num_days();
+        if (0..days as i64).contains(&back) {
+            out[days - 1 - back as usize] += 1;
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -550,5 +566,23 @@ mod tests {
             .collect();
         assert_eq!(todos.len(), 3);
         assert!(todos.contains(&"Müll runter bringen"));
+    }
+
+    #[test]
+    fn done_per_day() {
+        let now = Utc::now();
+        let today = NaiveDate::from_ymd_opt(2026, 11, 23).unwrap();
+        let done = |back: i64| {
+            let mut t = Task::new("x", now);
+            t.status = TaskStatus::Done;
+            t.done_on = Some(today - Duration::days(back));
+            t
+        };
+        let tasks = vec![done(0), done(0), done(3), done(20)];
+        let v = done_last_days(&tasks, today, 14);
+        assert_eq!(v.len(), 14);
+        assert_eq!(v[13], 2);
+        assert_eq!(v[10], 1);
+        assert_eq!(v.iter().sum::<u32>(), 3);
     }
 }

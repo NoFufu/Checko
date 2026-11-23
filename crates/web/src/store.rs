@@ -464,7 +464,7 @@ impl Store {
             .update(|items| items.retain(|i| i.meta.id != id));
     }
 
-    /// Hide all checked items (kept for "Oft gekauft" suggestions).
+    /// Hide all checked items (they stay in the shopping history).
     pub fn clear_checked_shopping(&self) {
         let mut ids = Vec::new();
         self.shopping.update(|items| {

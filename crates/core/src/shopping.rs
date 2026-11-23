@@ -378,6 +378,52 @@ pub fn suggestions(items: &[ShoppingItem], limit: usize) -> Vec<&ShoppingItem> {
     seen
 }
 
+/// One line in the shopping history.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Purchase {
+    pub name: String,
+    pub times: u32,
+    pub last: DateTime<Utc>,
+    pub url: Option<String>,
+    /// Currently on the list (not yet bought).
+    pub on_list: bool,
+}
+
+/// Everything bought so far, one entry per name, most recently bought first.
+pub fn purchase_history(items: &[ShoppingItem]) -> Vec<Purchase> {
+    let mut out: Vec<Purchase> = Vec::new();
+    for i in items.iter().filter(|i| i.times_bought > 0) {
+        match out
+            .iter_mut()
+            .find(|p| p.name.eq_ignore_ascii_case(&i.name))
+        {
+            Some(p) => {
+                p.times += i.times_bought;
+                if i.meta.updated_at > p.last {
+                    p.last = i.meta.updated_at;
+                }
+                if p.url.is_none() {
+                    p.url = i.url.clone();
+                }
+            }
+            None => out.push(Purchase {
+                name: i.name.clone(),
+                times: i.times_bought,
+                last: i.meta.updated_at,
+                url: i.url.clone(),
+                on_list: false,
+            }),
+        }
+    }
+    for p in &mut out {
+        p.on_list = items.iter().any(|i| {
+            i.meta.deleted_at.is_none() && !i.checked && i.name.eq_ignore_ascii_case(&p.name)
+        });
+    }
+    out.sort_by_key(|p| std::cmp::Reverse(p.last));
+    out
+}
+
 pub fn open_count(items: &[ShoppingItem]) -> usize {
     items
         .iter()
@@ -452,5 +498,27 @@ mod tests {
         );
         assert_eq!(title_from_url("https://example.org/"), "example.org");
         assert!(ShoppingItem::new("Milch", now).url.is_none());
+    }
+
+    #[test]
+    fn history() {
+        let t0 = Utc::now();
+        let t1 = t0 + chrono::Duration::hours(1);
+        let mut milk = ShoppingItem::new("Milch", t0);
+        milk.toggle(t0);
+        milk.meta.deleted_at = Some(t0); // bought and cleared
+        let mut milk2 = ShoppingItem::new("milch", t1);
+        milk2.toggle(t1);
+        let mut bread = ShoppingItem::new("Brot", t0);
+        bread.toggle(t0);
+        let bread_again = ShoppingItem::new("Brot", t1); // back on the list
+        let never = ShoppingItem::new("Käse", t0);
+        let h = purchase_history(&[milk, milk2, bread, bread_again, never]);
+        assert_eq!(h.len(), 2);
+        assert_eq!(h[0].name, "Milch");
+        assert_eq!(h[0].times, 2);
+        assert!(!h[0].on_list);
+        assert_eq!(h[1].name, "Brot");
+        assert!(h[1].on_list);
     }
 }

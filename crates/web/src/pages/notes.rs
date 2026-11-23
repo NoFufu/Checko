@@ -7,7 +7,6 @@ use crate::components::{
     icon::{Glyph, Icon},
     topbar::Topbar,
 };
-use crate::markdown::to_html;
 use crate::store::Store;
 
 #[component]
@@ -15,14 +14,12 @@ pub fn NotesPage() -> impl IntoView {
     let store = Store::get();
     let query = use_query_map();
     let selected = RwSignal::new(None::<Uuid>);
-    let preview = RwSignal::new(false);
 
     // Open the note from "?id=…" (used by search), otherwise the first one.
     Effect::new(move |_| {
         let from_url = query.with(|q| q.get("id")).and_then(|v| v.parse().ok());
         if from_url.is_some() {
             selected.set(from_url);
-            preview.set(true);
         } else if selected.get_untracked().is_none() {
             selected.set(
                 store
@@ -49,16 +46,14 @@ pub fn NotesPage() -> impl IntoView {
     let new_note = move |_| {
         let id = store.new_note();
         selected.set(Some(id));
-        preview.set(false);
     };
 
     view! {
-        <Topbar title="Notizen" icon=Glyph::Notes />
+        <Topbar />
         <div class="page">
             <div class="page-head">
                 <div>
                     <h1 class="page-h1">"Notizen"</h1>
-                    <p class="text-muted">"Markdown wird unterstützt: # Überschrift, **fett**, - Liste, - [ ] Checkliste"</p>
                 </div>
                 <button type="button" class="btn btn-primary" on:click=new_note>
                     <Icon glyph=Glyph::Add size=16 />
@@ -84,7 +79,7 @@ pub fn NotesPage() -> impl IntoView {
                                                 type="button"
                                                 class="note-item"
                                                 class:active=move || selected.get() == Some(id)
-                                                on:click=move |_| { selected.set(Some(id)); preview.set(true); }
+                                                on:click=move |_| selected.set(Some(id))
                                             >
                                                 <span class="note-item-title">
                                                     {n.pinned.then(|| view! { <Icon glyph=Glyph::Pin size=13 /> })}
@@ -115,10 +110,7 @@ pub fn NotesPage() -> impl IntoView {
                             let body = n.body_md.clone();
                             view! {
                                 <div class="note-toolbar">
-                                    <div class="segmented" role="tablist" aria-label="Ansicht">
-                                        <button type="button" class="segment" class:active=move || !preview.get() on:click=move |_| preview.set(false)>"Bearbeiten"</button>
-                                        <button type="button" class="segment" class:active=move || preview.get() on:click=move |_| preview.set(true)>"Vorschau"</button>
-                                    </div>
+                                    <span class="text-sm text-muted">{format!("Geändert {}", crate::time::local_label(n.meta.updated_at))}</span>
                                     <div class="flex items-center gap-1">
                                         <button
                                             type="button"
@@ -149,23 +141,13 @@ pub fn NotesPage() -> impl IntoView {
                                     prop:value=n.title.clone()
                                     on:input=move |ev| { let v = event_target_value(&ev); store.edit_note(id, |n| n.title = v); }
                                 />
-                                <Show
-                                    when=move || preview.get()
-                                    fallback=move || {
-                                        let body = body.clone();
-                                        view! {
-                                            <textarea
-                                                class="note-body"
-                                                aria-label="Inhalt"
-                                                placeholder="Schreib los …"
-                                                prop:value=body
-                                                on:input=move |ev| { let v = event_target_value(&ev); store.edit_note(id, |n| n.body_md = v); }
-                                            ></textarea>
-                                        }
-                                    }
-                                >
-                                    <div class="note-preview prose" on:dblclick=move |_| preview.set(false) inner_html=to_html(&n.body_md)></div>
-                                </Show>
+                                <textarea
+                                    class="note-body"
+                                    aria-label="Inhalt"
+                                    placeholder="Schreib los …"
+                                    prop:value=body
+                                    on:input=move |ev| { let v = event_target_value(&ev); store.edit_note(id, |n| n.body_md = v); }
+                                ></textarea>
                             }.into_any()
                         }
                     }}

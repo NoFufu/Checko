@@ -39,7 +39,7 @@ pub fn SettingsPage() -> impl IntoView {
     let is_error = move || matches!(sync.status.get(), SyncStatus::Error(_));
 
     view! {
-        <Topbar title="Einstellungen" icon=Glyph::Settings />
+        <Topbar />
         <div class="page settings">
             <div class="page-head">
                 <div>

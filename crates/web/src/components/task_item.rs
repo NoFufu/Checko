@@ -128,7 +128,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
             })}
 
             {appt_time.map(|(time, day)| view! {
-                <span class="appt-time" class:overdue=overdue>
+                <span class=format!("appt-time {}", priority_class(priority).replace("urgency ", "")) class:overdue=overdue>
                     <span class="appt-clock">{time}</span>
                     <span class="appt-day">{day}</span>
                 </span>

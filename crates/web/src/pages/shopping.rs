@@ -1,4 +1,4 @@
-use checko_core::{grouped, link_host, open_count, suggestions, ShoppingItem};
+use checko_core::{grouped, link_host, open_count, purchase_history, ShoppingItem};
 use leptos::prelude::*;
 
 use crate::components::{
@@ -11,6 +11,8 @@ use crate::store::Store;
 pub fn ShoppingPage() -> impl IntoView {
     let store = Store::get();
     let input = RwSignal::new(String::new());
+    let history_tab = RwSignal::new(false);
+    let history = move || store.shopping.with(|i| purchase_history(i));
 
     let groups = move || {
         store.shopping.with(|items| {
@@ -28,15 +30,6 @@ pub fn ShoppingPage() -> impl IntoView {
                 .count()
         })
     };
-    let suggest = move || {
-        store.shopping.with(|i| {
-            suggestions(i, 8)
-                .into_iter()
-                .map(|i| i.name.clone())
-                .collect::<Vec<_>>()
-        })
-    };
-
     let submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
         store.add_shopping(&input.get_untracked());
@@ -44,7 +37,7 @@ pub fn ShoppingPage() -> impl IntoView {
     };
 
     view! {
-        <Topbar title="Einkauf" icon=Glyph::Shopping />
+        <Topbar />
         <div class="page">
             <div class="page-head">
                 <div>
@@ -57,6 +50,61 @@ pub fn ShoppingPage() -> impl IntoView {
                         }}
                     </p>
                 </div>
+                <div class="segmented" role="tablist" aria-label="Ansicht">
+                    <button type="button" role="tab" class="segment" class:active=move || !history_tab.get() aria-selected=move || (!history_tab.get()).to_string() on:click=move |_| history_tab.set(false)>"Liste"</button>
+                    <button type="button" role="tab" class="segment" class:active=move || history_tab.get() aria-selected=move || history_tab.get().to_string() on:click=move |_| history_tab.set(true)>"Verlauf"</button>
+                </div>
+            </div>
+
+            <Show when=move || history_tab.get()>
+                <section class="panel list-panel">
+                    <Show
+                        when=move || !history().is_empty()
+                        fallback=|| view! { <p class="empty-line px-3">"Noch nichts gekauft. Abgehakte Sachen landen hier."</p> }
+                    >
+                        <ul class="task-list">
+                            {move || history()
+                                .into_iter()
+                                .map(|p| {
+                                    let again = match &p.url {
+                                        Some(u) => format!("{} {u}", p.name),
+                                        None => p.name.clone(),
+                                    };
+                                    let when = crate::time::local_label(p.last);
+                                    view! {
+                                        <li class="task-row history-row">
+                                            <div class="task-body">
+                                                <span class="task-title">{p.name.clone()}</span>
+                                                <span class="text-sm text-muted">{format!("{}× gekauft · zuletzt {}", p.times, when)}</span>
+                                            </div>
+                                            {p.url.clone().map(|u| view! {
+                                                <a class="shop-link" href=u target="_blank" rel="noopener noreferrer" aria-label="Link öffnen">
+                                                    <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                                                        <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                </a>
+                                            })}
+                                            {if p.on_list {
+                                                view! { <span class="chip">"Auf der Liste"</span> }.into_any()
+                                            } else {
+                                                view! {
+                                                    <button type="button" class="btn btn-outline btn-sm" on:click=move |_| store.add_shopping(&again)>
+                                                        <Icon glyph=Glyph::Add size=14 />
+                                                        "Nochmal"
+                                                    </button>
+                                                }.into_any()
+                                            }}
+                                        </li>
+                                    }
+                                })
+                                .collect_view()}
+                        </ul>
+                    </Show>
+                </section>
+            </Show>
+
+            <Show when=move || !history_tab.get()>
+            <div class="shop-actions">
                 <Show when=move || { checked() > 0 }>
                     <button type="button" class="btn btn-outline" on:click=move |_| store.clear_checked_shopping()>
                         <Icon glyph=Glyph::Trash size=16 />
@@ -78,25 +126,7 @@ pub fn ShoppingPage() -> impl IntoView {
                         />
                         <kbd>"Enter"</kbd>
                     </div>
-                    <p class="parse-hint">"Checko sortiert nach Regal. Links (z. B. von Amazon) einfach einfügen – optional mit Namen davor."</p>
                 </form>
-                <Show when=move || !suggest().is_empty()>
-                    <div class="suggestions">
-                        <span class="text-sm text-muted">"Oft gekauft:"</span>
-                        {move || suggest()
-                            .into_iter()
-                            .map(|name| {
-                                let n = name.clone();
-                                view! {
-                                    <button type="button" class="suggestion" on:click=move |_| store.add_shopping(&n)>
-                                        <Icon glyph=Glyph::Add size=13 />
-                                        {name}
-                                    </button>
-                                }
-                            })
-                            .collect_view()}
-                    </div>
-                </Show>
             </section>
 
             <Show
@@ -123,6 +153,7 @@ pub fn ShoppingPage() -> impl IntoView {
                         }
                     />
                 </div>
+            </Show>
             </Show>
         </div>
     }

@@ -1,4 +1,5 @@
-use checko_core::{done_this_week, level_for_xp, today_tasks};
+use checko_core::{done_last_days, level_for_xp, today_tasks};
+use chrono::Datelike;
 use leptos::prelude::*;
 
 use crate::components::{
@@ -9,7 +10,7 @@ use crate::components::{
     topbar::Topbar,
 };
 use crate::store::Store;
-use crate::time::{greeting, today, today_label, weekday_index};
+use crate::time::{greeting, today, today_label};
 
 const WEEK: [&str; 7] = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
@@ -41,13 +42,10 @@ pub fn TodayPage() -> impl IntoView {
             .filter(|t| !t.is_appointment())
             .collect::<Vec<_>>()
     };
-    let week = move || store.tasks.with(|t| done_this_week(t, today()));
-    let week_total = move || week().iter().sum::<u32>();
     let progress = move || store.profile.with(|p| level_for_xp(p.xp));
-    let today = weekday_index();
 
     view! {
-        <Topbar title="Heute" icon=Glyph::Today />
+        <Topbar />
         <div class="page">
             <section class="hero">
                 <div class="hero-text">
@@ -113,33 +111,7 @@ pub fn TodayPage() -> impl IntoView {
                 <div class="play-grid">
                     <div class="play-main">
                         <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
-                        <div class="metric-grid">
-                        <section class="panel">
-                            <p class="metric-label">"Erledigt diese Woche"</p>
-                            <p class="metric-sub">"Aufgaben pro Tag"</p>
-                            <p class="metric-value">{week_total} <span class="metric-unit">"Aufgaben"</span></p>
-                            <div class="week-bars" aria-hidden="true">
-                                {WEEK
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, d)| {
-                                        let height = move || {
-                                            let w = week();
-                                            let max = (*w.iter().max().unwrap_or(&0)).max(1) as f32;
-                                            format!("height:{}%", 6.0 + w[i] as f32 / max * 94.0)
-                                        };
-                                        view! {
-                                            <div class="week-col" title=move || format!("{}: {} erledigt", d, week()[i])>
-                                                <span class="week-bar" class:today=i == today class:filled=move || { week()[i] > 0 } style=height></span>
-                                                <span class="week-day" class:today=i == today>{*d}</span>
-                                            </div>
-                                        }
-                                    })
-                                    .collect_view()}
-                            </div>
-                        </section>
-                            <StreakCard />
-                        </div>
+                        <ProgressCard />
                         <div class="play-row">
                             <AchievementGrid />
                         <section class="panel level-card">
@@ -160,7 +132,7 @@ pub fn TodayPage() -> impl IntoView {
                     </div>
                     <div class="play-side">
                         <SectionHead icon=Glyph::Pin title="Kategorien" />
-                        <CategoryRings />
+                        <CategoryArcs />
                     </div>
                 </div>
             </section>
@@ -168,34 +140,87 @@ pub fn TodayPage() -> impl IntoView {
     }
 }
 
-/// Duolingo-style streak: big flame, days in a row, this week's active days.
+/// Streak + completions of the last 14 days as a smooth area chart (bklit-style).
 #[component]
-fn StreakCard() -> impl IntoView {
+fn ProgressCard() -> impl IntoView {
     let store = Store::get();
     let streak = move || store.profile.with(|p| p.current_streak(today()));
-    let week = move || store.tasks.with(|t| done_this_week(t, today()));
-    let today_idx = weekday_index();
+    let days = move || store.tasks.with(|t| done_last_days(t, today(), 14));
+    let week_total = move || days()[7..].iter().sum::<u32>();
+    const W: f64 = 300.0;
+    const H: f64 = 96.0;
+    let points = move || {
+        let d = days();
+        let max = (*d.iter().max().unwrap_or(&0)).max(1) as f64;
+        d.iter()
+            .enumerate()
+            .map(|(i, v)| {
+                let x = i as f64 * W / 13.0;
+                let y = H - 8.0 - *v as f64 / max * (H - 22.0);
+                (x, y)
+            })
+            .collect::<Vec<_>>()
+    };
+    // Catmull-Rom → cubic Bézier for a soft curve
+    let line = move || {
+        let p = points();
+        let mut d = format!("M{:.1} {:.1}", p[0].0, p[0].1);
+        for i in 0..p.len() - 1 {
+            let p0 = if i == 0 { p[0] } else { p[i - 1] };
+            let (p1, p2) = (p[i], p[i + 1]);
+            let p3 = if i + 2 < p.len() { p[i + 2] } else { p2 };
+            let c1 = (p1.0 + (p2.0 - p0.0) / 6.0, p1.1 + (p2.1 - p0.1) / 6.0);
+            let c2 = (p2.0 - (p3.0 - p1.0) / 6.0, p2.1 - (p3.1 - p1.1) / 6.0);
+            d.push_str(&format!(
+                " C{:.1} {:.1} {:.1} {:.1} {:.1} {:.1}",
+                c1.0, c1.1, c2.0, c2.1, p2.0, p2.1
+            ));
+        }
+        d
+    };
+    let area = move || format!("{} L{W} {H} L0 {H} Z", line());
+    let labels = move || {
+        let t = today();
+        (0..14)
+            .map(|i| {
+                let d = t - chrono::Duration::days(13 - i);
+                let wd = WEEK[d.weekday().num_days_from_monday() as usize];
+                (wd, i == 13)
+            })
+            .collect::<Vec<_>>()
+    };
     view! {
-        <section class="panel streak-card" class:lit=move || { streak() > 0 }>
-            <div class="streak-top">
-                <span class="streak-flame" aria-hidden="true">"🔥"</span>
-                <span>
-                    <span class="streak-num">{streak}</span>
-                    <span class="streak-label">{move || if streak() == 1 { "Tag in Folge" } else { "Tage in Folge" }}</span>
-                </span>
+        <section class="panel progress-card" class:lit=move || { streak() > 0 }>
+            <div class="progress-stats">
+                <div class="progress-stat">
+                    <span class="streak-flame" aria-hidden="true">"🔥"</span>
+                    <span>
+                        <span class="streak-num">{streak}</span>
+                        <span class="streak-label">{move || if streak() == 1 { "Tag in Folge" } else { "Tage in Folge" }}</span>
+                    </span>
+                </div>
+                <div class="progress-stat">
+                    <span>
+                        <span class="progress-num">{week_total}</span>
+                        <span class="streak-label">"erledigt in 7 Tagen"</span>
+                    </span>
+                </div>
             </div>
-            <ul class="streak-week" aria-label="Aktive Tage diese Woche">
-                {WEEK
-                    .iter()
-                    .enumerate()
-                    .map(|(i, d)| view! {
-                        <li class="streak-day" class:active=move || { week()[i] > 0 } class:today=i == today_idx>
-                            <span class="streak-dot">{move || if week()[i] > 0 { "✓" } else { "" }}</span>
-                            <span class="streak-dname">{*d}</span>
-                        </li>
-                    })
-                    .collect_view()}
-            </ul>
+            <svg class="area-chart" viewBox=format!("0 0 {W} {H}") preserveAspectRatio="none" role="img"
+                aria-label=move || format!("Erledigte Aufgaben der letzten 14 Tage: {}", days().iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", "))>
+                <defs>
+                    <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0" stop-color="#22c55e" stop-opacity="0.45" />
+                        <stop offset="1" stop-color="#22c55e" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+                <line class="area-grid" x1="0" x2=W y1=H - 8.0 y2=H - 8.0 />
+                <path d=area fill="url(#area-fill)" />
+                <path d=line class="area-line" />
+            </svg>
+            <div class="area-labels" aria-hidden="true">
+                {move || labels().into_iter().map(|(d, is_today)| view! { <span class:today=is_today>{d}</span> }).collect_view()}
+            </div>
         </section>
     }
 }
@@ -296,45 +321,42 @@ fn AchievementGrid() -> impl IntoView {
     }
 }
 
-/// Categories as concentric rings (one per category, length = share of open
-/// tasks) with the total in the middle and a clickable legend next to it.
+/// Categories as simple concentric half circles: arc length = share done.
 #[component]
-fn CategoryRings() -> impl IntoView {
+fn CategoryArcs() -> impl IntoView {
     let store = Store::get();
     let stats = move || {
         let mut v = store.tasks.with(|t| checko_core::category_stats(t));
         v.retain(|(_, open, _)| *open > 0);
         v.sort_by_key(|(_, open, _)| std::cmp::Reverse(*open));
-        v.truncate(5);
+        v.truncate(4);
         v
     };
     view! {
-        <section class="panel rings-panel">
+        <section class="panel arcs-panel">
             <Show
                 when=move || !stats().is_empty()
-                fallback=|| view! { <p class="text-sm text-muted">"Schreib „#Küche“ hinter eine Aufgabe, dann erscheint die Kategorie hier."</p> }
+                fallback=|| view! { <p class="text-sm text-muted">"Noch keine Kategorien mit offenen Aufgaben."</p> }
             >
                 {move || {
                     let s = stats();
-                    let total: usize = s.iter().map(|(_, o, _)| o).sum();
-                    let max = s.iter().map(|(_, o, _)| *o).max().unwrap_or(1).max(1) as f64;
-                    let rings = s
+                    let arcs = s
                         .iter()
                         .enumerate()
-                        .map(|(i, (name, open, _))| {
-                            let r = 90.0 - i as f64 * 12.0;
-                            let circ = 2.0 * std::f64::consts::PI * r;
-                            // 270° arc maximum, like the bklit ring chart
-                            let len = circ * 0.75 * (*open as f64 / max);
+                        .map(|(i, (name, open, done))| {
+                            let r = 92.0 - i as f64 * 15.0;
+                            let pct = (*done * 100 / (open + done).max(1)) as f64;
+                            let d = format!("M{} 104 A{r} {r} 0 0 1 {} 104", 110.0 - r, 110.0 + r);
                             let color = crate::ui::area_color(name);
                             view! {
-                                <circle class="ring-track" cx="100" cy="100" r=r stroke-dasharray=format!("{} {}", circ * 0.75, circ) />
-                                <circle
-                                    class="ring-bar"
-                                    cx="100" cy="100" r=r
+                                <path class="arc-track" d=d.clone() />
+                                <path
+                                    class="arc-bar"
+                                    d=d
+                                    pathLength="100"
                                     stroke=color
-                                    stroke-dasharray=format!("{len} {circ}")
-                                    style=format!("animation-delay:{}ms", i * 80)
+                                    stroke-dasharray=format!("{} 100", pct.max(1.5))
+                                    style=format!("animation-delay:{}ms", i * 90)
                                 />
                             }
                         })
@@ -347,28 +369,24 @@ fn CategoryRings() -> impl IntoView {
                             let href = format!("{}/aufgaben?kategorie={}", crate::BASE, js_sys::encode_uri_component(&name));
                             view! {
                                 <li>
-                                    <a class="legend-item" href=href>
-                                        <span class="legend-row">
-                                            <span class="cat-icon cat-icon-sm" style=format!("--c:{color}")>{crate::ui::category_icon(&name)}</span>
-                                            <span class="flex-1 font-semibold">{name.clone()}</span>
-                                            <span class="legend-value">{open} " offen"</span>
-                                            <span class="legend-pct" title="erledigt">{pct} " %"</span>
-                                        </span>
-                                        <span class="legend-bar"><span style=format!("width:{}%;background:{color}", pct.max(3))></span></span>
+                                    <a class="arc-legend" href=href>
+                                        <span class="arc-dot" style=format!("background:{color}")></span>
+                                        <span class="flex-1 truncate">{name.clone()}</span>
+                                        <span class="text-muted">{open} " offen"</span>
+                                        <span class="arc-pct">{pct} "%"</span>
                                     </a>
                                 </li>
                             }
                         })
                         .collect_view();
                     view! {
-                        <div class="rings">
-                            <svg viewBox="0 0 200 200" class="rings-svg" aria-hidden="true">
-                                <g transform="rotate(135 100 100)">{rings}</g>
-                                <text x="100" y="104" class="rings-total">{total}</text>
-                                <text x="100" y="122" class="rings-label">"offen"</text>
-                            </svg>
-                            <ul class="legend">{legend}</ul>
-                        </div>
+                        <svg viewBox="0 0 220 118" class="arcs-svg" role="img" aria-label="Erledigt pro Kategorie">
+                            {arcs}
+                            <text x="8" y="116" class="arc-tick">"0%"</text>
+                            <text x="110" y="8" class="arc-tick" text-anchor="middle">"50%"</text>
+                            <text x="212" y="116" class="arc-tick" text-anchor="end">"100%"</text>
+                        </svg>
+                        <ul class="arc-list">{legend}</ul>
                     }
                 }}
             </Show>

@@ -1,5 +1,4 @@
 mod components;
-mod markdown;
 mod pages;
 mod store;
 mod sync;

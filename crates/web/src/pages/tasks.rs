@@ -82,8 +82,8 @@ pub fn TasksPage() -> impl IntoView {
     };
 
     view! {
-        <Topbar title="Aufgaben" icon=Glyph::Tasks />
-        <div class="page">
+        <Topbar />
+        <div class="page page-wide">
             <div class="page-head">
                 <div>
                     <h1 class="page-h1">"Aufgaben"</h1>
@@ -129,46 +129,59 @@ pub fn TasksPage() -> impl IntoView {
                 </Show>
             </div>
 
-            <Show when=move || !appointments().is_empty()>
-                <h2 class="list-heading">
-                    <Icon glyph=Glyph::Calendar size=16 />
-                    "Termine"
-                </h2>
-                <section class="panel list-panel appt-panel">
-                    <ul class="task-list">
-                        <For
-                            each=appointments
-                            key=|t| (t.meta.id, t.meta.updated_at)
-                            children=move |t| view! { <TaskItem task=t /> }
-                        />
-                    </ul>
-                </section>
-                <h2 class="list-heading">
-                    <Icon glyph=Glyph::Tasks size=16 />
-                    "To-dos"
-                </h2>
-            </Show>
-            <section class="panel list-panel">
-                <Show
-                    when=move || !list().is_empty()
-                    fallback=move || {
-                        let text = match view_tab.get() {
-                            View::Open => "Keine offenen To-dos. Füge oben eins hinzu!",
-                            View::Done => "Noch nichts erledigt. Das erste Häkchen wartet!",
-                            View::Trash => "Der Papierkorb ist leer.",
-                        };
-                        view! { <p class="empty-line px-3">{text}</p> }
-                    }
-                >
-                    <ul class="task-list">
-                        <For
-                            each=list
-                            key=|t| (t.meta.id, t.meta.updated_at)
-                            children=move |t| view! { <TaskItem task=t trash=view_tab.get_untracked() == View::Trash /> }
-                        />
-                    </ul>
+            <div class="task-columns" class:split=move || view_tab.get() == View::Open>
+                <div class="task-col">
+                    <Show when=move || view_tab.get() == View::Open>
+                        <h2 class="list-heading">
+                            <Icon glyph=Glyph::Tasks size=16 />
+                            "To-dos"
+                        </h2>
+                    </Show>
+                    <section class="panel list-panel">
+                        <Show
+                            when=move || !list().is_empty()
+                            fallback=move || {
+                                let text = match view_tab.get() {
+                                    View::Open => "Keine offenen To-dos. Füge oben eins hinzu!",
+                                    View::Done => "Noch nichts erledigt. Das erste Häkchen wartet!",
+                                    View::Trash => "Der Papierkorb ist leer.",
+                                };
+                                view! { <p class="empty-line px-3">{text}</p> }
+                            }
+                        >
+                            <ul class="task-list">
+                                <For
+                                    each=list
+                                    key=|t| (t.meta.id, t.meta.updated_at)
+                                    children=move |t| view! { <TaskItem task=t trash=view_tab.get_untracked() == View::Trash /> }
+                                />
+                            </ul>
+                        </Show>
+                    </section>
+                </div>
+                <Show when=move || view_tab.get() == View::Open>
+                    <div class="task-col">
+                        <h2 class="list-heading">
+                            <Icon glyph=Glyph::Calendar size=16 />
+                            "Termine"
+                        </h2>
+                        <section class="panel list-panel appt-panel">
+                            <Show
+                                when=move || !appointments().is_empty()
+                                fallback=|| view! { <p class="empty-line px-3">"Keine Termine. Alles mit Uhrzeit landet hier."</p> }
+                            >
+                                <ul class="task-list">
+                                    <For
+                                        each=appointments
+                                        key=|t| (t.meta.id, t.meta.updated_at)
+                                        children=move |t| view! { <TaskItem task=t /> }
+                                    />
+                                </ul>
+                            </Show>
+                        </section>
+                    </div>
                 </Show>
-            </section>
+            </div>
         </div>
     }
 }
