@@ -1,9 +1,11 @@
 use checko_core::{parse_quick_add, Priority, TokenKind};
+use chrono::NaiveTime;
 
-use crate::ui::priority_name;
+use crate::ui::{priority_class, priority_name};
 use leptos::{html, prelude::*};
 
 use super::icon::{Glyph, Icon};
+use super::task_detail::repeat_from;
 use crate::store::{NewTask, Store};
 use crate::time::{due_label, today};
 
@@ -30,6 +32,9 @@ pub fn TaskForm(
     /// Share the typed text with the parent (the Strg+K dialog searches with it).
     #[prop(optional)]
     text: Option<RwSignal<String>>,
+    /// Show every option (date, time, repeat, category, urgency, kind) right away.
+    #[prop(optional)]
+    full: bool,
 ) -> impl IntoView {
     let store = Store::get();
     let input = NodeRef::<html::Input>::new();
@@ -44,6 +49,17 @@ pub fn TaskForm(
         }
     };
     let due = RwSignal::new(default_due());
+    let time = RwSignal::new(String::new());
+    let repeat = RwSignal::new(String::new());
+    let kind = RwSignal::new(None::<bool>);
+    // A day picked in the calendar (double-click) pre-fills the date.
+    if full {
+        Effect::new(move |_| {
+            if let Some(d) = store.quick_add_date.get() {
+                due.set(d.to_string());
+            }
+        });
+    }
     // Follow the page filter: adding while "Arbeit" is selected files it under Arbeit.
     Effect::new(move |_| area_sel.set(area.get().unwrap_or_default()));
 
@@ -80,11 +96,19 @@ pub fn TaskForm(
                 .area
                 .or_else(|| Some(area_sel.get_untracked()).filter(|a| !a.is_empty())),
             due: p.due.or_else(|| due.get_untracked().parse().ok()),
-            time: p.time,
+            time: p
+                .time
+                .or_else(|| NaiveTime::parse_from_str(&time.get_untracked(), "%H:%M").ok()),
             tags: p.tags,
-            recurrence: p.recurrence,
+            recurrence: p
+                .recurrence
+                .or_else(|| repeat_from(&repeat.get_untracked())),
+            appointment: kind.get_untracked(),
         });
         title.set(String::new());
+        time.set(String::new());
+        repeat.set(String::new());
+        kind.set(None);
         priority.set("4".into());
         area_sel.set(area.get_untracked().unwrap_or_default());
         due.set(default_due());
@@ -167,7 +191,99 @@ pub fn TaskForm(
                     <span class="sr-only">"Erkannt: " {recognised_words}</span>
                 </div>
             </Show>
-            <div class="task-form-options" class:collapsed=move || title.get().trim().is_empty()>
+            {full.then(|| {
+                // automatic kind: with a time it becomes an appointment
+                let is_appt = move || {
+                    kind.get().unwrap_or_else(|| {
+                        !time.get().is_empty() || parsed.with(|p| p.time.is_some())
+                    })
+                };
+                view! {
+                    <div class="add-options">
+                        <label class="add-field">
+                            <span>"Datum"</span>
+                            <input type="date" bind:value=due />
+                        </label>
+                        <label class="add-field">
+                            <span>"Uhrzeit"</span>
+                            <input type="time" bind:value=time />
+                        </label>
+                        <label class="add-field">
+                            <span>"Kategorie"</span>
+                            <select bind:value=area_sel>
+                                <option value="">"Keine"</option>
+                                {move || areas
+                                    .get()
+                                    .into_iter()
+                                    .map(|a| view! { <option value=a.clone()>{a.clone()}</option> })
+                                    .collect_view()}
+                            </select>
+                        </label>
+                        <label class="add-field">
+                            <span>"Wiederholen"</span>
+                            <select bind:value=repeat>
+                                <option value="">"Nie"</option>
+                                <option value="d">"Jeden Tag"</option>
+                                <option value="w">"Jede Woche"</option>
+                                <option value="2w">"Alle 2 Wochen"</option>
+                                <option value="m">"Jeden Monat"</option>
+                                <option value="y">"Jedes Jahr"</option>
+                            </select>
+                        </label>
+                        <div class="add-field">
+                            <span>"Dringlichkeit"</span>
+                            <div class="urgency-dots" role="radiogroup" aria-label="Dringlichkeit">
+                                {[("4", Priority::P4), ("3", Priority::P3), ("2", Priority::P2), ("1", Priority::P1)]
+                                    .into_iter()
+                                    .map(|(v, p)| {
+                                        let active = move || priority.get() == v;
+                                        view! {
+                                            <button
+                                                type="button"
+                                                role="radio"
+                                                class="urgency-dot"
+                                                class:active=active
+                                                aria-checked=move || active().to_string()
+                                                aria-label=priority_name(p)
+                                                title=priority_name(p)
+                                                on:click=move |_| priority.set(v.to_string())
+                                            >
+                                                <span class=priority_class(p)></span>
+                                            </button>
+                                        }
+                                    })
+                                    .collect_view()}
+                            </div>
+                        </div>
+                        <div class="add-field">
+                            <span>"Anzeigen als"</span>
+                            <div class="seg-mini" role="radiogroup" aria-label="Anzeigen als">
+                                {[("To-do", false), ("Termin", true)]
+                                    .into_iter()
+                                    .map(|(label, value)| {
+                                        let active = move || is_appt() == value;
+                                        view! {
+                                            <button
+                                                type="button"
+                                                role="radio"
+                                                class:active=active
+                                                aria-checked=move || active().to_string()
+                                                on:click=move |_| kind.set(Some(value))
+                                            >
+                                                {label}
+                                            </button>
+                                        }
+                                    })
+                                    .collect_view()}
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary add-submit" disabled=move || title.get().trim().is_empty()>
+                            "Hinzufügen"
+                        </button>
+                    </div>
+                }
+            })}
+            <div class="task-form-options" class:collapsed=move || full || title.get().trim().is_empty()>
                 <label class="field">
                     <span class="sr-only">"Dringlichkeit"</span>
                     <select bind:value=priority aria-label="Dringlichkeit">

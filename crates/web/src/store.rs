@@ -74,6 +74,8 @@ pub struct NewTask {
     pub time: Option<NaiveTime>,
     pub tags: Vec<String>,
     pub recurrence: Option<Recurrence>,
+    /// Explicit "To-do" / "Termin" choice; `None` = automatic.
+    pub appointment: Option<bool>,
 }
 
 #[derive(Clone, Copy)]
@@ -86,6 +88,8 @@ pub struct Store {
     pub toast: RwSignal<Option<Toast>>,
     /// The Strg+K quick-add dialog.
     pub quick_add_open: RwSignal<bool>,
+    /// Day pre-selected in the add dialog (double-click in the calendar).
+    pub quick_add_date: RwSignal<Option<NaiveDate>>,
     /// Task shown in the detail panel.
     pub detail: RwSignal<Option<Uuid>>,
     /// Celebrations waiting to be shown (first one is visible).
@@ -103,6 +107,7 @@ impl Store {
             events: RwSignal::new(load(EVENTS_KEY)),
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
+            quick_add_date: RwSignal::new(None),
             detail: RwSignal::new(None),
             celebrations: RwSignal::new(Vec::new()),
         };
@@ -226,6 +231,7 @@ impl Store {
         t.due_time = new.time;
         t.tags = new.tags;
         t.recurrence = new.recurrence;
+        t.appointment = new.appointment;
         // Confirm where the task went when it is not for today.
         if let Some(d) = t.due.filter(|d| *d != today()) {
             let mut when = crate::time::due_label(d, today());

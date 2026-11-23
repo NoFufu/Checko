@@ -4,7 +4,6 @@ use leptos_router::components::A;
 use super::icon::{Glyph, Icon};
 use super::logo::Logo;
 use super::task_item::DRAG_TYPE;
-use super::theme::ThemeSwitch;
 use crate::store::Store;
 use crate::time::today;
 use crate::ui::area_color;
@@ -129,32 +128,6 @@ pub fn Sidebar() -> impl IntoView {
                 <p class="area-hint">"Aufgaben hierher ziehen, um sie einzuordnen."</p>
             </details>
 
-            <div class="sidebar-bottom">
-                <A href=format!("{BASE}/einstellungen") attr:class="nav-item">
-                    <Icon glyph=Glyph::Settings size=18 />
-                    <span class="nav-label">"Einstellungen"</span>
-                </A>
-                <div class="profile-card">
-                    <div class="profile-row">
-                        <span class="avatar">"Du"</span>
-                        <span class="min-w-0">
-                            <span class="profile-name">{move || crate::sync::Sync::get().config.with(|c| c.username.clone()).unwrap_or_else(|| "Mein Checko".into())}</span>
-                            <span class="profile-sub">
-                                {move || {
-                                    let sync = crate::sync::Sync::get();
-                                    match sync.status.get() {
-                                        crate::sync::SyncStatus::Off => "Lokal gespeichert".to_string(),
-                                        crate::sync::SyncStatus::Syncing => "Synchronisiere …".to_string(),
-                                        crate::sync::SyncStatus::Error(_) => "Sync-Fehler".to_string(),
-                                        crate::sync::SyncStatus::Idle => "Synchronisiert".to_string(),
-                                    }
-                                }}
-                            </span>
-                        </span>
-                    </div>
-                    <ThemeSwitch />
-                </div>
-            </div>
         </aside>
     }
 }

@@ -40,6 +40,7 @@ fn main() {
 fn App() -> impl IntoView {
     let store = store::Store::provide();
     sync::Sync::provide(store);
+    components::theme::provide_theme();
     view! {
         <Router base=BASE>
             <div class="app-shell" class:detail-open=move || store.detail.get().is_some()>

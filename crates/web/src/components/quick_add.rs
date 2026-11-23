@@ -27,6 +27,13 @@ pub fn QuickAddDialog() -> impl IntoView {
         })
     };
 
+    // forget a day picked in the calendar once the dialog closes
+    Effect::new(move |_| {
+        if !open.get() {
+            store.quick_add_date.set(None);
+        }
+    });
+
     let handle = window_event_listener(ev::keydown, move |e| {
         let key = e.key().to_lowercase();
         if key == "k" && (e.ctrl_key() || e.meta_key()) {
@@ -50,9 +57,10 @@ pub fn QuickAddDialog() -> impl IntoView {
                 >
                     <div class="dialog-head">
                         <h2 class="font-semibold">"Hinzufügen oder suchen"</h2>
-                        <span class="text-sm text-muted">"Enter legt eine Aufgabe an · Esc schließt"</span>
+                        <span class="text-sm text-muted">"Enter speichert · Esc schließt"</span>
                     </div>
                     <TaskForm
+                        full=true
                         autofocus=true
                         text=text
                         on_added=Callback::new(move |_| open.set(false))

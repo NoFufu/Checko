@@ -44,9 +44,17 @@ pub fn SettingsPage() -> impl IntoView {
             <div class="page-head">
                 <div>
                     <h1 class="page-h1">"Einstellungen"</h1>
-                    <p class="text-muted">"Synchronisierung zwischen PC und Handy."</p>
+                    <p class="text-muted">"Konto, Sync zwischen PC und Handy, Darstellung."</p>
                 </div>
             </div>
+
+            <section class="panel settings-section settings-row">
+                <span>
+                    <span class="block font-semibold">"Darstellung"</span>
+                    <span class="block text-sm text-muted">"Hell oder dunkel"</span>
+                </span>
+                <crate::components::theme::ThemeSwitch />
+            </section>
 
             <section class="panel settings-section">
                 <h2 class="section-head"><Icon glyph=Glyph::Repeat size=18 />"Synchronisieren"</h2>

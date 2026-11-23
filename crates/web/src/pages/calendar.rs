@@ -175,7 +175,13 @@ fn DayCell(
             role="button"
             tabindex="0"
             aria-label=day_title(day)
+            title="Doppelklick: neuer Eintrag an diesem Tag"
             on:click=move |_| selected.set(day)
+            on:dblclick=move |_| {
+                selected.set(day);
+                store.quick_add_date.set(Some(day));
+                store.quick_add_open.set(true);
+            }
             on:keydown=move |e| if e.key() == "Enter" || e.key() == " " { e.prevent_default(); selected.set(day) }
             on:dragover=move |e| { e.prevent_default(); over.set(true); }
             on:dragleave=move |_| over.set(false)
@@ -223,7 +229,7 @@ fn ItemChip(item: CalendarItem) -> impl IntoView {
             }
         >
             {item.start.map(|s| view! { <span class="cal-time">{s.format("%H:%M").to_string()}</span> })}
-            {item.title.clone()}
+            <span class="cal-title">{item.title.clone()}</span>
         </span>
     }
 }
@@ -329,20 +335,19 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
         None
     };
     view! {
-        <li class="agenda-row" class:done=item.done class:todo=!item.appointment style=format!("--c:{color}")>
+        <li
+            class="agenda-row"
+            class:done=item.done
+            class:todo=!item.appointment
+            class:clickable=!is_event
+            style=format!("--c:{color}")
+            title=(!is_event).then_some("Details öffnen")
+            on:click=move |_| if !is_event { store.detail.set(Some(id)) }
+        >
             <span class="agenda-bar" aria-hidden="true"></span>
             <span class="agenda-time">{time}</span>
             <span class="flex-1 min-w-0">
-                {if is_event {
-                    view! { <span class="block font-medium truncate">{item.title.clone()}</span> }.into_any()
-                } else {
-                    view! {
-                        <button type="button" class="agenda-title" title="Details öffnen" on:click=move |_| store.detail.set(Some(id))>
-                            {item.title.clone()}
-                        </button>
-                    }
-                        .into_any()
-                }}
+                <span class="block font-medium truncate">{item.title.clone()}</span>
                 <span class="block text-sm text-muted">
                     {if item.appointment { "Termin" } else { "Aufgabe" }}
                     {item.category.clone().map(|c| format!(" · {c}"))}
@@ -380,7 +385,10 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
                         class="check agenda-check"
                         class:checked=done
                         aria-label=if done { "Wieder öffnen" } else { "Abhaken" }
-                        on:click=move |_| if done { store.reopen(id) } else { store.complete(id) }
+                        on:click=move |e| {
+                            e.stop_propagation();
+                            if done { store.reopen(id) } else { store.complete(id) }
+                        }
                     >
                         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
                             <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />

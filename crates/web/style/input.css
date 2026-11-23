@@ -162,8 +162,8 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .profile-name { display: block; font-weight: 600; font-size: 0.9rem; }
 .profile-sub { display: block; font-size: 0.75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.theme-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.2rem; padding: 0.2rem; border-radius: 0.55rem; background: var(--panel-soft); }
-.theme-option { display: flex; align-items: center; justify-content: center; gap: 0.3rem; padding: 0.3rem 0.2rem; border: 0; border-radius: 0.4rem; background: transparent; font-size: 0.75rem; color: var(--muted); cursor: pointer; }
+.theme-switch { display: inline-flex; gap: 0.15rem; padding: 0.2rem; border-radius: 0.7rem; border: 1px solid var(--border); background: var(--panel); box-shadow: var(--shadow-sm); }
+.theme-option { display: grid; place-items: center; width: 1.9rem; height: 1.9rem; padding: 0; border: 0; border-radius: 0.5rem; background: transparent; color: var(--muted); cursor: pointer; }
 .theme-option.active { background: var(--active-bg); color: var(--active-text); box-shadow: var(--shadow-sm); }
 
 /* Small screens: sidebar becomes a bottom bar with the main links only */
@@ -702,12 +702,12 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .play-side .rings { grid-template-columns: 1fr; }
 .play-side .rings-svg { width: 11rem; height: 11rem; }
 
-.streak-card { display: flex; flex-direction: column; gap: 0.9rem; }
+.streak-card { display: flex; flex-direction: column; gap: 0.7rem; }
 .streak-top { display: flex; align-items: center; gap: 0.75rem; }
-.streak-flame { font-size: 2.8rem; line-height: 1; filter: grayscale(1) opacity(0.45); transition: filter 0.3s; }
+.streak-flame { font-size: 2rem; line-height: 1; filter: grayscale(1) opacity(0.45); transition: filter 0.3s; }
 .streak-card.lit .streak-flame { filter: drop-shadow(0 6px 10px rgb(249 115 22 / 0.45)); animation: flicker 2.4s ease-in-out infinite; }
 @keyframes flicker { 0%,100% { transform: scale(1) rotate(0); } 50% { transform: scale(1.06) rotate(-3deg); } }
-.streak-num { display: block; font-size: 2.2rem; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
+.streak-num { display: block; font-size: 1.8rem; font-weight: 800; line-height: 1; letter-spacing: -0.03em; }
 .streak-card.lit .streak-num { color: #f97316; }
 .streak-label { display: block; font-size: 0.85rem; color: var(--muted); font-weight: 600; }
 .streak-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.3rem; margin: 0; padding: 0; list-style: none; }
@@ -962,5 +962,26 @@ body { touch-action: manipulation; }
 .agenda-check { flex: none; }
 @media (max-width: 700px) { .cal-chip.task { padding-left: 0; } .cal-chip.task::before { display: none; } }
 @media (max-width: 639px) { .cal-chip.task { background: transparent !important; box-shadow: inset 0 0 0 1.5px var(--c); } }
-.agenda-title { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-weight: 500; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-.agenda-title:hover { text-decoration: underline; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+
+/* calendar: readable entries */
+.agenda-row.clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+.agenda-row.clickable:hover { border-color: var(--green); }
+@media (min-width: 701px) {
+  .cal-day { min-height: 7.5rem; }
+  .cal-chip { white-space: normal; padding: 0.2rem 0.4rem; font-size: 0.74rem; line-height: 1.25; }
+  .cal-chip .cal-time { display: block; margin: 0; font-size: 0.66rem; opacity: 0.8; }
+  .cal-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+  .cal-chip.task::before { top: 0.55rem; margin-top: 0; }
+}
+/* with the detail panel open, the day panel moves below the month so the grid stays wide */
+.app-shell.detail-open .cal-layout { grid-template-columns: minmax(0, 1fr); }
+
+/* add dialog: every option visible right away */
+.add-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 0.75rem; margin-top: 0.8rem; }
+.add-field { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+.add-field > span { font-size: 0.72rem; font-weight: 700; color: var(--muted); }
+.add-field input, .add-field select { width: 100%; min-width: 0; min-height: 2.4rem; font: inherit; font-size: 0.9rem; color: var(--text); padding: 0.35rem 0.6rem; border-radius: 0.6rem; border: 1px solid var(--border); background: var(--panel); }
+.add-field .seg-mini { align-self: flex-start; }
+.add-submit { grid-column: 1 / -1; justify-content: center; }
+.dialog { max-height: 88vh; overflow-y: auto; }

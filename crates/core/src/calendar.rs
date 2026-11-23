@@ -150,7 +150,7 @@ pub struct CalendarItem {
 }
 
 /// Events and due tasks between two dates, sorted by date and time
-/// (all-day items first within a day).
+/// (open before done, all-day items first within a day).
 pub fn items_between(
     events: &[Event],
     tasks: &[Task],
@@ -194,13 +194,22 @@ pub fn items_between(
             appointment: t.is_appointment(),
         });
     }
+    // per day: open before done, all-day before timed, then by time
     out.sort_by(|a, b| {
-        (a.date, a.start.is_some(), a.start, a.kind == ItemKind::Task).cmp(&(
-            b.date,
-            b.start.is_some(),
-            b.start,
-            b.kind == ItemKind::Task,
-        ))
+        (
+            a.date,
+            a.done,
+            a.start.is_some(),
+            a.start,
+            a.kind == ItemKind::Task,
+        )
+            .cmp(&(
+                b.date,
+                b.done,
+                b.start.is_some(),
+                b.start,
+                b.kind == ItemKind::Task,
+            ))
     });
     out
 }
@@ -290,5 +299,20 @@ mod tests {
         assert_eq!(items.len(), 2);
         assert_eq!(items[0].kind, ItemKind::Task); // all-day first
         assert!(items[1].repeats);
+    }
+
+    #[test]
+    fn done_items_come_last() {
+        let now = chrono::Utc::now();
+        let day = NaiveDate::from_ymd_opt(2026, 11, 23).unwrap();
+        let mut done = Task::new("IHK Veranstaltung", now);
+        done.due = Some(day);
+        done.status = TaskStatus::Done;
+        let mut open = Task::new("Neue Mail", now);
+        open.due = Some(day);
+        open.due_time = NaiveTime::from_hms_opt(7, 30, 0);
+        let items = items_between(&[], &[done, open], day, day);
+        assert_eq!(items[0].title, "Neue Mail");
+        assert!(items[1].done);
     }
 }

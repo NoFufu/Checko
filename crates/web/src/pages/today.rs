@@ -175,7 +175,6 @@ fn StreakCard() -> impl IntoView {
     let streak = move || store.profile.with(|p| p.current_streak(today()));
     let week = move || store.tasks.with(|t| done_this_week(t, today()));
     let today_idx = weekday_index();
-    let done_today = move || week()[today_idx] > 0;
     view! {
         <section class="panel streak-card" class:lit=move || { streak() > 0 }>
             <div class="streak-top">
@@ -197,15 +196,6 @@ fn StreakCard() -> impl IntoView {
                     })
                     .collect_view()}
             </ul>
-            <p class="streak-hint">
-                {move || if done_today() {
-                    "Heute schon geschafft – stark!".to_string()
-                } else if streak() > 0 {
-                    "Erledige heute eine Aufgabe, damit deine Serie hält.".to_string()
-                } else {
-                    "Erledige heute eine Aufgabe und starte eine Serie.".to_string()
-                }}
-            </p>
         </section>
     }
 }

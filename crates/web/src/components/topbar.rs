@@ -12,6 +12,10 @@ pub fn Topbar(title: &'static str, icon: Glyph) -> impl IntoView {
                 <span>{title}</span>
             </div>
             <div class="flex items-center gap-2">
+                <super::theme::ThemeSwitch />
+                <a href=format!("{}/einstellungen", crate::BASE) class="btn-icon" aria-label="Einstellungen" title="Einstellungen">
+                    <Icon glyph=Glyph::Settings size=18 />
+                </a>
                 <button type="button" class="btn-icon" aria-label="Benachrichtigungen" title="Erinnerungen kommen in Phase 6">
                     <Icon glyph=Glyph::Bell size=18 />
                 </button>
