@@ -930,3 +930,11 @@ body { touch-action: manipulation; }
   .dash-main .task-list { margin-top: 0; }
   .dash-main .panel { padding-block: 0.3rem; }
 }
+
+/* product links on the shopping list */
+.shop-link { display: inline-flex; align-items: center; gap: 0.3rem; flex: none; max-width: 9rem; padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.78rem; font-weight: 700; text-decoration: none; color: #fff; background: var(--accent-grad); box-shadow: 0 4px 10px -5px rgb(22 163 74 / 0.7); transition: transform 0.15s cubic-bezier(.34,1.56,.64,1); }
+.shop-link:hover { transform: translateY(-1px); }
+.shop-link:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.shop-link-host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shop-row.done .shop-link { opacity: 0.5; box-shadow: none; }
+@media (max-width: 639px) { .shop-link-host { display: none; } .shop-link { padding: 0.45rem; } }

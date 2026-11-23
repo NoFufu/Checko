@@ -135,6 +135,9 @@ pub struct ShoppingItem {
     pub category: Option<String>,
     pub checked: bool,
     pub times_bought: u32,
+    /// Optional product link (e.g. Amazon).
+    #[serde(default)]
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]

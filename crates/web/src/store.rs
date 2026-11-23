@@ -434,6 +434,9 @@ impl Store {
             }) {
                 existing.checked = false;
                 existing.qty = item.qty.clone();
+                if item.url.is_some() {
+                    existing.url = item.url.clone();
+                }
                 existing.meta.updated_at = now();
             } else {
                 items.push(item);

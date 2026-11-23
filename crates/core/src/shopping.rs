@@ -203,9 +203,110 @@ pub fn parse_item(input: &str) -> (String, Option<String>) {
     (input.trim().to_string(), None)
 }
 
+/// Pull the first web link out of the input: ("Kopfhörer https://…", Some(url)).
+pub fn extract_link(input: &str) -> (String, Option<String>) {
+    let mut url = None;
+    let mut rest = Vec::new();
+    for word in input.split_whitespace() {
+        let lower = word.to_ascii_lowercase();
+        if url.is_none() && (lower.starts_with("https://") || lower.starts_with("http://")) {
+            url = Some(word.to_string());
+        } else {
+            rest.push(word);
+        }
+    }
+    (rest.join(" "), url)
+}
+
+/// Host without "www.", e.g. "amazon.de".
+pub fn link_host(url: &str) -> String {
+    let after = url.split_once("://").map_or(url, |(_, r)| r);
+    let host = after.split(['/', '?', '#']).next().unwrap_or(after);
+    let host = host.rsplit('@').next().unwrap_or(host);
+    let host = host.split(':').next().unwrap_or(host);
+    host.trim_start_matches("www.").to_lowercase()
+}
+
+/// Decode %XX escapes (UTF-8); invalid sequences are kept as they are.
+fn percent_decode(s: &str) -> String {
+    let bytes = s.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            if let Ok(b) = u8::from_str_radix(&s[i + 1..i + 3], 16) {
+                out.push(b);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    String::from_utf8(out).unwrap_or_else(|_| s.to_string())
+}
+
+/// A readable name for a pasted link. Shops like Amazon put the product name
+/// into the path ("/Sony-WH-1000XM5-Kopfhörer/dp/B09…"); otherwise the host is used.
+pub fn title_from_url(url: &str) -> String {
+    let host = link_host(url);
+    let after = url.split_once("://").map_or(url, |(_, r)| r);
+    let path = after
+        .split(['?', '#'])
+        .next()
+        .unwrap_or("")
+        .split_once('/')
+        .map_or("", |(_, p)| p);
+    let looks_like_name = |seg: &str| {
+        let seg = percent_decode(seg);
+        let letters = seg.chars().filter(|c| c.is_alphabetic()).count();
+        let words = seg.split(['-', '_', '+']).filter(|w| !w.is_empty()).count();
+        (words >= 2 && letters >= 4).then_some(seg)
+    };
+    let segments: Vec<&str> = path.split('/').filter(|s| !s.is_empty()).collect();
+    // Amazon: the segment right before "dp" / "gp"
+    let amazon = segments
+        .iter()
+        .position(|s| *s == "dp" || *s == "gp")
+        .and_then(|i| i.checked_sub(1))
+        .and_then(|i| looks_like_name(segments[i]));
+    let name = amazon.or_else(|| segments.iter().rev().find_map(|s| looks_like_name(s)));
+    match name {
+        Some(seg) => {
+            let seg = seg.trim_end_matches(".html").trim_end_matches(".htm");
+            let words: Vec<&str> = seg
+                .split(['-', '_', '+'])
+                .filter(|w| !w.is_empty())
+                .collect();
+            let mut title = String::new();
+            for w in words {
+                if title.chars().count() + w.chars().count() > 48 {
+                    title.push_str(" …");
+                    break;
+                }
+                if !title.is_empty() {
+                    title.push(' ');
+                }
+                title.push_str(w);
+            }
+            let mut c = title.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => host,
+            }
+        }
+        None if host.starts_with("amzn.") || host.contains("amazon.") => "Amazon-Artikel".into(),
+        None => host,
+    }
+}
+
 impl ShoppingItem {
     pub fn new(input: &str, now: DateTime<Utc>) -> Self {
-        let (name, qty) = parse_item(input);
+        let (text, url) = extract_link(input);
+        let (mut name, qty) = parse_item(&text);
+        if name.is_empty() {
+            name = url.as_deref().map(title_from_url).unwrap_or_default();
+        }
         let category = Some(guess_category(&name).to_string());
         Self {
             meta: Meta::new(now),
@@ -214,6 +315,7 @@ impl ShoppingItem {
             category,
             checked: false,
             times_bought: 0,
+            url,
         }
     }
 
@@ -327,5 +429,28 @@ mod tests {
         let mut items2 = items.clone();
         items2.push(ShoppingItem::new("milch", now));
         assert!(suggestions(&items2, 5).is_empty());
+    }
+
+    #[test]
+    fn links() {
+        let now = Utc::now();
+        let amazon = "https://www.amazon.de/Sony-WH-1000XM5-Kopfh%C3%B6rer-Noise-Cancelling/dp/B09Y2MYL5C/ref=sr_1_1?keywords=sony";
+        let item = ShoppingItem::new(amazon, now);
+        assert_eq!(item.name, "Sony WH 1000XM5 Kopfhörer Noise Cancelling");
+        assert_eq!(item.url.as_deref(), Some(amazon));
+        assert_eq!(link_host(amazon), "amazon.de");
+
+        let item = ShoppingItem::new("2x Druckerpatronen https://amzn.eu/d/abc123", now);
+        assert_eq!(item.name, "Druckerpatronen");
+        assert_eq!(item.qty.as_deref(), Some("2x"));
+        assert_eq!(item.url.as_deref(), Some("https://amzn.eu/d/abc123"));
+
+        assert_eq!(title_from_url("https://amzn.eu/d/abc123"), "Amazon-Artikel");
+        assert_eq!(
+            title_from_url("https://www.ikea.com/de/de/p/kallax-regal-weiss-80275887/"),
+            "Kallax regal weiss 80275887"
+        );
+        assert_eq!(title_from_url("https://example.org/"), "example.org");
+        assert!(ShoppingItem::new("Milch", now).url.is_none());
     }
 }

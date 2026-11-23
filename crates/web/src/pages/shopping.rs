@@ -1,4 +1,4 @@
-use checko_core::{grouped, open_count, suggestions, ShoppingItem};
+use checko_core::{grouped, link_host, open_count, suggestions, ShoppingItem};
 use leptos::prelude::*;
 
 use crate::components::{
@@ -72,13 +72,13 @@ pub fn ShoppingPage() -> impl IntoView {
                         <input
                             type="text"
                             aria-label="Artikel hinzufügen"
-                            placeholder="z. B. 2x Milch, Äpfel, Wasser 6l"
+                            placeholder="z. B. 2x Milch oder ein Link"
                             autofocus=true
                             bind:value=input
                         />
                         <kbd>"Enter"</kbd>
                     </div>
-                    <p class="parse-hint">"Checko sortiert automatisch nach Regal: Obst & Gemüse, Kühlregal, Getränke …"</p>
+                    <p class="parse-hint">"Checko sortiert nach Regal. Links (z. B. von Amazon) einfach einfügen – optional mit Namen davor."</p>
                 </form>
                 <Show when=move || !suggest().is_empty()>
                     <div class="suggestions">
@@ -150,6 +150,26 @@ fn ShopRow(item: ShoppingItem) -> impl IntoView {
                 <span class="task-title">{item.name.clone()}</span>
             </div>
             {item.qty.clone().map(|q| view! { <span class="qty">{q}</span> })}
+            {item.url.clone().map(|url| {
+                let host = link_host(&url);
+                let title = format!("Öffnen auf {host}");
+                let label = format!("Link öffnen ({host})");
+                view! {
+                    <a
+                        class="shop-link"
+                        href=url
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title=title
+                        aria-label=label
+                    >
+                        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                            <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <span class="shop-link-host">{host}</span>
+                    </a>
+                }
+            })}
             <div class="task-actions">
                 <button type="button" class="row-btn" aria-label="Entfernen" title="Entfernen" on:click=move |_| store.remove_shopping(id)>
                     <Icon glyph=Glyph::Trash size=16 />
