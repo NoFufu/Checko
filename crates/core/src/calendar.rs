@@ -145,6 +145,8 @@ pub struct CalendarItem {
     pub done: bool,
     pub priority: Option<Priority>,
     pub repeats: bool,
+    /// Time block look (events and appointment tasks) instead of a to-do chip.
+    pub appointment: bool,
 }
 
 /// Events and due tasks between two dates, sorted by date and time
@@ -169,6 +171,7 @@ pub fn items_between(
                 done: false,
                 priority: None,
                 repeats: e.recurrence.is_some(),
+                appointment: true,
             });
         }
     }
@@ -188,6 +191,7 @@ pub fn items_between(
             done: t.status == TaskStatus::Done,
             priority: Some(t.priority),
             repeats: t.recurrence.is_some(),
+            appointment: t.is_appointment(),
         });
     }
     out.sort_by(|a, b| {

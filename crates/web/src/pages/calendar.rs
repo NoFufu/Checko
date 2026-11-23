@@ -205,11 +205,12 @@ fn ItemChip(item: CalendarItem) -> impl IntoView {
         .as_deref()
         .map(area_color)
         .unwrap_or("var(--green)");
-    let is_task = item.kind == ItemKind::Task;
+    // to-dos look like a little checkbox chip, appointments like a block
+    let is_todo = !item.appointment;
     view! {
         <span
             class="cal-chip"
-            class:task=is_task
+            class:task=is_todo
             class:done=item.done
             draggable=crate::ui::fine_pointer().then_some("true")
             title=item.title.clone()
@@ -328,13 +329,22 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
         None
     };
     view! {
-        <li class="agenda-row" class:done=item.done style=format!("--c:{color}")>
+        <li class="agenda-row" class:done=item.done class:todo=!item.appointment style=format!("--c:{color}")>
             <span class="agenda-bar" aria-hidden="true"></span>
             <span class="agenda-time">{time}</span>
             <span class="flex-1 min-w-0">
-                <span class="block font-medium truncate">{item.title.clone()}</span>
+                {if is_event {
+                    view! { <span class="block font-medium truncate">{item.title.clone()}</span> }.into_any()
+                } else {
+                    view! {
+                        <button type="button" class="agenda-title" title="Details öffnen" on:click=move |_| store.detail.set(Some(id))>
+                            {item.title.clone()}
+                        </button>
+                    }
+                        .into_any()
+                }}
                 <span class="block text-sm text-muted">
-                    {if is_event { "Termin" } else { "Aufgabe" }}
+                    {if item.appointment { "Termin" } else { "Aufgabe" }}
                     {item.category.clone().map(|c| format!(" · {c}"))}
                     {item.repeats.then_some(" · wiederholt sich")}
                 </span>
@@ -363,8 +373,19 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
                 }
                     .into_any()
             } else {
+                let done = item.done;
                 view! {
-                    <button type="button" class="btn btn-outline btn-sm" on:click=move |_| store.detail.set(Some(id))>"Öffnen"</button>
+                    <button
+                        type="button"
+                        class="check agenda-check"
+                        class:checked=done
+                        aria-label=if done { "Wieder öffnen" } else { "Abhaken" }
+                        on:click=move |_| if done { store.reopen(id) } else { store.complete(id) }
+                    >
+                        <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                            <path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
                 }
                     .into_any()
             }}

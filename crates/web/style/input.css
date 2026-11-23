@@ -938,3 +938,29 @@ body { touch-action: manipulation; }
 .shop-link-host { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .shop-row.done .shop-link { opacity: 0.5; box-shadow: none; }
 @media (max-width: 639px) { .shop-link-host { display: none; } .shop-link { padding: 0.45rem; } }
+
+/* ============================================================
+   Appointments vs. to-dos: one entry, two looks
+   ============================================================ */
+.list-heading { display: flex; align-items: center; gap: 0.45rem; margin: 1.2rem 0 0.5rem; font-size: 0.95rem; font-weight: 800; color: var(--text); }
+.list-heading .checko-icon { color: var(--icon-accent); }
+.appt-time { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: none; min-width: 3.6rem; padding: 0.3rem 0.45rem; border-radius: 0.7rem; color: #fff; background: var(--accent-grad); box-shadow: 0 6px 14px -8px rgb(22 163 74 / 0.8); line-height: 1.1; }
+.appt-time.overdue { background: linear-gradient(135deg, #f87171, #dc2626); box-shadow: 0 6px 14px -8px rgb(220 38 38 / 0.8); }
+.appt-clock { font-size: 0.92rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.appt-day { font-size: 0.66rem; font-weight: 700; opacity: 0.9; white-space: nowrap; }
+.task-row.appt.done .appt-time { opacity: 0.45; box-shadow: none; }
+.seg-mini { display: inline-flex; padding: 0.2rem; border-radius: 999px; background: var(--panel-soft); border: 1px solid var(--border); }
+.seg-mini button { padding: 0.3rem 0.8rem; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+.seg-mini button.active { background: var(--panel); color: var(--text); box-shadow: var(--shadow-sm); }
+.seg-mini button:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+/* calendar: to-dos as small checkbox chips, appointments as blocks */
+.cal-chip.task { position: relative; padding-left: 1.05rem; }
+.cal-chip.task::before { content: ""; position: absolute; left: 0.3rem; top: 50%; width: 0.5rem; height: 0.5rem; margin-top: -0.25rem; border-radius: 999px; border: 1.5px solid var(--c); }
+.cal-chip.task.done::before { background: var(--c); }
+.agenda-row.todo { background: transparent; border: 1px dashed var(--border-strong); }
+.agenda-row.todo .agenda-bar { display: none; }
+.agenda-check { flex: none; }
+@media (max-width: 700px) { .cal-chip.task { padding-left: 0; } .cal-chip.task::before { display: none; } }
+@media (max-width: 639px) { .cal-chip.task { background: transparent !important; box-shadow: inset 0 0 0 1.5px var(--c); } }
+.agenda-title { display: block; width: 100%; padding: 0; border: 0; background: transparent; color: var(--text); font: inherit; font-weight: 500; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.agenda-title:hover { text-decoration: underline; }

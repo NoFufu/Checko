@@ -93,6 +93,10 @@ pub struct Task {
     /// Repeat rule: when done, the next occurrence is created automatically.
     #[serde(default)]
     pub recurrence: Option<crate::Recurrence>,
+    /// Shown as appointment (time block) or to-do. `None` = automatic:
+    /// an entry with a time of day is an appointment.
+    #[serde(default)]
+    pub appointment: Option<bool>,
 }
 
 impl Task {
@@ -114,6 +118,7 @@ impl Task {
             xp_awarded: 0,
             steps: Vec::new(),
             recurrence: None,
+            appointment: None,
         }
     }
 }

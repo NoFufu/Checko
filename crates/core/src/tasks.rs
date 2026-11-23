@@ -145,6 +145,12 @@ impl Task {
         !self.is_deleted() && self.status != TaskStatus::Done
     }
 
+    /// Appointment look (time block in the calendar, "Termine" section) instead of a to-do.
+    /// Needs a date; by default everything with a time of day is an appointment.
+    pub fn is_appointment(&self) -> bool {
+        self.due.is_some() && self.appointment.unwrap_or(self.due_time.is_some())
+    }
+
     /// Open and due today or earlier.
     pub fn is_due_by(&self, today: NaiveDate) -> bool {
         self.is_open() && self.due.is_some_and(|d| d <= today)
@@ -235,6 +241,7 @@ pub fn complete_task(
             next.tags = t.tags.clone();
             next.due = Some(next_due);
             next.due_time = t.due_time;
+            next.appointment = t.appointment;
             next.recurrence = Some(r);
             next.steps = t
                 .steps
@@ -294,6 +301,24 @@ pub fn today_tasks<'a>(tasks: &'a [Task], area: Option<&str>, today: NaiveDate) 
         .collect()
 }
 
+/// Open appointments (see [`Task::is_appointment`]) by date and time.
+pub fn open_appointments<'a>(tasks: &'a [Task], area: Option<&str>) -> Vec<&'a Task> {
+    let mut v: Vec<_> = tasks
+        .iter()
+        .filter(|t| t.is_open() && t.is_appointment() && matches_area(t, area))
+        .collect();
+    v.sort_by_key(|t| (t.due, t.due_time.is_some(), t.due_time));
+    v
+}
+
+/// Open to-dos (everything open that is not an appointment).
+pub fn open_todos<'a>(tasks: &'a [Task], area: Option<&str>) -> Vec<&'a Task> {
+    open_tasks(tasks, area)
+        .into_iter()
+        .filter(|t| !t.is_appointment())
+        .collect()
+}
+
 /// Done tasks, most recent first.
 pub fn done_tasks<'a>(tasks: &'a [Task], area: Option<&str>) -> Vec<&'a Task> {
     let mut v: Vec<_> = tasks
@@ -331,7 +356,8 @@ pub fn done_this_week(tasks: &[Task], today: NaiveDate) -> [u32; 7] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Priority;
+    use crate::{Meta, Priority};
+    use chrono::NaiveTime;
 
     fn day(n: u32) -> NaiveDate {
         NaiveDate::from_ymd_opt(2026, 11, n).unwrap()
@@ -474,5 +500,55 @@ mod tests {
         let t = task("x", Priority::P4, Some(day(19)));
         assert!(t.is_overdue(day(20)));
         assert!(!t.is_overdue(day(19)));
+    }
+
+    #[test]
+    fn appointments_and_todos() {
+        let now = Utc::now();
+        let day = NaiveDate::from_ymd_opt(2026, 11, 24).unwrap();
+        let mut meeting = Task::new("Zweigstelle Paderborn", now);
+        meeting.due = Some(day);
+        meeting.due_time = NaiveTime::from_hms_opt(9, 0, 0);
+        let mut early = meeting.clone();
+        early.meta = Meta::new(now);
+        early.due_time = NaiveTime::from_hms_opt(7, 30, 0);
+        let mut wash = Task::new("Wäsche machen", now);
+        wash.due = Some(day);
+        let mut trash = Task::new("Müll runter bringen", now);
+        trash.due = Some(day);
+        trash.due_time = NaiveTime::from_hms_opt(18, 0, 0);
+        trash.appointment = Some(false); // has a time, but the user wants a to-do
+        let mut party = Task::new("Glühweintour", now);
+        party.due = Some(day);
+        party.appointment = Some(true); // all-day appointment
+        let undated = Task::new("Isi antworten", now);
+
+        assert!(meeting.is_appointment());
+        assert!(!wash.is_appointment());
+        assert!(!trash.is_appointment());
+        assert!(party.is_appointment());
+        let mut no_date = undated.clone();
+        no_date.appointment = Some(true);
+        assert!(!no_date.is_appointment(), "an appointment needs a date");
+
+        let all = vec![meeting, early, wash, trash, party, undated];
+        let appts: Vec<_> = open_appointments(&all, None)
+            .iter()
+            .map(|t| t.due_time)
+            .collect();
+        assert_eq!(
+            appts,
+            vec![
+                None,
+                NaiveTime::from_hms_opt(7, 30, 0),
+                NaiveTime::from_hms_opt(9, 0, 0)
+            ]
+        );
+        let todos: Vec<_> = open_todos(&all, None)
+            .iter()
+            .map(|t| t.title.as_str())
+            .collect();
+        assert_eq!(todos.len(), 3);
+        assert!(todos.contains(&"Müll runter bringen"));
     }
 }

@@ -1,4 +1,4 @@
-use checko_core::{done_tasks, open_tasks, trashed_tasks};
+use checko_core::{done_tasks, open_appointments, open_tasks, open_todos, trashed_tasks};
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
@@ -41,7 +41,7 @@ pub fn TasksPage() -> impl IntoView {
         let a = area.get();
         store.tasks.with(|ts| {
             let items: Vec<_> = match view_tab.get() {
-                View::Open => open_tasks(ts, a.as_deref()),
+                View::Open => open_todos(ts, a.as_deref()),
                 View::Done => done_tasks(ts, a.as_deref()),
                 View::Trash => trashed_tasks(ts),
             }
@@ -49,6 +49,19 @@ pub fn TasksPage() -> impl IntoView {
             .cloned()
             .collect();
             items
+        })
+    };
+
+    let appointments = move || {
+        let a = area.get();
+        if view_tab.get() != View::Open {
+            return Vec::new();
+        }
+        store.tasks.with(|ts| {
+            open_appointments(ts, a.as_deref())
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>()
         })
     };
 
@@ -116,12 +129,31 @@ pub fn TasksPage() -> impl IntoView {
                 </Show>
             </div>
 
+            <Show when=move || !appointments().is_empty()>
+                <h2 class="list-heading">
+                    <Icon glyph=Glyph::Calendar size=16 />
+                    "Termine"
+                </h2>
+                <section class="panel list-panel appt-panel">
+                    <ul class="task-list">
+                        <For
+                            each=appointments
+                            key=|t| (t.meta.id, t.meta.updated_at)
+                            children=move |t| view! { <TaskItem task=t /> }
+                        />
+                    </ul>
+                </section>
+                <h2 class="list-heading">
+                    <Icon glyph=Glyph::Tasks size=16 />
+                    "To-dos"
+                </h2>
+            </Show>
             <section class="panel list-panel">
                 <Show
                     when=move || !list().is_empty()
                     fallback=move || {
                         let text = match view_tab.get() {
-                            View::Open => "Keine offenen Aufgaben. Füge oben eine hinzu!",
+                            View::Open => "Keine offenen To-dos. Füge oben eins hinzu!",
                             View::Done => "Noch nichts erledigt. Das erste Häkchen wartet!",
                             View::Trash => "Der Papierkorb ist leer.",
                         };

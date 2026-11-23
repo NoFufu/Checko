@@ -27,6 +27,20 @@ pub fn TodayPage() -> impl IntoView {
                 .collect::<Vec<_>>()
         })
     };
+    let today_appts = move || {
+        let mut v: Vec<_> = today_list()
+            .into_iter()
+            .filter(|t| t.is_appointment())
+            .collect();
+        v.sort_by_key(|t| (t.due, t.due_time.is_some(), t.due_time));
+        v
+    };
+    let today_todos = move || {
+        today_list()
+            .into_iter()
+            .filter(|t| !t.is_appointment())
+            .collect::<Vec<_>>()
+    };
     let week = move || store.tasks.with(|t| done_this_week(t, today()));
     let week_total = move || week().iter().sum::<u32>();
     let progress = move || store.profile.with(|p| level_for_xp(p.xp));
@@ -59,16 +73,28 @@ pub fn TodayPage() -> impl IntoView {
 
             <div class="dash-grid">
                 <div class="dash-main">
-                    <SectionHead icon=Glyph::Tasks title="Heute fällig" />
+                    <Show when=move || !today_appts().is_empty()>
+                        <SectionHead icon=Glyph::Calendar title="Termine heute" />
+                        <section class="panel appt-panel">
+                            <ul class="task-list">
+                                <For
+                                    each=today_appts
+                                    key=|t| (t.meta.id, t.meta.updated_at)
+                                    children=|t| view! { <TaskItem task=t /> }
+                                />
+                            </ul>
+                        </section>
+                    </Show>
+                    <SectionHead icon=Glyph::Tasks title="Heute zu tun" />
                     <section class="panel">
                         <TaskForm due_today=true area=area />
                         <Show
-                            when=move || !today_list().is_empty()
-                            fallback=|| view! { <p class="empty-line">"Für heute ist nichts fällig. Ein perfekter Start!"</p> }
+                            when=move || !today_todos().is_empty()
+                            fallback=|| view! { <p class="empty-line">"Für heute ist nichts zu tun. Ein perfekter Start!"</p> }
                         >
                             <ul class="task-list mt-2">
                                 <For
-                                    each=today_list
+                                    each=today_todos
                                     key=|t| (t.meta.id, t.meta.updated_at)
                                     children=|t| view! { <TaskItem task=t /> }
                                 />
@@ -194,9 +220,7 @@ fn UpcomingEvents() -> impl IntoView {
             store.tasks.with(|t| {
                 checko_core::items_between(e, t, from, from + chrono::Duration::days(14))
                     .into_iter()
-                    .filter(|i| {
-                        !i.done && (i.kind == checko_core::ItemKind::Event || i.start.is_some())
-                    })
+                    .filter(|i| !i.done && i.appointment)
                     .take(5)
                     .collect::<Vec<_>>()
             })
@@ -385,9 +409,7 @@ fn HeroUpcoming() -> impl IntoView {
             store.tasks.with(|t| {
                 checko_core::items_between(e, t, from, to)
                     .into_iter()
-                    .filter(|i| {
-                        !i.done && (i.kind == checko_core::ItemKind::Event || i.start.is_some())
-                    })
+                    .filter(|i| !i.done && i.appointment)
                     .collect::<Vec<_>>()
             })
         })

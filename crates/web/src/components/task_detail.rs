@@ -91,6 +91,7 @@ fn DetailBody(task: Task) -> impl IntoView {
     }
     let current_due = task.due;
     let current_time = task.due_time;
+    let is_appt = task.is_appointment();
     let overdue = !done && current_due.is_some_and(|d| d < today);
     let (when_big, when_small) = match current_due {
         Some(d) => (due_label(d, today), long_date(d)),
@@ -185,6 +186,34 @@ fn DetailBody(task: Task) -> impl IntoView {
 
         // compact settings list
         <div class="detail-list">
+            <div class="detail-row">
+                <span class="detail-label">"Anzeigen als"</span>
+                <div class="seg-mini" role="radiogroup" aria-label="Anzeigen als">
+                    {[("To-do", false), ("Termin", true)]
+                        .into_iter()
+                        .map(|(label, value)| {
+                            let active = is_appt == value;
+                            view! {
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked=active.to_string()
+                                    class:active=active
+                                    on:click=move |_| store.edit(id, |t| {
+                                        t.appointment = Some(value);
+                                        if value && t.due.is_none() {
+                                            t.due = Some(today);
+                                        }
+                                        t.meta.updated_at = crate::time::now();
+                                    })
+                                >
+                                    {label}
+                                </button>
+                            }
+                        })
+                        .collect_view()}
+                </div>
+            </div>
             <div class="detail-row">
                 <span class="detail-label">"Dringlichkeit"</span>
                 <div class="urgency-dots" role="radiogroup" aria-label="Dringlichkeit">

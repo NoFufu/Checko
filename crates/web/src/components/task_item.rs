@@ -70,7 +70,17 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
         }
     };
 
-    let due = task.due.map(|d| {
+    let appointment = !trash && task.is_appointment();
+    // appointments show their time as a block on the left, to-dos a small date line
+    let appt_time = appointment.then(|| {
+        let time = task
+            .due_time
+            .map(|t| t.format("%H:%M").to_string())
+            .unwrap_or_else(|| "Ganzer Tag".into());
+        let day = task.due.map(|d| due_label(d, today)).unwrap_or_default();
+        (time, day)
+    });
+    let due = task.due.filter(|_| !appointment).map(|d| {
         let mut label = due_label(d, today);
         if let Some(t) = task.due_time {
             label.push_str(&format!(" · {}", t.format("%H:%M")));
@@ -94,6 +104,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     view! {
         <li
             class="task-row"
+            class:appt=appointment
             class:done=done
             class:checking=move || checking.get()
             class:selected=move || store.detail.get() == Some(id)
@@ -116,6 +127,12 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                 </button>
             })}
 
+            {appt_time.map(|(time, day)| view! {
+                <span class="appt-time" class:overdue=overdue>
+                    <span class="appt-clock">{time}</span>
+                    <span class="appt-day">{day}</span>
+                </span>
+            })}
             <div class="task-body">
                 <button
                     type="button"

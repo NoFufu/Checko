@@ -390,7 +390,7 @@ async fn widget(
         .collect();
     let next = items_between(&events, &tasks, today, today + chrono::Duration::days(30))
         .into_iter()
-        .filter(|i| !i.done && (i.kind == ItemKind::Event || i.start.is_some()))
+        .filter(|i| !i.done && i.appointment)
         .filter(|i| i.date > today || i.start.is_none_or(|t| t >= local_now.time()))
         // tasks due today are already listed under "Heute"
         .filter(|i| !(i.kind == ItemKind::Task && i.date <= today))
