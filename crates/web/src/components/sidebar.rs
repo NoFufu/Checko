@@ -81,7 +81,7 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
             }
         >
             <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item" attr:title=it.label>
-                <Icon glyph=it.icon size=18 />
+                <Icon glyph=it.icon size=20 />
                 <span class="nav-label">{it.label}</span>
                 <Show when=move || { count() > 0 }>
                     <span class="nav-count">{count}</span>
@@ -91,100 +91,112 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
     }
 }
 
-/// Is the keyboard focus still somewhere inside the sidebar?
-fn focus_in_sidebar() -> bool {
-    web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.active_element())
-        .and_then(|el| el.closest(".sidebar").ok().flatten())
-        .is_some()
+const OPEN_KEY: &str = "checko-sidebar-open";
+const GROUP_KEY: &str = "checko-sidebar-categories-open";
+
+fn storage() -> Option<web_sys::Storage> {
+    web_sys::window()?.local_storage().ok().flatten()
 }
 
-/// Main navigation (port of the Aceternity "Sidebar"): on the desktop it is a
-/// 60 px icon rail that opens to 300 px while the mouse is over it (also on
-/// keyboard focus and while dragging a task onto it) and pushes the page aside.
+fn load_flag(key: &str, default: bool) -> bool {
+    storage()
+        .and_then(|s| s.get_item(key).ok().flatten())
+        .map(|v| v != "false")
+        .unwrap_or(default)
+}
+
+fn save_flag(key: &str, value: bool) {
+    if let Some(s) = storage() {
+        let _ = s.set_item(key, if value { "true" } else { "false" });
+    }
+}
+
+/// Main navigation, after the Aceternity "Grouped Sidebar": a white card on a
+/// grey frame, plain links, a divider, collapsible groups with indented items
+/// and a small arrow button on the edge that collapses it to a 70 px icon rail.
+/// Open/closed and the group state are remembered in this browser.
 /// On small screens only the main links are shown, as a bottom bar.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     let store = Store::get();
-    let open = RwSignal::new(false);
+    let open = RwSignal::new(load_flag(OPEN_KEY, true));
+    let cats_open = RwSignal::new(load_flag(GROUP_KEY, true));
+    Effect::new(move |_| save_flag(OPEN_KEY, open.get()));
+    Effect::new(move |_| save_flag(GROUP_KEY, cats_open.get()));
     view! {
-        <aside
-            class="sidebar"
-            class:open=move || open.get()
-            aria-label="Seitenleiste"
-            on:mouseenter=move |_| open.set(true)
-            on:mouseleave=move |_| if !focus_in_sidebar() { open.set(false) }
-            on:focusin=move |_| open.set(true)
-            on:focusout=move |_| {
-                // the newly focused element is only known after this event
-                set_timeout(move || if !focus_in_sidebar() { open.set(false) }, std::time::Duration::ZERO);
-            }
-            on:dragenter=move |_| open.set(true)
-            on:drop=move |_| open.set(false)
-        >
-            <a href=format!("{BASE}/") class="sidebar-brand" aria-label="Checko Startseite">
-                <img class="brand-mark" src=crate::asset("brand/icon-192.png") alt="" width="28" height="28" />
-                <Logo />
-            </a>
-
-            <button type="button" class="sidebar-search" title="Suchen / Neu (Strg K)" on:click=move |_| store.quick_add_open.set(true)>
-                <Icon glyph=Glyph::Search size=16 />
-                <span>"Suchen / Neu"</span>
-                <kbd>"Strg K"</kbd>
+        <aside class="sidebar" class:open=move || open.get() class:collapsed=move || !open.get() aria-label="Seitenleiste">
+            <button
+                type="button"
+                class="sidebar-toggle"
+                aria-label=move || if open.get() { "Seitenleiste einklappen" } else { "Seitenleiste ausklappen" }
+                aria-expanded=move || open.get().to_string()
+                title=move || if open.get() { "Einklappen" } else { "Ausklappen" }
+                on:click=move |_| open.update(|o| *o = !*o)
+            >
+                <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+                    <path d="M5 12h14M5 12l4 4M5 12l4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
             </button>
+            <div class="sidebar-scroll">
+                <a href=format!("{BASE}/") class="sidebar-brand" aria-label="Checko Startseite">
+                    <img class="brand-mark" src=crate::asset("brand/icon-192.png") alt="" width="24" height="24" />
+                    <Logo />
+                </a>
 
-            <nav class="nav-section" aria-label="Hauptnavigation">
-                <p class="nav-heading">"Übersicht"</p>
-                {MAIN.iter().map(|it| nav_link(it, store)).collect_view()}
-            </nav>
+                <nav class="nav-section" aria-label="Hauptnavigation">
+                    <button type="button" class="sidebar-search nav-item" title="Suchen / Neu (Strg K)" on:click=move |_| store.quick_add_open.set(true)>
+                        <Icon glyph=Glyph::Search size=20 />
+                        <span class="nav-label">"Suchen"</span>
+                        <kbd>"Strg K"</kbd>
+                    </button>
+                    {MAIN.iter().map(|it| nav_link(it, store)).collect_view()}
+                </nav>
 
-            <details class="nav-section nav-collapsible" open>
-                <summary class="nav-heading-row">
-                    "Kategorien"
-                    <Icon glyph=Glyph::ChevronDown size=16 />
-                </summary>
-                <ul class="area-list">
-                    {move || store
-                        .areas()
-                        .into_iter()
-                        .map(|name| view! { <CategoryFolder name=name /> })
-                        .collect_view()}
-                </ul>
-                <p class="area-hint">"Aufgaben hierher ziehen, um sie einzuordnen."</p>
-            </details>
+                <div class="sidebar-divider" role="separator"></div>
 
+                <div class="nav-group nav-collapsible">
+                    <button
+                        type="button"
+                        class="group-head"
+                        aria-expanded=move || cats_open.get().to_string()
+                        title="Kategorien"
+                        on:click=move |_| cats_open.update(|o| *o = !*o)
+                    >
+                        <Icon glyph=Glyph::Pin size=20 />
+                        <span class="nav-label">"Kategorien"</span>
+                        <span class="group-chevron" class:closed=move || !cats_open.get()><Icon glyph=Glyph::ChevronDown size=16 /></span>
+                    </button>
+                    <Show when=move || cats_open.get()>
+                        <ul class="group-items area-list">
+                            {move || store
+                                .areas()
+                                .into_iter()
+                                .map(|name| view! { <CategoryLink name=name /> })
+                                .collect_view()}
+                        </ul>
+                    </Show>
+                </div>
+            </div>
         </aside>
     }
 }
 
-/// One category in the sidebar: a folder you can open to see its tasks,
-/// click to filter, and drop tasks onto.
+/// One category inside the "Kategorien" group: click to filter the tasks,
+/// drop a task onto it to file it there.
 #[component]
-fn CategoryFolder(name: String) -> impl IntoView {
+fn CategoryLink(name: String) -> impl IntoView {
     let store = Store::get();
-    let open = RwSignal::new(false);
     let over = RwSignal::new(false);
     let n = name.clone();
-    let tasks = Memo::new(move |_| {
-        store.tasks.with(|t| {
-            open_tasks(t, Some(&n))
-                .into_iter()
-                .map(|t| (t.meta.id, t.title.clone()))
-                .collect::<Vec<_>>()
-        })
-    });
-    let count = move || tasks.with(Vec::len);
+    let count = Memo::new(move |_| store.tasks.with(|t| open_tasks(t, Some(&n)).len()));
     let href = format!(
         "{BASE}/aufgaben?kategorie={}",
         js_sys::encode_uri_component(&name)
     );
     let drop_name = name.clone();
-    let row_style = format!("--c:{}", area_color(&name));
+    let style = format!("--c:{}", area_color(&name));
     let icon = crate::ui::category_icon(&name);
-    let toggle_label = format!("{name} auf- oder zuklappen");
-    let label = name.clone();
-
+    let title = name.clone();
     view! {
         <li
             class="folder"
@@ -196,46 +208,16 @@ fn CategoryFolder(name: String) -> impl IntoView {
                 over.set(false);
                 if let Some(id) = dragged_task(&e) {
                     store.add_category(id, &drop_name);
-                    open.set(true);
                 }
             }
         >
-            <div class="folder-row" style=row_style>
-                <A href=href attr:class="folder-link" attr:title=name.clone()>
-                    <span class="cat-icon">{icon}</span>
-                    <span class="flex-1 truncate">{label}</span>
-                </A>
-                <Show when=move || count() != 0>
+            <a href=href class="folder-link nav-item" title=title style=style>
+                <span class="cat-icon">{icon}</span>
+                <span class="nav-label truncate">{name}</span>
+                <Show when=move || count.get() != 0>
                     <span class="nav-count">{count}</span>
                 </Show>
-                <button
-                    type="button"
-                    class="folder-toggle"
-                    class:open=move || open.get()
-                    aria-expanded=move || open.get().to_string()
-                    aria-label=toggle_label
-                    disabled=move || count() == 0
-                    on:click=move |_| open.update(|o| *o = !*o)
-                >
-                    <Icon glyph=Glyph::ChevronDown size=14 />
-                </button>
-            </div>
-            <Show when=move || { open.get() && count() > 0 }>
-                <ul class="folder-tasks">
-                    {move || tasks
-                        .get()
-                        .into_iter()
-                        .take(8)
-                        .map(|(id, title)| view! {
-                            <li>
-                                <button type="button" class="folder-task" on:click=move |_| store.detail.set(Some(id))>
-                                    {title}
-                                </button>
-                            </li>
-                        })
-                        .collect_view()}
-                </ul>
-            </Show>
+            </a>
         </li>
     }
 }
