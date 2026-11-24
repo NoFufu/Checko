@@ -1039,57 +1039,74 @@ body { touch-action: manipulation; }
 .history-row .task-body { display: flex; flex-direction: column; gap: 0.1rem; }
 
 /* ============================================================
-   Desktop sidebar: icon rail that opens on hover
-   (after ui.aceternity.com/components/sidebar: 60 px ↔ 300 px).
-   It opens OVER the page, so the content does not jump around.
+   Desktop sidebar, like ui.aceternity.com/components/sidebar:
+   grey frame, plain links, 60 px ↔ 300 px on hover, pushes the content,
+   content sits on a panel with a rounded top-left corner.
    ============================================================ */
 @media (min-width: 640px) {
+  :root { --frame: #ededf0; --link: #404040; }
+  :root[data-theme="dark"] { --frame: #262626; --link: #e5e5e5; }
+  body { background: var(--frame); }
+
   .sidebar {
-    --rail: 60px;
-    width: var(--rail); padding: 1rem 0; gap: 1rem; overflow-x: hidden;
-    background: var(--panel); border-right: 1px solid var(--border);
-    transition: width 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+    width: 60px; padding: 1rem; gap: 0; overflow-x: hidden;
+    background: var(--frame); border-right: 0; box-shadow: none;
+    transition: width 0.3s cubic-bezier(.4,0,.2,1);
   }
-  .sidebar.open { width: 300px; padding: 1rem 0; box-shadow: 18px 0 40px -18px rgb(0 0 0 / 0.45); }
-  .app-main { margin-left: 60px; }
-  /* every row starts at the same x, so icons form one centred column (x = 30 px) */
-  .sidebar > *, .sidebar .nav-section > *, .sidebar .area-list > * { margin-left: 0; margin-right: 0; }
-  .sidebar-brand, .sidebar-search, .sidebar .nav-heading, .sidebar .nav-heading-row, .sidebar .area-hint { margin-left: 16px !important; margin-right: 16px !important; }
-  .sidebar .nav-drop, .sidebar .folder { padding: 0 8px; }
+  .sidebar.open { width: 300px; }
+  .app-main {
+    margin-left: 60px; min-height: 100vh; background: var(--bg);
+    border: 1px solid var(--border); border-right: 0; border-bottom: 0; border-top-left-radius: 1rem;
+    transition: margin-left 0.3s cubic-bezier(.4,0,.2,1);
+  }
+  .app-shell:has(.sidebar.open) .app-main { margin-left: 300px; }
 
-  /* brand: gecko mark when closed, wordmark when open */
-  .sidebar-brand { position: relative; height: 2.4rem; padding: 0; }
-  .brand-mark { flex: none; width: 28px; height: 28px; border-radius: 8px; box-shadow: 0 3px 8px -3px rgb(0 0 0 / 0.4); transition: opacity 0.15s; }
-  .sidebar .wordmark { position: absolute; left: 0; top: 50%; translate: 0 -50%; width: 8.5rem; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
-  .sidebar.open .wordmark { opacity: 1; pointer-events: auto; }
-  .sidebar.open .brand-mark { opacity: 0; }
+  /* logo: mark when closed, mark + wordmark when open */
+  .sidebar-brand { display: flex; align-items: center; gap: 0.5rem; height: 1.75rem; padding: 0.25rem 0; margin: 0; position: relative; }
+  .brand-mark { flex: none; width: 24px; height: 24px; border-radius: 7px; }
+  .sidebar .wordmark { width: 6.5rem; opacity: 0; transition: opacity 0.2s; }
+  .sidebar.open .wordmark { opacity: 1; }
 
-  /* labels: hidden while closed, fade in when open, nudge right on hover */
-  .sidebar .nav-label, .sidebar-search span, .sidebar-search kbd, .sidebar .nav-heading,
-  .sidebar .folder-link .truncate, .sidebar .area-hint, .sidebar .nav-heading-row {
+  /* links: icon 20 px, text-sm, gap 0.5rem, py-2, no pills */
+  .sidebar-search, .nav-item, .folder-link {
+    display: flex; align-items: center; gap: 0.5rem; height: auto; width: auto; padding: 0.5rem 0;
+    border: 0; border-radius: 0; background: transparent !important; box-shadow: none !important;
+    color: var(--link); font-size: 0.875rem; font-weight: 400; text-decoration: none;
+  }
+  .sidebar-search { margin-top: 2rem; cursor: pointer; }
+  .sidebar-search .checko-icon, .nav-item .checko-icon { width: 20px; height: 20px; flex: none; color: var(--link); }
+  .sidebar .nav-section { gap: 0.5rem; margin-top: 0.5rem; }
+  .sidebar .nav-drop, .sidebar .folder { padding: 0; }
+  .sidebar .nav-heading { display: none; }
+  .nav-item[aria-current="page"] { color: var(--text); font-weight: 700; }
+  .nav-item[aria-current="page"] .checko-icon { color: var(--icon-accent); }
+
+  .sidebar .nav-label, .sidebar-search span, .sidebar-search kbd, .sidebar .folder-link .truncate,
+  .sidebar .area-hint, .sidebar .nav-heading-row, .sidebar .nav-count {
     white-space: nowrap; opacity: 0; transition: opacity 0.15s, translate 0.15s;
   }
-  .sidebar.open .nav-label, .sidebar.open .sidebar-search span, .sidebar.open .sidebar-search kbd,
-  .sidebar.open .nav-heading, .sidebar.open .folder-link .truncate, .sidebar.open .area-hint, .sidebar.open .nav-heading-row { opacity: 1; }
-  .sidebar.open .nav-item:hover .nav-label, .sidebar.open .folder-link:hover .truncate { translate: 0.25rem 0; }
+  .sidebar.open .nav-label, .sidebar.open .sidebar-search span, .sidebar.open .sidebar-search kbd, .sidebar.open .folder-link .truncate,
+  .sidebar.open .area-hint, .sidebar.open .nav-heading-row, .sidebar.open .nav-count { opacity: 1; }
+  .sidebar.open .nav-item:hover .nav-label, .sidebar.open .sidebar-search:hover span, .sidebar.open .folder-link:hover .truncate { translate: 0.25rem 0; }
+  .sidebar-search kbd { margin-left: auto; }
+  .sidebar .nav-count { margin-left: auto; min-width: 0; padding: 0; border: 0; background: transparent !important; color: var(--muted) !important; font-size: 0.75rem; font-weight: 600; }
+  /* closed: a small dot shows there is something */
+  .sidebar:not(.open) .nav-item { position: relative; }
+  .sidebar:not(.open) .nav-item .nav-count { position: absolute; top: 0.4rem; left: 0.9rem; opacity: 1; width: 0.5rem; height: 0.5rem; border-radius: 999px; font-size: 0; background: #ef4444 !important; box-shadow: 0 0 0 2px var(--frame); }
 
-  /* rows: 44 px wide icon cell (8 px inset → icon centre at 30 px) */
-  .sidebar-search { width: 28px; height: 2.25rem; padding: 0 0 0 6px; gap: 0.75rem; overflow: hidden; border-color: transparent; background: transparent; box-shadow: none; transition: width 0.3s cubic-bezier(.4,0,.2,1), background 0.15s; }
-  .sidebar.open .sidebar-search { width: auto; padding: 0 0.7rem 0 6px; border-color: var(--border); background: var(--panel-soft); }
-  .nav-item { position: relative; height: 2.5rem; padding: 0 0 0 13px; gap: 0.85rem; }
-  .sidebar:not(.open) .nav-item { width: 44px; }
-  .sidebar .nav-heading { padding: 0 0 0.35rem; }
-  .folder-row { padding: 0; }
-  .folder-link { padding: 0.35rem 0 0.35rem 8px; gap: 0.75rem; }
-  .sidebar:not(.open) .folder-row { width: 44px; }
-
-  /* counters become a small dot on the icon while closed */
-  .sidebar:not(.open) .nav-item .nav-count { position: absolute; top: 0.45rem; left: 1.65rem; min-width: 0.55rem; width: 0.55rem; height: 0.55rem; padding: 0; font-size: 0; border: 2px solid var(--panel); background: #ef4444; }
-
-  /* categories: only the coloured tiles while closed */
-  .sidebar .area-list { margin: 0; padding: 0; border-left: 0; }
-  .sidebar:not(.open) .folder-row .nav-count, .sidebar:not(.open) .folder-toggle, .sidebar:not(.open) .folder-tasks { display: none; }
-  .sidebar .nav-collapsible { padding-top: 0.75rem; }
+  /* categories: coloured 20 px tiles as icons */
+  .sidebar .nav-collapsible { border-top: 0; padding-top: 0; margin-top: 1.5rem; }
+  .sidebar .nav-heading-row { padding: 0 0 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--muted); }
+  .sidebar .area-list { margin: 0; padding: 0; border-left: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+  .sidebar .folder-row { padding: 0; background: transparent !important; }
+  .sidebar .folder-link .cat-icon { width: 20px; height: 20px; border-radius: 6px; font-size: 0.7rem; }
+  .sidebar .folder-toggle { opacity: 0; }
+  .sidebar.open .folder-toggle { opacity: 1; }
+  .sidebar:not(.open) .folder-tasks { display: none; }
+  .sidebar .area-hint { margin: 0.4rem 0 0; }
+}
+@media (min-width: 640px) and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --frame: #262626; --link: #e5e5e5; }
 }
 @media (prefers-reduced-motion: reduce) {
   .sidebar, .app-main, .sidebar * { transition: none !important; }
