@@ -80,7 +80,7 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
                 }
             }
         >
-            <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item">
+            <A href=format!("{BASE}{}", it.href) exact=true attr:class="nav-item" attr:title=it.label>
                 <Icon glyph=it.icon size=18 />
                 <span class="nav-label">{it.label}</span>
                 <Show when=move || { count() > 0 }>
@@ -91,18 +91,44 @@ fn nav_link(it: &'static Item, store: Store) -> impl IntoView {
     }
 }
 
-/// Main navigation: brand, search, sections, settings and profile card.
+/// Is the keyboard focus still somewhere inside the sidebar?
+fn focus_in_sidebar() -> bool {
+    web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.active_element())
+        .and_then(|el| el.closest(".sidebar").ok().flatten())
+        .is_some()
+}
+
+/// Main navigation (port of the Aceternity "Sidebar"): on the desktop it is a
+/// 60 px icon rail that opens to 300 px while the mouse is over it (also on
+/// keyboard focus and while dragging a task onto it) and pushes the page aside.
 /// On small screens only the main links are shown, as a bottom bar.
 #[component]
 pub fn Sidebar() -> impl IntoView {
     let store = Store::get();
+    let open = RwSignal::new(false);
     view! {
-        <aside class="sidebar" aria-label="Seitenleiste">
+        <aside
+            class="sidebar"
+            class:open=move || open.get()
+            aria-label="Seitenleiste"
+            on:mouseenter=move |_| open.set(true)
+            on:mouseleave=move |_| if !focus_in_sidebar() { open.set(false) }
+            on:focusin=move |_| open.set(true)
+            on:focusout=move |_| {
+                // the newly focused element is only known after this event
+                set_timeout(move || if !focus_in_sidebar() { open.set(false) }, std::time::Duration::ZERO);
+            }
+            on:dragenter=move |_| open.set(true)
+            on:drop=move |_| open.set(false)
+        >
             <a href=format!("{BASE}/") class="sidebar-brand" aria-label="Checko Startseite">
+                <img class="brand-mark" src=crate::asset("brand/icon-192.png") alt="" width="28" height="28" />
                 <Logo />
             </a>
 
-            <button type="button" class="sidebar-search" on:click=move |_| store.quick_add_open.set(true)>
+            <button type="button" class="sidebar-search" title="Suchen / Neu (Strg K)" on:click=move |_| store.quick_add_open.set(true)>
                 <Icon glyph=Glyph::Search size=16 />
                 <span>"Suchen / Neu"</span>
                 <kbd>"Strg K"</kbd>
@@ -175,7 +201,7 @@ fn CategoryFolder(name: String) -> impl IntoView {
             }
         >
             <div class="folder-row" style=row_style>
-                <A href=href attr:class="folder-link">
+                <A href=href attr:class="folder-link" attr:title=name.clone()>
                     <span class="cat-icon">{icon}</span>
                     <span class="flex-1 truncate">{label}</span>
                 </A>
