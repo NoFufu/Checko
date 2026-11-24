@@ -131,14 +131,15 @@ fn WidgetSetup() -> impl IntoView {
         <section class="panel settings-section">
             <h2 class="section-head"><Icon glyph=Glyph::Today size=18 />"iPhone-Widget"</h2>
             <p class="text-sm text-muted">
-                "Zeigt heute fällige Aufgaben, den nächsten Termin und deinen Streak auf dem Startbildschirm – ohne die App zu öffnen. "
-                "Aktualisiert sich etwa alle 15 Minuten."
+                "Zeigt heute fällige Aufgaben, den nächsten Termin und deinen Streak – auf dem Start- und auf dem Sperrbildschirm. "
+                "Aktualisiert sich etwa alle 15 Minuten. Das Skript holt sich neue Designs automatisch, du richtest es nur einmal ein."
             </p>
             <ol class="widget-steps">
                 <li>"Die kostenlose App "<b>"Scriptable"</b>" aus dem App Store laden."</li>
                 <li>"Hier auf "<b>"„Widget-Skript kopieren“"</b>" tippen."</li>
-                <li>"In Scriptable oben rechts "<b>"+"</b>" → Text einfügen → oben den Namen "<b>"Checko"</b>" geben → Fertig."</li>
-                <li>"Startbildschirm lange drücken → "<b>"+"</b>" → "<b>"Scriptable"</b>" → mittlere Größe → Widget antippen → bei "<b>"Script"</b>" „Checko“ wählen."</li>
+                <li>"In Scriptable oben rechts "<b>"+"</b>" → Text einfügen → oben den Namen "<b>"Checko"</b>" geben → Fertig. Hast du schon ein Checko-Skript: dessen Text komplett ersetzen (einmalig)."</li>
+                <li><b>"Startbildschirm:"</b>" lange drücken → "<b>"+"</b>" → "<b>"Scriptable"</b>" → Größe wählen → Widget antippen → bei "<b>"Script"</b>" „Checko“ wählen."</li>
+                <li><b>"Sperrbildschirm:"</b>" Sperrbildschirm lange drücken → "<b>"Anpassen"</b>" → Sperrbildschirm → Widget-Feld antippen → "<b>"Scriptable"</b>" → das breite Feld wählen → antippen → „Checko“ wählen."</li>
             </ol>
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button" class="btn btn-primary" on:click=copy>
