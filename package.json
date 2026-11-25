@@ -2,10 +2,14 @@
   "name": "checko",
   "private": true,
   "scripts": {
-    "css": "tailwindcss -i crates/web/style/input.css -o crates/web/style/output.css"
+    "css": "tailwindcss -i crates/web/style/input.css -o crates/web/style/output.css",
+    "checkup": "node e2e/checkup.mjs",
+    "checkup:report": "node e2e/report.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.0",
+    "axe-core": "^4.14.1",
+    "playwright": "1.63.0",
     "tailwindcss": "^4.1.0"
   }
 }

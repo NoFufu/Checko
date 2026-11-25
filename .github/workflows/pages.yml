@@ -36,6 +36,20 @@ jobs:
         run: |
           trunk build --release --public-url "/${{ github.event.repository.name }}/"
           cp dist/index.html dist/404.html
+      # Check-up: clicks through the main flows in a real browser.
+      # If a flow breaks, the step fails and nothing is published.
+      - name: Check-up
+        env:
+          CHECKUP_BASE: /${{ github.event.repository.name }}
+        run: |
+          npx playwright install --with-deps chromium
+          npm run checkup
+      - name: Bewertungsbogen hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bewertungsbogen
+          path: checkup-report
       - uses: actions/upload-pages-artifact@v3
         with:
           path: crates/web/dist

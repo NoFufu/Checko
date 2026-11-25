@@ -7,12 +7,12 @@
 Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. Wir bauen gemeinsam **„Checko“**, einen persönlichen Organizer (To‑Dos, Kalender, Notizen, Einkaufsliste, Erinnerungen), der im Browser (PWA), auf dem Desktop und auf Android/iOS läuft.
 
 ## Pflicht‑Technologien
-- **Sprache: ausschließlich Rust** (außer minimalem CSS/HTML und Build‑Config).
-- **Jetzt: reine Webanwendung.** Leptos 0.7 (CSR, WASM) + `leptos_router`, Build mit Trunk, Tailwind CSS v4. Später als PWA installierbar; Tauri (Desktop/Mobile) erst in einer späteren Phase – Code so schreiben, dass er wiederverwendbar bleibt.
+- **Sprache: ausschließlich Rust** (außer minimalem CSS/HTML und Build‑Config). Ausnahme nur für Test‑Werkzeuge: der Check‑up in `e2e/` nutzt Playwright (JS); die App selbst bleibt 100 % Rust.
+- **Jetzt: reine Webanwendung.** Leptos 0.8 (CSR, WASM) + `leptos_router`, Build mit Trunk, Tailwind CSS v4. Später als PWA installierbar; Tauri (Desktop/Mobile) erst in einer späteren Phase – Code so schreiben, dass er wiederverwendbar bleibt.
 - **Architektur:** Cargo‑Workspace mit `crates/core` (pure Rust, keine Web‑Abhängigkeiten) und `crates/web` (Leptos‑App).
 - **Sync PC ↔ Handy ist Pflicht** (Axum‑Server, Phase 5). KI über Claude API auf dem Server (Phase 8).
 - **Daten:** local‑first im Browser. Trait `Storage`, zuerst `localStorage`, später IndexedDB. IDs = UUID v7, jede Entität hat `created_at`, `updated_at`, `deleted_at` (Soft‑Delete, sync‑fähig).
-- **Zeit:** `chrono`, Wiederholungen mit `rrule`.
+- **Zeit:** `chrono`, Wiederholungen mit eigener Regel in `core/calendar.rs` (kein `rrule`).
 
 ## Design‑Vorgaben
 - Orientiere dich an **reactbits.dev** (z. B. Soft Aurora, Dock, Magic Bento, Animated List, Spring Check, Swipe Row, Click Spark, Blur Text, Counter) und **ui.aceternity.com** (Bento Grid, Card Spotlight, Glowing Effect, Floating Dock, Placeholders‑And‑Vanish‑Input, Animated Modal, Timeline). Siehe Tabelle in `docs/PLAN.md`.
@@ -48,6 +48,14 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Keine Platzhalter‑„TODO“-Implementierungen ohne Hinweis; keine unnötigen Abhängigkeiten.
 - Halte dich an den Plan in `docs/PLAN.md`; frage nach, wenn eine Entscheidung offen ist, statt zu raten.
 - Commits klein und beschreibend (Conventional Commits).
+- **Sparsam arbeiten:** Prüf‑Screenshots nur bei sichtbaren Design‑Änderungen, klein (Ausschnitt/verkleinert), möglichst mehrere Ansichten in einem Bild. Keine Webseiten wiederholt abrufen.
+- **Eine Aufgabe = eine Sitzung:** Nach einer erledigten Aufgabe kann NoFufu eine neue Sitzung starten; der Stand steht unten unter „Aktueller Stand“ – dort nach größeren Schritten aktualisieren.
+
+## Check‑up & Bewertungsbogen
+- `npm run checkup` (nach `trunk build --release`): klickt alle Kernabläufe am PC und Handy durch, prüft Konsolenfehler, Überbreite, Barrierefreiheit (axe, WCAG AA), Tempo; schreibt `checkup-report/` mit Screenshots und dem visuellen **Bewertungsbogen** `checkup-report/index.html`.
+- Läuft bei jedem Push auf `main` in GitHub Actions; schlägt ein Ablauf fehl, wird nicht veröffentlicht. Der Bogen liegt als Artefakt „bewertungsbogen“ am Workflow‑Lauf.
+- `/checkup`: Claude führt den Check‑up aus, bewertet (Design‑Note, Stärken, Schwächen, max. 5 Empfehlungen in `review.json`) und schickt **immer** den visuell ausgearbeiteten Bewertungsbogen.
+- Neue Funktionen bekommen einen Ablauf in `e2e/checkup.mjs`.
 
 ## Skills, die wir nutzen
 - `frontend-design` / `impeccable`: bei neuen Seiten und größeren Design‑Änderungen.
@@ -57,5 +65,9 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - `code-review` und `simplify`: vor dem Merge einer Phase nach `main`.
 - `run`: App starten und Screenshots machen.
 
-## Aktuelle Aufgabe
-Phase 0–3 fertig, Phase 4 teilweise (Erfolge, Level‑Up; Themes/Fokus‑Modus/Maskottchen zurückgestellt). Phase 5 Code fertig: Sync‑Server `crates/server` (Axum + Postgres/Neon, Render‑Blueprint `render.yaml`, Keep‑awake‑Ping), Client `crates/web/src/sync.rs`, Anleitung `docs/SYNC-SETUP.md` – Hosting richtet NoFufu selbst ein. Phase 6 Schritt 1 fertig (Kalender, Wiederholungen; eigene Regel in `core/calendar.rs` statt `rrule`). Offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2).
+## Aktueller Stand
+- Fertig: Heute‑Dashboard (Hero „Als Nächstes“, Termine heute/Heute zu tun, Fortschritt mit Flächen‑Diagramm, Kategorien‑Halbkreise), Aufgaben (To‑dos und Termine nebeneinander; Eintrag mit Uhrzeit = Termin, umschaltbar), Detail‑Ansicht mit großer Termin‑Karte, Hinzufügen‑Dialog mit allen Optionen (Strg K / Neu / +), Kalender (Monat/Agenda, Doppelklick legt Eintrag an, To‑dos als Chips abhakbar), schlichte Notizen, Einkauf mit Links (Amazon) und Verlauf, Erfolge/Level/Streak.
+- Sync über eigenen Server (Render + Neon) läuft; iPhone‑Widget über Scriptable mit selbst‑aktualisierendem Lader (`docs/widget/`), Start‑ und Sperrbildschirm.
+- Design: Grouped Sidebar (nach Aceternity) mit Einklapp‑Knopf, Gecko‑App‑Icon und Logo (Gecko als „C“), Hell/Dunkel oben rechts.
+- Zurückgestellt: Themes per Level, Fokus‑Modus, Maskottchen, native App.
+- Nächstes offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2).
