@@ -65,6 +65,16 @@ pub fn TodayPage() -> impl IntoView {
             <section class="hero">
                 <div class="hero-text">
                     <p class="hero-kicker">{today_label()}</p>
+                    <Show when=move || !store.focus()>
+                        <a class="xp-mini" href="#fortschritt"
+                            aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {}", p.level, p.current, p.needed, p.level + 1) }>
+                            <span class="xp-mini-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
+                            <span class="xp-mini-bar" aria-hidden="true">
+                                <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
+                            </span>
+                            <span class="xp-mini-text" aria-hidden="true">{move || { let p = progress(); format!("{} / {} XP", p.current, p.needed) }}</span>
+                        </a>
+                    </Show>
                     <h1 class="hero-title">{format!("{}!", greeting())}</h1>
                     <div class="mt-6 flex flex-wrap gap-3">
                         <a class="btn btn-primary btn-lg" href=format!("{}/aufgaben", crate::BASE)>
@@ -127,7 +137,7 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
 
-            <section class="play-zone" aria-label=move || if store.focus() { "Kategorien" } else { "Fortschritt, Erfolge und Kategorien" }>
+            <section id="fortschritt" class="play-zone" aria-label=move || if store.focus() { "Kategorien" } else { "Fortschritt, Erfolge und Kategorien" }>
                 <div class="play-grid" class:play-focus=move || store.focus()>
                     <Show when=move || !store.focus()>
                     <div class="play-main">
