@@ -70,4 +70,5 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Sync über eigenen Server (Render + Neon) läuft; iPhone‑Widget über Scriptable mit selbst‑aktualisierendem Lader (`docs/widget/`), Start‑ und Sperrbildschirm.
 - Design: Grouped Sidebar (nach Aceternity) mit Einklapp‑Knopf, Gecko‑App‑Icon und Logo (Gecko als „C“), Hell/Dunkel oben rechts.
 - Zurückgestellt: Themes per Level, Fokus‑Modus, Maskottchen, native App.
-- Nächstes offen: Erinnerungen/Benachrichtigungen (Phase 6 Schritt 2).
+- Erinnerungen: Feld „Erinnerung“ an Aufgaben/Terminen (`remind` Minuten vorher, ganztägig vor 09:00), `core::reminders_between`; im Browser `web/src/notify.rs` (Timer + Service Worker), Web Push vom Server (`server/src/push.rs`, VAPID-Schlüssel in der DB, Planer jede Minute). Kalender-Termine haben eine eigene Detail-Ansicht (`EventDetail`).
+- Offene Empfehlungen aus dem Check-up: Kontrast `--muted`, Kalender-Tabs (ARIA).

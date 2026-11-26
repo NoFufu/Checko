@@ -23,3 +23,30 @@ self.addEventListener("fetch", (e) => {
       })
   );
 });
+
+// Reminders from the server (Web Push) – same tag as in-app reminders, so no doubles.
+self.addEventListener("push", (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: e.data && e.data.text() }; }
+  e.waitUntil(
+    self.registration.showNotification(d.title || "Checko", {
+      body: d.body || "",
+      tag: d.tag || undefined,
+      icon: new URL("assets/brand/icon-192.png", self.registration.scope).href,
+      badge: new URL("assets/brand/favicon-64.png", self.registration.scope).href,
+      data: { url: self.registration.scope },
+    })
+  );
+});
+
+// Tap on a notification: focus an open Checko window or open one.
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || self.registration.scope;
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) if (c.url.startsWith(self.registration.scope) && "focus" in c) return c.focus();
+      return self.clients.openWindow(url);
+    })
+  );
+});

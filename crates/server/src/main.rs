@@ -4,12 +4,15 @@
 //! - `POST /api/sync` (Bearer token): push local changes, get everything newer
 //!   than the client's `since` cursor. Conflicts: last write (by `updated_at`) wins.
 //! - `GET /health` for uptime pings.
+//! - `GET /api/push/key`, `POST /api/push/subscribe`: reminders via Web Push (see `push.rs`).
 //!
 //! Configuration via environment:
 //! - `DATABASE_URL` (Postgres, e.g. Neon)
 //! - `PORT` (default 8080)
 //! - `ALLOWED_ORIGINS` comma-separated (default: GitHub Pages + localhost)
 //! - `ALLOW_REGISTRATION` = "false" to close sign-ups after creating your account
+
+mod push;
 
 use std::{net::SocketAddr, sync::Arc};
 
@@ -39,6 +42,7 @@ const MAX_CHANGES: usize = 5000;
 struct AppState {
     db: PgPool,
     allow_registration: bool,
+    vapid: Arc<push::Vapid>,
 }
 
 type Shared = Arc<AppState>;
@@ -457,6 +461,8 @@ fn app(state: Shared) -> Router {
         .route("/api/logout", post(logout))
         .route("/api/sync", post(sync))
         .route("/api/widget", get(widget))
+        .route("/api/push/key", get(push::key))
+        .route("/api/push/subscribe", post(push::subscribe))
         .layer(cors())
         .with_state(state)
 }
@@ -472,13 +478,19 @@ async fn main() {
     migrate(&db)
         .await
         .expect("Tabellen konnten nicht angelegt werden");
+    push::migrate(&db)
+        .await
+        .expect("Push-Tabellen konnten nicht angelegt werden");
+    let vapid = push::vapid(&db).await.expect("VAPID-Schlüssel");
     let allow_registration = std::env::var("ALLOW_REGISTRATION")
         .map(|v| v != "false")
         .unwrap_or(true);
     let state = Arc::new(AppState {
         db,
         allow_registration,
+        vapid: Arc::new(vapid),
     });
+    push::spawn_scheduler(state.clone());
 
     let port: u16 = std::env::var("PORT")
         .ok()

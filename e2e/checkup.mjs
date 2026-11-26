@@ -187,6 +187,24 @@ async function main() {
       await page.locator('.cal-chip', { hasText: 'Team-Meeting' }).waitFor();
     });
 
+    await flow('Kalender: Termin anklicken, bearbeiten und Erinnerung setzen', async () => {
+      const form = page.locator('.cal-form input[aria-label="Termin"]');
+      await form.fill('Elternabend in der Grundschule am Marktplatz 18:00');
+      await page.locator('.cal-form button[type="submit"]').click();
+      const chip = page.locator('.cal-chip', { hasText: 'Elternabend' }).first();
+      await chip.waitFor();
+      await chip.click();
+      const drawer = page.locator('.drawer[aria-label="Termin bearbeiten"]');
+      await drawer.waitFor();
+      await drawer.locator('textarea.drawer-title').fill('Elternabend Grundschule');
+      await drawer.locator('textarea.drawer-title').press('Enter');
+      await drawer.locator('select[aria-label="Erinnerung"]').selectOption('15');
+      await page.keyboard.press('Escape');
+      await page.locator('.cal-chip', { hasText: 'Elternabend Grundschule' }).first().waitFor();
+      const remind = await page.evaluate(() => JSON.parse(localStorage.getItem('checko.events.v1') || '[]').find((e) => e.title === 'Elternabend Grundschule')?.remind);
+      expect(remind === 15, `Erinnerung nicht gespeichert (${remind})`);
+    });
+
     await flow('Einkauf: Amazon-Link wird zum Eintrag mit Namen', async () => {
       await nav(page, 'Einkauf');
       const input = page.locator('input[aria-label="Artikel hinzufügen"]');

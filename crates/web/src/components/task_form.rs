@@ -52,6 +52,7 @@ pub fn TaskForm(
     let time = RwSignal::new(String::new());
     let repeat = RwSignal::new(String::new());
     let kind = RwSignal::new(None::<bool>);
+    let remind = RwSignal::new(String::new());
     // A day picked in the calendar (double-click) pre-fills the date.
     if full {
         Effect::new(move |_| {
@@ -104,7 +105,9 @@ pub fn TaskForm(
                 .recurrence
                 .or_else(|| repeat_from(&repeat.get_untracked())),
             appointment: kind.get_untracked(),
+            remind: super::task_detail::remind_from(&remind.get_untracked()),
         });
+        remind.set(String::new());
         title.set(String::new());
         time.set(String::new());
         repeat.set(String::new());
@@ -228,6 +231,12 @@ pub fn TaskForm(
                                 <option value="2w">"Alle 2 Wochen"</option>
                                 <option value="m">"Jeden Monat"</option>
                                 <option value="y">"Jedes Jahr"</option>
+                            </select>
+                        </label>
+                        <label class="add-field">
+                            <span>"Erinnerung"</span>
+                            <select bind:value=remind on:change=move |_| crate::notify::ensure_permission()>
+                                {super::task_detail::REMIND_OPTIONS.iter().map(|(v, l)| view! { <option value=*v>{*l}</option> }).collect_view()}
                             </select>
                         </label>
                         <div class="add-field">

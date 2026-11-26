@@ -7,28 +7,28 @@ use super::icon::{Glyph, Icon};
 #[component]
 pub fn Topbar() -> impl IntoView {
     view! {
-        <header class="topbar">
-            <span></span>
-            <div class="flex items-center gap-2">
-                <super::theme::ThemeSwitch />
-                <a href=format!("{}/einstellungen", crate::BASE) class="btn-icon" aria-label="Einstellungen" title="Einstellungen">
-                    <Icon glyph=Glyph::Settings size=18 />
-                </a>
-                <button type="button" class="btn-icon" aria-label="Benachrichtigungen" title="Erinnerungen kommen in Phase 6">
-                    <Icon glyph=Glyph::Bell size=18 />
-                </button>
-                <button
-                    type="button"
-                    class="btn btn-primary"
-                    title="Schnell hinzufügen (Strg K)"
-                    on:click=move |_| crate::store::Store::get().quick_add_open.set(true)
-                >
-                    <Icon glyph=Glyph::Add size=16 />
-                    "Neu"
-                </button>
-            </div>
-        </header>
-    }
+            <header class="topbar">
+                <span></span>
+                <div class="flex items-center gap-2">
+                    <super::theme::ThemeSwitch />
+                    <a href=format!("{}/einstellungen", crate::BASE) class="btn-icon" aria-label="Einstellungen" title="Einstellungen">
+                        <Icon glyph=Glyph::Settings size=18 />
+                    </a>
+    <a href=format!("{}/einstellungen", crate::BASE) class="btn-icon" aria-label="Erinnerungen einstellen" title="Erinnerungen">
+                        <Icon glyph=Glyph::Bell size=18 />
+                    </a>
+                    <button
+                        type="button"
+                        class="btn btn-primary"
+                        title="Schnell hinzufügen (Strg K)"
+                        on:click=move |_| crate::store::Store::get().quick_add_open.set(true)
+                    >
+                        <Icon glyph=Glyph::Add size=16 />
+                        "Neu"
+                    </button>
+                </div>
+            </header>
+        }
 }
 
 /// Phone-only header: logo, sync state, search/new and settings.

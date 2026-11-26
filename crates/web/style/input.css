@@ -1134,3 +1134,24 @@ body { touch-action: manipulation; }
   .page, .page-wide { max-width: 84rem; }
   .topbar { max-width: 84rem; margin: 0 auto 1rem; }
 }
+.notify-status { margin: 0.6rem 0 0.8rem; padding: 0.55rem 0.8rem; border-radius: 0.7rem; background: var(--panel-soft); font-size: 0.9rem; font-weight: 600; }
+.notify-status.on { background: color-mix(in srgb, var(--green) 14%, var(--panel)); color: var(--icon-accent); }
+
+/* long titles stay readable (wrap instead of "…") */
+.agenda-name { overflow-wrap: anywhere; white-space: normal; }
+.agenda-row { align-items: flex-start; }
+.agenda-row .agenda-time { padding-top: 0.1rem; }
+.agenda-open { flex: none; display: grid; color: var(--muted); transform: rotate(-90deg); }
+.agenda-row.clickable:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.cal-chip[role="button"] { cursor: pointer; }
+.cal-chip:hover { filter: brightness(0.97); box-shadow: 0 0 0 1px var(--c); }
+@media (min-width: 701px) { .cal-title { -webkit-line-clamp: 4; } }
+.upcoming-item .font-medium, .task-title { overflow-wrap: anywhere; }
+.event-mark { display: grid; place-items: center; flex: none; width: 1.55rem; height: 1.55rem; margin-top: 0.35rem; border-radius: 0.45rem; color: #fff; background: var(--accent-grad); }
+.when-fields-3 { grid-template-columns: 1.4fr 1fr 1fr; }
+button.cal-num { border: 0; background: transparent; font: inherit; color: inherit; cursor: pointer; }
+button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 1px; }
+.cal-title { word-break: normal !important; overflow-wrap: break-word; hyphens: auto; }
+.agenda-name { overflow-wrap: break-word; hyphens: auto; }
+.event-row { cursor: pointer; }
+.event-title { display: block; font-weight: 500; }

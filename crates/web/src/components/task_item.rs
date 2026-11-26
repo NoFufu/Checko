@@ -91,6 +91,7 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
     let (steps_done, steps_total) = task.step_progress();
     let has_notes = !task.notes.trim().is_empty();
     let repeat = task.recurrence.map(|r| r.label());
+    let reminder = task.remind.is_some();
     let title = task.title.clone();
 
     let on_drag = move |e: leptos::ev::DragEvent| {
@@ -151,6 +152,9 @@ pub fn TaskItem(task: Task, #[prop(optional)] trash: bool) -> impl IntoView {
                     })}
                     {repeat.map(|r| view! {
                         <span class="meta-item" title=r.clone()><Icon glyph=Glyph::Repeat size=13 /></span>
+                    })}
+                    {reminder.then(|| view! {
+                        <span class="meta-item" title="Erinnerung an"><Icon glyph=Glyph::Bell size=13 /></span>
                     })}
                     {(steps_total > 0).then(|| view! {
                         <span class="meta-item" class:all-done=steps_done == steps_total>

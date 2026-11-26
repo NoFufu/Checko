@@ -1,6 +1,6 @@
 //! Calendar: events, simple repeat rules and the combined view of events + tasks.
 
-use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveTime, Utc};
+use chrono::{DateTime, Datelike, Duration, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -101,6 +101,9 @@ pub struct Event {
     pub notes: String,
     #[serde(default)]
     pub recurrence: Option<Recurrence>,
+    /// Reminder: minutes before the start (all-day: before 09:00). `None` = off.
+    #[serde(default)]
+    pub remind: Option<u32>,
 }
 
 impl Event {
@@ -114,6 +117,7 @@ impl Event {
             category: None,
             notes: String::new(),
             recurrence: None,
+            remind: None,
         }
     }
 
@@ -147,6 +151,8 @@ pub struct CalendarItem {
     pub repeats: bool,
     /// Time block look (events and appointment tasks) instead of a to-do chip.
     pub appointment: bool,
+    /// Minutes before the start to send a reminder.
+    pub remind: Option<u32>,
 }
 
 /// Events and due tasks between two dates, sorted by date and time
@@ -172,6 +178,7 @@ pub fn items_between(
                 priority: None,
                 repeats: e.recurrence.is_some(),
                 appointment: true,
+                remind: e.remind,
             });
         }
     }
@@ -192,6 +199,7 @@ pub fn items_between(
             priority: Some(t.priority),
             repeats: t.recurrence.is_some(),
             appointment: t.is_appointment(),
+            remind: t.remind,
         });
     }
     // per day: open before done, all-day before timed, then by time
@@ -231,6 +239,58 @@ pub fn shift_month(d: NaiveDate, delta: i32) -> NaiveDate {
         NaiveDate::from_ymd_opt(total.div_euclid(12), (total.rem_euclid(12) + 1) as u32, 1)
             .unwrap_or(first)
     }
+}
+
+/// Reference time for all-day items when computing reminders.
+pub const ALL_DAY_REMINDER: (u32, u32) = (9, 0);
+
+/// One reminder that is due.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Reminder {
+    /// Stable key (item id + date) so a reminder is only sent once.
+    pub key: String,
+    pub id: Uuid,
+    pub title: String,
+    /// e.g. "Heute · 14:00" is built by the caller; here: start time if any.
+    pub start: Option<NaiveTime>,
+    pub date: NaiveDate,
+    /// Local time the reminder fires.
+    pub at: NaiveDateTime,
+}
+
+/// Reminders (of open events and tasks with `remind` set) that fire in
+/// `(after, until]` local time. Repeating events are expanded.
+pub fn reminders_between(
+    events: &[Event],
+    tasks: &[Task],
+    after: NaiveDateTime,
+    until: NaiveDateTime,
+) -> Vec<Reminder> {
+    // a reminder can be up to a few days before the item, so look ahead
+    let from = after.date();
+    let to = until.date() + Duration::days(8);
+    let mut out: Vec<Reminder> = items_between(events, tasks, from, to)
+        .into_iter()
+        .filter(|i| !i.done)
+        .filter_map(|i| {
+            let minutes = i.remind?;
+            let (h, m) = ALL_DAY_REMINDER;
+            let start = i
+                .start
+                .unwrap_or_else(|| NaiveTime::from_hms_opt(h, m, 0).unwrap_or_default());
+            let at = i.date.and_time(start) - Duration::minutes(minutes as i64);
+            (at > after && at <= until).then(|| Reminder {
+                key: format!("{}:{}", i.id, i.date),
+                id: i.id,
+                title: i.title,
+                start: i.start,
+                date: i.date,
+                at,
+            })
+        })
+        .collect();
+    out.sort_by_key(|r| r.at);
+    out
 }
 
 #[cfg(test)]
@@ -314,5 +374,51 @@ mod tests {
         let items = items_between(&[], &[done, open], day, day);
         assert_eq!(items[0].title, "Neue Mail");
         assert!(items[1].done);
+    }
+
+    #[test]
+    fn reminders() {
+        let now = chrono::Utc::now();
+        let day = d(2026, 11, 26);
+        let at = |h, m| day.and_hms_opt(h, m, 0).unwrap();
+        let mut dentist = Event::new("Zahnarzt", day, now);
+        dentist.start = NaiveTime::from_hms_opt(14, 0, 0);
+        dentist.remind = Some(15);
+        let mut birthday = Event::new("Papa Geburtstag", day, now);
+        birthday.remind = Some(0); // all-day → 09:00
+        let silent = Event::new("Ohne Erinnerung", day, now);
+        let mut task = Task::new("Rezept abholen", now);
+        task.due = Some(day);
+        task.due_time = NaiveTime::from_hms_opt(8, 0, 0);
+        task.remind = Some(60);
+        let mut done = task.clone();
+        done.meta = Meta::new(now);
+        done.status = TaskStatus::Done;
+
+        let events = [dentist, birthday, silent];
+        let tasks = [task, done];
+        let all = reminders_between(&events, &tasks, at(0, 0), at(23, 59));
+        let titles: Vec<_> = all.iter().map(|r| (r.title.as_str(), r.at)).collect();
+        assert_eq!(
+            titles,
+            vec![
+                ("Rezept abholen", at(7, 0)),
+                ("Papa Geburtstag", at(9, 0)),
+                ("Zahnarzt", at(13, 45))
+            ]
+        );
+        // window is (after, until]
+        assert_eq!(
+            reminders_between(&events, &tasks, at(13, 44), at(13, 45)).len(),
+            1
+        );
+        assert!(reminders_between(&events, &tasks, at(13, 45), at(13, 50)).is_empty());
+        // one day before
+        let mut ev = Event::new("Flug", d(2026, 11, 27), now);
+        ev.start = NaiveTime::from_hms_opt(10, 0, 0);
+        ev.remind = Some(24 * 60);
+        let r = reminders_between(&[ev], &[], at(9, 0), at(11, 0));
+        assert_eq!(r[0].at, at(10, 0));
+        assert!(r[0].key.ends_with("2026-11-27"));
     }
 }

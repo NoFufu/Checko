@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::components::{
     icon::{Glyph, Icon},
-    task_detail::{repeat_from, repeat_value},
+    task_detail::repeat_from,
     topbar::Topbar,
 };
 use crate::store::Store;
@@ -172,9 +172,6 @@ fn DayCell(
             class:today=is_today
             class:selected=move || selected.get() == day
             class:drop-over=move || over.get()
-            role="button"
-            tabindex="0"
-            aria-label=day_title(day)
             title="Doppelklick: neuer Eintrag an diesem Tag"
             on:click=move |_| selected.set(day)
             on:dblclick=move |_| {
@@ -182,7 +179,6 @@ fn DayCell(
                 store.quick_add_date.set(Some(day));
                 store.quick_add_open.set(true);
             }
-            on:keydown=move |e| if e.key() == "Enter" || e.key() == " " { e.prevent_default(); selected.set(day) }
             on:dragover=move |e| { e.prevent_default(); over.set(true); }
             on:dragleave=move |_| over.set(false)
             on:drop=move |e| {
@@ -194,7 +190,9 @@ fn DayCell(
                 }
             }
         >
-            <span class="cal-num">{day.day()}</span>
+            <button type="button" class="cal-num" aria-label=day_title(day) on:click=move |e| { e.stop_propagation(); selected.set(day) }>
+                {day.day()}
+            </button>
             <ul class="cal-items">
                 {shown.into_iter().map(|i| view! { <li><ItemChip item=i /></li> }).collect_view()}
                 {(extra > 0).then(|| view! { <li class="cal-more">{format!("+{extra} mehr")}</li> })}
@@ -213,9 +211,20 @@ fn ItemChip(item: CalendarItem) -> impl IntoView {
         .unwrap_or("var(--green)");
     // to-dos look like a little checkbox chip, appointments like a block
     let is_todo = !item.appointment;
+    let store = Store::get();
+    let (kind, id) = (item.kind, item.id);
     view! {
         <span
             class="cal-chip"
+            role="button"
+            tabindex="0"
+            on:click=move |e| {
+                e.stop_propagation();
+                if kind == ItemKind::Event { store.event_detail.set(Some(id)) } else { store.detail.set(Some(id)) }
+            }
+            on:keydown=move |e| if e.key() == "Enter" {
+                if kind == ItemKind::Event { store.event_detail.set(Some(id)) } else { store.detail.set(Some(id)) }
+            }
             class:task=is_todo
             class:done=item.done
             draggable=crate::ui::fine_pointer().then_some("true")
@@ -325,29 +334,20 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
         .unwrap_or("var(--green)");
     let is_event = item.kind == ItemKind::Event;
     let time = time_range(&item).unwrap_or_else(|| "Ganztägig".into());
-    let repeat_label = if is_event {
-        store.events.with_untracked(|es| {
-            es.iter()
-                .find(|e| e.meta.id == id)
-                .and_then(|e| e.recurrence)
-        })
-    } else {
-        None
-    };
     view! {
         <li
             class="agenda-row"
             class:done=item.done
             class:todo=!item.appointment
-            class:clickable=!is_event
+            class:clickable=true
             style=format!("--c:{color}")
-            title=(!is_event).then_some("Details öffnen")
-            on:click=move |_| if !is_event { store.detail.set(Some(id)) }
+            title="Details öffnen"
+            on:click=move |_| if is_event { store.event_detail.set(Some(id)) } else { store.detail.set(Some(id)) }
         >
             <span class="agenda-bar" aria-hidden="true"></span>
             <span class="agenda-time">{time}</span>
             <span class="flex-1 min-w-0">
-                <span class="block font-medium truncate">{item.title.clone()}</span>
+                <span class="block font-medium agenda-name">{item.title.clone()}</span>
                 <span class="block text-sm text-muted">
                     {if item.appointment { "Termin" } else { "Aufgabe" }}
                     {item.category.clone().map(|c| format!(" · {c}"))}
@@ -355,27 +355,7 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
                 </span>
             </span>
             {if is_event {
-                view! {
-                    <label class="field">
-                        <span class="sr-only">"Wiederholen"</span>
-                        <select
-                            class="agenda-repeat"
-                            aria-label="Wiederholen"
-                            prop:value=repeat_value(repeat_label)
-                            on:change=move |e| { let r = repeat_from(&event_target_value(&e)); store.edit_event(id, |ev| ev.recurrence = r); }
-                        >
-                            <option value="">"Einmalig"</option>
-                            <option value="d">"Täglich"</option>
-                            <option value="w">"Wöchentlich"</option>
-                            <option value="2w">"Alle 2 Wo."</option>
-                            <option value="m">"Monatlich"</option>
-                            <option value="y">"Jährlich"</option>
-                        </select>
-                    </label>
-                    <button type="button" class="row-btn" aria-label="Termin löschen" title="Termin löschen" on:click=move |_| store.delete_event(id)>
-                        <Icon glyph=Glyph::Trash size=16 />
-                    </button>
-                }
+                view! { <span class="agenda-open" aria-hidden="true"><Icon glyph=Glyph::ChevronDown size=16 /></span> }
                     .into_any()
             } else {
                 let done = item.done;

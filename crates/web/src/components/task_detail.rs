@@ -35,6 +35,46 @@ pub fn repeat_from(v: &str) -> Option<Recurrence> {
     }
 }
 
+/// Reminder choices ("" = none), shared by tasks, events and the add dialog.
+pub const REMIND_OPTIONS: [(&str, &str); 7] = [
+    ("", "Keine"),
+    ("0", "Zum Zeitpunkt"),
+    ("5", "5 Min. vorher"),
+    ("15", "15 Min. vorher"),
+    ("30", "30 Min. vorher"),
+    ("60", "1 Std. vorher"),
+    ("1440", "1 Tag vorher"),
+];
+
+pub fn remind_from(v: &str) -> Option<u32> {
+    v.parse().ok()
+}
+
+pub fn remind_value(r: Option<u32>) -> String {
+    r.map(|m| m.to_string()).unwrap_or_default()
+}
+
+/// Select for the reminder; asks for notification permission on first use.
+#[component]
+pub fn RemindSelect(value: Option<u32>, on_change: Callback<Option<u32>>) -> impl IntoView {
+    view! {
+        <select
+            class="detail-select"
+            aria-label="Erinnerung"
+            prop:value=remind_value(value)
+            on:change=move |e| {
+                let r = remind_from(&event_target_value(&e));
+                if r.is_some() {
+                    crate::notify::ensure_permission();
+                }
+                on_change.run(r);
+            }
+        >
+            {REMIND_OPTIONS.iter().map(|(v, l)| view! { <option value=*v>{*l}</option> }).collect_view()}
+        </select>
+    }
+}
+
 const PRIORITIES: [Priority; 4] = [Priority::P4, Priority::P3, Priority::P2, Priority::P1];
 
 /// Side panel with everything about one task (like Microsoft To Do):
@@ -265,6 +305,19 @@ fn DetailBody(task: Task) -> impl IntoView {
                     <option value="y">"Jedes Jahr"</option>
                 </select>
             </label>
+            <label class="detail-row">
+                <span class="detail-label">"Erinnerung"</span>
+                <RemindSelect
+                    value=task.remind
+                    on_change=Callback::new(move |r| store.edit(id, |t| {
+                        t.remind = r;
+                        if r.is_some() && t.due.is_none() {
+                            t.due = Some(today);
+                        }
+                        t.meta.updated_at = crate::time::now();
+                    }))
+                />
+            </label>
             <div class="detail-row detail-row-wrap">
                 <span class="detail-label">"Kategorie"</span>
                 <div class="cat-editor">
@@ -356,6 +409,142 @@ fn DetailBody(task: Task) -> impl IntoView {
                 {format!("Erstellt am {}", task.meta.created_at.format("%d.%m.%Y"))}
             </span>
             <button type="button" class="btn btn-outline btn-sm" on:click=move |_| { store.trash(id); store.detail.set(None); }>
+                <Icon glyph=Glyph::Trash size=14 />
+                "Löschen"
+            </button>
+        </div>
+    }
+}
+
+/// Detail panel for a calendar event (same look as the task panel).
+#[component]
+pub fn EventDetail() -> impl IntoView {
+    let store = Store::get();
+    let event = move || {
+        let id = store.event_detail.get()?;
+        store.events.with(|es| {
+            es.iter()
+                .find(|e| e.meta.id == id && e.meta.deleted_at.is_none())
+                .cloned()
+        })
+    };
+    let close = move || store.event_detail.set(None);
+    let handle = window_event_listener(ev::keydown, move |e| {
+        if e.key() == "Escape" && store.event_detail.get_untracked().is_some() {
+            store.event_detail.set(None);
+        }
+    });
+    on_cleanup(move || handle.remove());
+    view! {
+        <Show when=move || event().is_some()>
+            <div class="drawer-backdrop" on:click=move |_| close()></div>
+            <aside class="drawer" role="complementary" aria-label="Termin bearbeiten">
+                {move || event().map(|e| view! { <EventBody event=e /> })}
+            </aside>
+        </Show>
+    }
+}
+
+#[component]
+fn EventBody(event: checko_core::Event) -> impl IntoView {
+    let store = Store::get();
+    let id = event.meta.id;
+    let today = today();
+    let date = event.date;
+    let start = event.start;
+    let end = event.end;
+    let time_text = match (start, end) {
+        (Some(s), Some(e)) => Some(format!("{}–{}", s.format("%H:%M"), e.format("%H:%M"))),
+        (Some(s), None) => Some(s.format("%H:%M").to_string()),
+        _ => None,
+    };
+    let parse_time = |v: String| NaiveTime::parse_from_str(&v, "%H:%M").ok();
+    let category = event.category.clone().unwrap_or_default();
+    view! {
+        <div class="drawer-head">
+            <span class="event-mark" aria-hidden="true"><Icon glyph=Glyph::Calendar size=16 /></span>
+            <textarea
+                class="drawer-title"
+                rows="1"
+                aria-label="Titel"
+                prop:value=event.title.clone()
+                on:change=move |e| { let v = event_target_value(&e); store.edit_event(id, |ev| ev.title = v.trim().to_string()); }
+                on:keydown=move |e| if e.key() == "Enter" { e.prevent_default(); let v = event_target_value(&e); store.edit_event(id, |ev| ev.title = v.trim().to_string()); }
+            ></textarea>
+            <button type="button" class="drawer-close" aria-label="Schließen" title="Schließen (Esc)" on:click=move |_| store.event_detail.set(None)>"✕"</button>
+        </div>
+
+        <section class="when-card">
+            <div class="when-main">
+                <span class="when-icon" aria-hidden="true"><Icon glyph=Glyph::Calendar size=20 /></span>
+                <span class="min-w-0">
+                    <span class="when-big">{due_label(date, today)}</span>
+                    <span class="when-small">{long_date(date)}</span>
+                </span>
+                {time_text.map(|t| view! { <span class="when-time">{t}</span> })}
+            </div>
+            <div class="when-fields when-fields-3">
+                <label class="when-field">
+                    <span>"Datum"</span>
+                    <input type="date" prop:value=date.to_string()
+                        on:change=move |e| if let Ok(d) = event_target_value(&e).parse() { store.edit_event(id, |ev| ev.date = d) } />
+                </label>
+                <label class="when-field">
+                    <span>"Von"</span>
+                    <input type="time" prop:value=start.map(|t| t.format("%H:%M").to_string()).unwrap_or_default()
+                        on:change=move |e| { let t = parse_time(event_target_value(&e)); store.edit_event(id, |ev| ev.start = t) } />
+                </label>
+                <label class="when-field">
+                    <span>"Bis"</span>
+                    <input type="time" prop:value=end.map(|t| t.format("%H:%M").to_string()).unwrap_or_default()
+                        on:change=move |e| { let t = parse_time(event_target_value(&e)); store.edit_event(id, |ev| ev.end = t) } />
+                </label>
+            </div>
+        </section>
+
+        <div class="detail-list">
+            <label class="detail-row">
+                <span class="detail-label">"Wiederholen"</span>
+                <select class="detail-select" prop:value=repeat_value(event.recurrence)
+                    on:change=move |e| { let r = repeat_from(&event_target_value(&e)); store.edit_event(id, |ev| ev.recurrence = r) }>
+                    <option value="">"Nie"</option>
+                    <option value="d">"Jeden Tag"</option>
+                    <option value="w">"Jede Woche"</option>
+                    <option value="2w">"Alle 2 Wochen"</option>
+                    <option value="m">"Jeden Monat"</option>
+                    <option value="y">"Jedes Jahr"</option>
+                </select>
+            </label>
+            <label class="detail-row">
+                <span class="detail-label">"Erinnerung"</span>
+                <RemindSelect value=event.remind on_change=Callback::new(move |r| store.edit_event(id, |ev| ev.remind = r)) />
+            </label>
+            <label class="detail-row">
+                <span class="detail-label">"Kategorie"</span>
+                <select class="detail-select" prop:value=category
+                    on:change=move |e| { let v = event_target_value(&e); store.edit_event(id, |ev| ev.category = Some(v).filter(|v| !v.is_empty())) }>
+                    <option value="">"Keine"</option>
+                    {move || store.areas().into_iter().map(|a| view! { <option value=a.clone()>{a.clone()}</option> }).collect_view()}
+                </select>
+            </label>
+        </div>
+
+        <section class="drawer-section">
+            <h3 class="drawer-label">"Notizen"</h3>
+            <textarea
+                class="note-body drawer-notes"
+                placeholder="Ort, Link, Details …"
+                aria-label="Notizen zum Termin"
+                prop:value=event.notes.clone()
+                on:change=move |e| { let v = event_target_value(&e); store.edit_event(id, |ev| ev.notes = v) }
+            ></textarea>
+        </section>
+
+        <div class="drawer-foot">
+            <span class="text-sm text-muted">
+                {if event.recurrence.is_some() { "Wiederholt sich – Änderungen gelten für alle Termine." } else { "Termin" }}
+            </span>
+            <button type="button" class="btn btn-outline btn-sm" on:click=move |_| { store.delete_event(id); store.event_detail.set(None); }>
                 <Icon glyph=Glyph::Trash size=14 />
                 "Löschen"
             </button>

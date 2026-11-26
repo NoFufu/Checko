@@ -242,6 +242,7 @@ pub fn complete_task(
             next.due = Some(next_due);
             next.due_time = t.due_time;
             next.appointment = t.appointment;
+            next.remind = t.remind;
             next.recurrence = Some(r);
             next.steps = t
                 .steps

@@ -97,6 +97,9 @@ pub struct Task {
     /// an entry with a time of day is an appointment.
     #[serde(default)]
     pub appointment: Option<bool>,
+    /// Reminder: minutes before the due time (all-day: before 09:00). `None` = off.
+    #[serde(default)]
+    pub remind: Option<u32>,
 }
 
 impl Task {
@@ -119,6 +122,7 @@ impl Task {
             steps: Vec::new(),
             recurrence: None,
             appointment: None,
+            remind: None,
         }
     }
 }

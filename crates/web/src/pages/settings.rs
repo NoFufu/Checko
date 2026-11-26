@@ -48,6 +48,8 @@ pub fn SettingsPage() -> impl IntoView {
                 </div>
             </div>
 
+            <NotifySetup />
+
             <section class="panel settings-section settings-row">
                 <span>
                     <span class="block font-semibold">"Darstellung"</span>
@@ -147,6 +149,74 @@ fn WidgetSetup() -> impl IntoView {
                 </button>
                 <span class="text-sm text-muted">"Das Skript enthält deinen Zugangsschlüssel – nicht weitergeben."</span>
             </div>
+        </section>
+    }
+}
+
+/// Turn on reminders: permission, push subscription (with sync account), test.
+#[component]
+fn NotifySetup() -> impl IntoView {
+    use web_sys::NotificationPermission as P;
+    let perm = RwSignal::new(crate::notify::permission());
+    let push = RwSignal::new(false);
+    let busy = RwSignal::new(false);
+    let msg = RwSignal::new(None::<String>);
+    let sync = Sync::get();
+    let signed_in = move || sync.config.with(|c| c.token.is_some());
+    leptos::task::spawn_local(async move { push.set(crate::notify::push_active().await) });
+    let enable = move |_| {
+        busy.set(true);
+        msg.set(None);
+        leptos::task::spawn_local(async move {
+            match crate::notify::enable_push().await {
+                Ok(()) => {
+                    push.set(crate::notify::push_active().await);
+                    msg.set(Some("Fertig! Erinnerungen sind an.".into()));
+                }
+                Err(e) => msg.set(Some(e)),
+            }
+            perm.set(crate::notify::permission());
+            busy.set(false);
+        });
+    };
+    let test = move |_| {
+        leptos::task::spawn_local(async {
+            crate::notify::show(
+                "Checko",
+                "So sehen deine Erinnerungen aus. 🦎",
+                "checko-test",
+            )
+            .await
+        })
+    };
+    let status = move || {
+        match (perm.get(), push.get(), signed_in()) {
+        (P::Granted, true, _) => "An – auch wenn Checko geschlossen ist.",
+        (P::Granted, false, true) => "An, solange Checko geöffnet ist. Tippe auf „Aktivieren“ für Erinnerungen bei geschlossener App.",
+        (P::Granted, false, false) => "An, solange Checko geöffnet ist. Mit Sync-Konto kommen sie auch bei geschlossener App.",
+        (P::Denied, _, _) => "Blockiert – in den Browser- bzw. iPhone-Einstellungen für Checko erlauben.",
+        _ => "Noch aus.",
+    }
+    };
+    view! {
+        <section class="panel settings-section">
+            <h2 class="section-head"><Icon glyph=Glyph::Bell size=18 />"Erinnerungen"</h2>
+            <p class="text-sm text-muted">
+                "Bei Terminen und Aufgaben unter „Erinnerung“ einstellen, wann Checko Bescheid gibt (z. B. 15 Min. vorher). "
+                "Auf dem iPhone funktioniert das nur mit Checko auf dem Home-Bildschirm (Teilen → Zum Home-Bildschirm)."
+            </p>
+            <p class="notify-status" class:on=move || perm.get() == P::Granted>{status}</p>
+            <div class="flex flex-wrap items-center gap-2">
+                <Show when=move || !(perm.get() == P::Granted && (push.get() || !signed_in()))>
+                    <button type="button" class="btn btn-primary" disabled=move || busy.get() on:click=enable>
+                        {move || if busy.get() { "Einen Moment …" } else { "Erinnerungen aktivieren" }}
+                    </button>
+                </Show>
+                <Show when=move || perm.get() == P::Granted>
+                    <button type="button" class="btn btn-outline" on:click=test>"Test-Benachrichtigung"</button>
+                </Show>
+            </div>
+            {move || msg.get().map(|m| view! { <p class="text-sm mt-2">{m}</p> })}
         </section>
     }
 }

@@ -36,6 +36,21 @@ pub fn TodayPage() -> impl IntoView {
         v.sort_by_key(|t| (t.due, t.due_time.is_some(), t.due_time));
         v
     };
+    // calendar events of today (respecting the category filter)
+    let today_events = move || {
+        let a = area.get();
+        let d = today();
+        store.events.with(|e| {
+            checko_core::items_between(e, &[], d, d)
+                .into_iter()
+                .filter(|i| {
+                    a.as_deref()
+                        .is_none_or(|a| i.category.as_deref() == Some(a))
+                })
+                .collect::<Vec<_>>()
+        })
+    };
+    let has_appts = move || !today_appts().is_empty() || !today_events().is_empty();
     let today_todos = move || {
         today_list()
             .into_iter()
@@ -71,10 +86,15 @@ pub fn TodayPage() -> impl IntoView {
 
             <div class="dash-grid">
                 <div class="dash-main">
-                    <Show when=move || !today_appts().is_empty()>
+                    <Show when=has_appts>
                         <SectionHead icon=Glyph::Calendar title="Termine heute" />
                         <section class="panel appt-panel">
                             <ul class="task-list">
+                                <For
+                                    each=today_events
+                                    key=|i| (i.id, i.title.clone(), i.start, i.remind)
+                                    children=|i| view! { <EventRow item=i /> }
+                                />
                                 <For
                                     each=today_appts
                                     key=|t| (t.meta.id, t.meta.updated_at)
@@ -102,7 +122,7 @@ pub fn TodayPage() -> impl IntoView {
                 </div>
 
                 <aside class="dash-side">
-                    <SectionHead icon=Glyph::Calendar title="Nächste Termine" />
+                    <SectionHead icon=Glyph::Calendar title="Demnächst" />
                     <UpcomingEvents />
                 </aside>
             </div>
@@ -225,6 +245,36 @@ fn ProgressCard() -> impl IntoView {
     }
 }
 
+/// A calendar event in the "Termine heute" list (same look as appointment tasks).
+#[component]
+fn EventRow(item: checko_core::CalendarItem) -> impl IntoView {
+    let store = Store::get();
+    let id = item.id;
+    let time = item
+        .start
+        .map(|t| t.format("%H:%M").to_string())
+        .unwrap_or_else(|| "Ganzer Tag".into());
+    view! {
+        <li class="task-row appt event-row" role="button" tabindex="0" title="Termin öffnen"
+            on:click=move |_| store.event_detail.set(Some(id))
+            on:keydown=move |e| if e.key() == "Enter" { store.event_detail.set(Some(id)) }
+        >
+            <span class="appt-time urgency-4">
+                <span class="appt-clock">{time}</span>
+                <span class="appt-day">"Heute"</span>
+            </span>
+            <div class="task-body">
+                <span class="task-title event-title">{item.title.clone()}</span>
+                <div class="task-meta">
+                    {item.repeats.then(|| view! { <span class="meta-item" title="Wiederholt sich"><Icon glyph=Glyph::Repeat size=13 /></span> })}
+                    {item.remind.is_some().then(|| view! { <span class="meta-item" title="Erinnerung an"><Icon glyph=Glyph::Bell size=13 /></span> })}
+                    {item.category.clone().map(|c| view! { <crate::components::task_item::CategoryChip name=c /> })}
+                </div>
+            </div>
+        </li>
+    }
+}
+
 /// Next events and dated tasks (14 days), max. 5.
 #[component]
 fn UpcomingEvents() -> impl IntoView {
@@ -235,7 +285,8 @@ fn UpcomingEvents() -> impl IntoView {
             store.tasks.with(|t| {
                 checko_core::items_between(e, t, from, from + chrono::Duration::days(14))
                     .into_iter()
-                    .filter(|i| !i.done && i.appointment)
+                    // today is already listed under "Termine heute"
+                    .filter(|i| !i.done && i.appointment && i.date > from)
                     .take(5)
                     .collect::<Vec<_>>()
             })
@@ -249,8 +300,8 @@ fn UpcomingEvents() -> impl IntoView {
                     <div class="list-empty">
                         <span class="list-icon"><Icon glyph=Glyph::Clock size=18 /></span>
                         <span>
-                            <span class="block font-semibold">"Keine Termine"</span>
-                            <span class="block text-sm text-muted">"Dein Kalender ist frei."</span>
+                            <span class="block font-semibold">"Keine weiteren Termine"</span>
+                            <span class="block text-sm text-muted">"Die nächsten 14 Tage sind frei."</span>
                         </span>
                     </div>
                 }
@@ -267,7 +318,7 @@ fn UpcomingEvents() -> impl IntoView {
                                     <a class="upcoming-item" href=format!("{}/kalender", crate::BASE) style=format!("--c:{color}")>
                                         <span class="agenda-bar" aria-hidden="true"></span>
                                         <span class="min-w-0">
-                                            <span class="block font-medium truncate">{i.title.clone()}</span>
+                                            <span class="block font-medium">{i.title.clone()}</span>
                                             <span class="block text-sm text-muted">{when}{time}</span>
                                         </span>
                                     </a>

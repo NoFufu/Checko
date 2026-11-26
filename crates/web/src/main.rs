@@ -1,4 +1,5 @@
 mod components;
+mod notify;
 mod pages;
 mod store;
 mod sync;
@@ -10,8 +11,11 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 
 use components::{
-    celebrate::CelebrationHost, quick_add::QuickAddDialog, sidebar::Sidebar,
-    task_detail::TaskDetail, toast::ToastHost,
+    celebrate::CelebrationHost,
+    quick_add::QuickAddDialog,
+    sidebar::Sidebar,
+    task_detail::{EventDetail, TaskDetail},
+    toast::ToastHost,
 };
 use pages::{
     calendar::CalendarPage, notes::NotesPage, settings::SettingsPage, shopping::ShoppingPage,
@@ -40,9 +44,21 @@ fn App() -> impl IntoView {
     let store = store::Store::provide();
     sync::Sync::provide(store);
     components::theme::provide_theme();
+    notify::start(store);
+    // only one detail panel at a time
+    Effect::new(move |_| {
+        if store.detail.get().is_some() {
+            store.event_detail.set(None);
+        }
+    });
+    Effect::new(move |_| {
+        if store.event_detail.get().is_some() {
+            store.detail.set(None);
+        }
+    });
     view! {
         <Router base=BASE>
-            <div class="app-shell" class:detail-open=move || store.detail.get().is_some()>
+            <div class="app-shell" class:detail-open=move || store.detail.get().is_some() || store.event_detail.get().is_some()>
                 <Sidebar />
                 <main class="app-main">
                     <components::topbar::MobileHeader />
@@ -59,6 +75,7 @@ fn App() -> impl IntoView {
             <ToastHost />
             <QuickAddDialog />
             <TaskDetail />
+            <EventDetail />
             <CelebrationHost />
         </Router>
     }
