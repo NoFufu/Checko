@@ -5,6 +5,7 @@ pub mod calendar;
 pub mod categories;
 pub mod gamification;
 pub mod ics;
+pub mod ics_export;
 pub mod model;
 pub mod notes;
 pub mod parse;
@@ -19,6 +20,7 @@ pub use calendar::{
 pub use categories::*;
 pub use gamification::{level_for_xp, xp_for_task, LevelProgress};
 pub use ics::{merge_ics, parse_ics, IcsEvent, ImportStats};
+pub use ics_export::write_ics;
 pub use model::*;
 pub use notes::*;
 pub use parse::{parse_quick_add, ParsedTask, Token, TokenKind};

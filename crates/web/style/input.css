@@ -1198,3 +1198,7 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 /* Fokus-Modus */
 .focus-mode .spark { display: none; }
 @media (min-width: 1100px) { .play-grid.play-focus { grid-template-columns: minmax(0, 1fr); max-width: 32rem; } }
+
+/* Outlook-Abo */
+.feed-url { width: 100%; font: inherit; font-size: 0.8rem; padding: 0.55rem 0.7rem; border-radius: 0.6rem; border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); }
+.feed-url:focus { outline: 0; border-color: var(--green); box-shadow: 0 0 0 3px rgb(101 169 130 / 0.2); }
