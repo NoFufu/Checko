@@ -8,8 +8,8 @@ use crate::asset;
 pub fn Logo() -> impl IntoView {
     view! {
         <span class="wordmark" role="img" aria-label="checko">
-            <img class="logo-for-light" src=asset("brand/logo-light.webp") alt="" width="900" height="232" />
-            <img class="logo-for-dark" src=asset("brand/logo-dark.webp") alt="" width="900" height="232" />
+            <img class="logo-for-light" src=asset("brand/logo-light.webp") alt="" width="900" height="276" />
+            <img class="logo-for-dark" src=asset("brand/logo-dark.webp") alt="" width="900" height="276" />
         </span>
     }
 }
