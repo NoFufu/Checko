@@ -34,6 +34,22 @@ pub fn supported() -> bool {
         .unwrap_or(false)
 }
 
+/// iPhone/iPad in a normal Safari tab: Apple allows notifications only for
+/// web apps started from the home screen.
+pub fn ios_tab() -> bool {
+    let Some(w) = web_sys::window() else {
+        return false;
+    };
+    let ua = w.navigator().user_agent().unwrap_or_default();
+    let ios = ua.contains("iPhone") || ua.contains("iPad");
+    let standalone = w
+        .match_media("(display-mode: standalone)")
+        .ok()
+        .flatten()
+        .is_some_and(|m| m.matches());
+    ios && !standalone
+}
+
 pub fn permission() -> NotificationPermission {
     if supported() {
         web_sys::Notification::permission()

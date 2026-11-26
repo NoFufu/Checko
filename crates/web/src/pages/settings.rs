@@ -306,7 +306,11 @@ fn NotifySetup() -> impl IntoView {
             }));
         })
     };
+    let ios_tab = crate::notify::ios_tab();
     let status = move || {
+        if ios_tab {
+            return "Im Safari-Tab erlaubt das iPhone keine Benachrichtigungen. So geht's: unten auf Teilen (□↑) → „Zum Home-Bildschirm“ → Checko über das neue Symbol öffnen und hier auf „Erinnerungen aktivieren“ tippen.";
+        }
         match (perm.get(), push.get(), signed_in()) {
         (P::Granted, true, _) => "An – auch wenn Checko geschlossen ist.",
         (P::Granted, false, true) => "An, solange Checko geöffnet ist. Tippe auf „Aktivieren“ für Erinnerungen bei geschlossener App.",
@@ -324,7 +328,7 @@ fn NotifySetup() -> impl IntoView {
             </p>
             <p class="notify-status" class:on=move || perm.get() == P::Granted>{status}</p>
             <div class="flex flex-wrap items-center gap-2">
-                <Show when=move || !(perm.get() == P::Granted && (push.get() || !signed_in()))>
+                <Show when=move || !ios_tab && !(perm.get() == P::Granted && (push.get() || !signed_in()))>
                     <button type="button" class="btn btn-primary" disabled=move || busy.get() on:click=enable>
                         {move || if busy.get() { step.get().unwrap_or("Einen Moment …") } else { "Erinnerungen aktivieren" }}
                     </button>
