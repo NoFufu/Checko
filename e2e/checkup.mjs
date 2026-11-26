@@ -247,6 +247,27 @@ async function main() {
       expect((await page.locator('.note-item').first().innerText()).includes('Check-up Notiz'), 'Notiz nicht gespeichert');
     });
 
+    await flow('Kategorie umbenennen, Emoji ändern und Fokus-Modus', async () => {
+      await dismissPopups(page); await page.locator('.topbar a[aria-label="Einstellungen"]').first().click(); await page.waitForTimeout(400);
+      await page.waitForTimeout(400);
+      const name = page.locator('.cat-name-input[id="cat-Privat"]');
+      await name.fill('Zuhause');
+      await name.press('Enter');
+      await page.locator('.cat-name-input[id="cat-Zuhause"]').waitFor();
+      const emoji = page.locator('.cat-manage-row', { has: page.locator('[id="cat-Zuhause"]') }).locator('.cat-emoji-input');
+      await emoji.fill('🏡');
+      await emoji.press('Tab');
+      await page.locator('.folder-link', { hasText: 'Zuhause' }).locator('.cat-icon', { hasText: '🏡' }).waitFor();
+      await page.locator('label.switch').click();
+      await nav(page, 'Heute');
+      await page.waitForTimeout(400);
+      expect(!(await page.locator('.level-card').count()), 'Level trotz Fokus-Modus sichtbar');
+      await dismissPopups(page); await page.locator('.topbar a[aria-label="Einstellungen"]').first().click(); await page.waitForTimeout(400);
+      await page.locator('label.switch').click();
+      await nav(page, 'Heute');
+      await page.locator('.level-card').waitFor();
+    });
+
     await flow('Hell/Dunkel umschalten', async () => {
       await page.locator('.topbar .theme-option[aria-label="Dunkel"]').click();
       expect(await page.evaluate(() => document.documentElement.dataset.theme) === 'dark', 'Dunkelmodus nicht aktiv');

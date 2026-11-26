@@ -1171,3 +1171,30 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .cal-import[open] summary { margin-bottom: 0.7rem; }
 .ics-import.compact .ics-drop { padding: 0.7rem 0.8rem; }
 .ics-import.compact .text-sm.text-muted { font-size: 0.75rem; }
+
+/* Kategorien verwalten */
+.cat-manage { display: flex; flex-direction: column; gap: 0.4rem; }
+.cat-manage-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: 0.8rem; background: var(--panel-soft); border-left: 4px solid var(--c); }
+.cat-emoji-input { width: 2.6rem; height: 2.6rem; text-align: center; font-size: 1.2rem; border-radius: 0.7rem; border: 1px solid var(--border); background: var(--panel); color: var(--text); }
+.cat-color-field input { width: 2.2rem; height: 2.2rem; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.cat-color-field input::-webkit-color-swatch-wrapper { padding: 0; }
+.cat-color-field input::-webkit-color-swatch { border: 2px solid var(--border); border-radius: 50%; }
+.cat-name-form { flex: 1; min-width: 0; }
+.cat-name-input { width: 100%; font: inherit; font-weight: 600; padding: 0.45rem 0.6rem; border-radius: 0.6rem; border: 1px solid transparent; background: transparent; color: var(--text); }
+.cat-name-input:hover { border-color: var(--border); }
+.cat-name-input:focus { outline: 0; border-color: var(--green); box-shadow: 0 0 0 3px rgb(101 169 130 / 0.2); background: var(--panel); }
+.cat-emoji-input:focus-visible, .cat-color-field input:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+
+/* Schalter */
+.switch { position: relative; display: inline-flex; cursor: pointer; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+.switch-track { width: 2.9rem; height: 1.65rem; border-radius: 999px; background: var(--border); transition: background 200ms cubic-bezier(.34,1.56,.64,1); display: flex; align-items: center; padding: 0.2rem; }
+.switch-thumb { width: 1.25rem; height: 1.25rem; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); transition: transform 220ms cubic-bezier(.34,1.56,.64,1); }
+.switch input:checked + .switch-track { background: var(--green-strong, #3f7d5a); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(1.25rem); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--green); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .switch-track, .switch-thumb { transition: none; } }
+
+/* Fokus-Modus */
+.focus-mode .spark { display: none; }
+@media (min-width: 1100px) { .play-grid.play-focus { grid-template-columns: minmax(0, 1fr); max-width: 32rem; } }

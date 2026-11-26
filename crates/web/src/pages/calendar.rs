@@ -208,7 +208,7 @@ fn ItemChip(item: CalendarItem) -> impl IntoView {
         .category
         .as_deref()
         .map(area_color)
-        .unwrap_or("var(--green)");
+        .unwrap_or_else(|| "var(--green)".to_string());
     // to-dos look like a little checkbox chip, appointments like a block
     let is_todo = !item.appointment;
     let store = Store::get();
@@ -335,7 +335,7 @@ fn AgendaRow(item: CalendarItem) -> impl IntoView {
         .category
         .as_deref()
         .map(area_color)
-        .unwrap_or("var(--green)");
+        .unwrap_or_else(|| "var(--green)".to_string());
     let is_event = item.kind == ItemKind::Event;
     let time = time_range(&item).unwrap_or_else(|| "Ganztägig".into());
     view! {

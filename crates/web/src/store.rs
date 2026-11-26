@@ -139,7 +139,7 @@ impl Store {
             let level = store
                 .profile
                 .with(|p| checko_core::level_for_xp(p.xp).level);
-            if level > last_level.get_value() {
+            if level > last_level.get_value() && !store.profile.with_untracked(|p| p.focus_mode) {
                 store
                     .celebrations
                     .update(|c| c.push(Celebration::LevelUp(level)));
@@ -171,7 +171,7 @@ impl Store {
                     })
                 })
             });
-            if !new.is_empty() {
+            if !new.is_empty() && !store.profile.with_untracked(|p| p.focus_mode) {
                 store
                     .celebrations
                     .update(|c| c.extend(new.into_iter().map(Celebration::Achievement)));
@@ -251,7 +251,64 @@ impl Store {
 
     /// All categories (defaults + custom ones in use), reactive.
     pub fn areas(&self) -> Vec<String> {
-        self.tasks.with(|t| all_areas(t))
+        let mut a = self.tasks.with(|t| all_areas(t));
+        self.profile.with(|p| {
+            a.retain(|c| !p.category_hidden(c));
+            for k in p.kept_categories() {
+                if !a.iter().any(|x| x.eq_ignore_ascii_case(k)) {
+                    a.push(k.to_string());
+                }
+            }
+        });
+        a
+    }
+
+    /// Focus mode: no XP, level, streak, achievements or confetti.
+    pub fn focus(&self) -> bool {
+        self.profile.with(|p| p.focus_mode)
+    }
+
+    pub fn set_focus(&self, on: bool) {
+        self.profile.update(|p| {
+            p.focus_mode = on;
+            p.updated_at = Some(now());
+        });
+    }
+
+    /// Rename a category everywhere (tasks, events, own style).
+    pub fn rename_category_everywhere(&self, old: &str, new: &str) {
+        let new = new.trim().trim_start_matches('#').trim().to_string();
+        if new.is_empty() || new == old {
+            return;
+        }
+        let events = self.events;
+        let mut n = 0;
+        self.tasks.update(|ts| {
+            events.update(|ev| n = checko_core::rename_category(ts, ev, old, &new, now()));
+        });
+        self.profile
+            .update(|p| p.rename_category_style(old, &new, now()));
+        self.notify(format!("„{old}“ heißt jetzt „{new}“ ({n} Einträge)"), None);
+    }
+
+    /// Remove a category from everything; the tasks themselves stay.
+    pub fn delete_category_everywhere(&self, name: &str) {
+        let events = self.events;
+        let mut n = 0;
+        self.tasks.update(|ts| {
+            events.update(|ev| n = checko_core::delete_category(ts, ev, name, now()));
+        });
+        self.profile
+            .update(|p| p.delete_category_style(name, now()));
+        self.notify(
+            format!("Kategorie „{name}“ gelöscht ({n} Einträge behalten)"),
+            None,
+        );
+    }
+
+    pub fn set_category_style(&self, name: &str, emoji: Option<String>, color: Option<String>) {
+        self.profile
+            .update(|p| p.set_category_style(name, emoji, color, now()));
     }
 
     /// Rename a task. "#Küche", "morgen", "!1" in the new text are applied too.
@@ -286,6 +343,7 @@ impl Store {
     }
 
     pub fn add_category(&self, id: Uuid, c: &str) {
+        self.profile.update(|p| p.unhide_category(c, now()));
         self.edit(id, |t| t.add_category(c, now()));
     }
 
@@ -319,7 +377,12 @@ impl Store {
             });
         });
         if xp > 0 {
-            self.notify(format!("Erledigt! +{xp} XP"), Some(Undo::Complete(id)));
+            let text = if self.focus() {
+                "Erledigt!".to_string()
+            } else {
+                format!("Erledigt! +{xp} XP")
+            };
+            self.notify(text, Some(Undo::Complete(id)));
         }
     }
 

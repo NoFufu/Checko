@@ -58,7 +58,7 @@ fn App() -> impl IntoView {
     });
     view! {
         <Router base=BASE>
-            <div class="app-shell" class:detail-open=move || store.detail.get().is_some() || store.event_detail.get().is_some()>
+            <div class="app-shell" class:focus-mode=move || store.focus() class:detail-open=move || store.detail.get().is_some() || store.event_detail.get().is_some()>
                 <Sidebar />
                 <main class="app-main">
                     <components::topbar::MobileHeader />

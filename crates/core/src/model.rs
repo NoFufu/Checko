@@ -158,6 +158,22 @@ pub struct Profile {
     pub achievements: Vec<String>,
     /// Last change (for sync between devices).
     pub updated_at: Option<DateTime<Utc>>,
+    /// Own emoji/colour per category, and hidden default categories.
+    pub category_styles: Vec<CategoryStyle>,
+    /// Focus mode: XP, level, streak, achievements and confetti are hidden.
+    pub focus_mode: bool,
+}
+
+/// Look of one category, chosen by the user.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
+#[serde(default)]
+pub struct CategoryStyle {
+    pub name: String,
+    pub emoji: Option<String>,
+    /// CSS colour, e.g. "#65a982".
+    pub color: Option<String>,
+    /// Hidden from the category list (used for deleted default categories).
+    pub hidden: bool,
 }
 
 #[cfg(test)]

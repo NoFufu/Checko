@@ -1,10 +1,26 @@
 //! Small shared display helpers (colours and labels).
 
 use checko_core::Priority;
+use leptos::prelude::{use_context, With};
 
 /// Colour for a category dot. Default areas have fixed colours, custom ones
 /// get a stable colour from a small palette.
-pub fn area_color(area: &str) -> &'static str {
+pub fn area_color(area: &str) -> String {
+    if let Some(c) = own_style(area).and_then(|s| s.color) {
+        return c;
+    }
+    default_area_color(area).to_string()
+}
+
+/// The user's own style for a category (reactive when read inside a view).
+fn own_style(name: &str) -> Option<checko_core::CategoryStyle> {
+    use_context::<crate::store::Store>()?
+        .profile
+        .with(|p| p.category_style(name).cloned())
+}
+
+/// Colour without the user's own choice.
+pub fn default_area_color(area: &str) -> &'static str {
     const PALETTE: [&str; 6] = [
         "#6fa8dc", "#e6a23c", "#d17fb0", "#5bb5a2", "#c9a227", "#8e9aaf",
     ];
@@ -43,6 +59,14 @@ pub fn priority_class(p: Priority) -> &'static str {
 
 /// Icon for a category (emoji for common names, otherwise the first letter).
 pub fn category_icon(name: &str) -> String {
+    if let Some(e) = own_style(name).and_then(|s| s.emoji) {
+        return e;
+    }
+    default_category_icon(name)
+}
+
+/// Icon without the user's own choice.
+pub fn default_category_icon(name: &str) -> String {
     let n = name.to_lowercase();
     let pick = [
         (["arbeit", "job", "büro"].as_slice(), "💼"),

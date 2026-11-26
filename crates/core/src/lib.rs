@@ -2,6 +2,7 @@
 
 pub mod achievements;
 pub mod calendar;
+pub mod categories;
 pub mod gamification;
 pub mod ics;
 pub mod model;
@@ -15,6 +16,7 @@ pub use calendar::{
     items_between, month_grid, reminders_between, shift_month, CalendarItem, Event, Freq, ItemKind,
     Recurrence, Reminder, ALL_DAY_REMINDER,
 };
+pub use categories::*;
 pub use gamification::{level_for_xp, xp_for_task, LevelProgress};
 pub use ics::{merge_ics, parse_ics, IcsEvent, ImportStats};
 pub use model::*;

@@ -127,8 +127,9 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
 
-            <section class="play-zone" aria-label="Fortschritt, Erfolge und Kategorien">
-                <div class="play-grid">
+            <section class="play-zone" aria-label=move || if store.focus() { "Kategorien" } else { "Fortschritt, Erfolge und Kategorien" }>
+                <div class="play-grid" class:play-focus=move || store.focus()>
+                    <Show when=move || !store.focus()>
                     <div class="play-main">
                         <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
                         <ProgressCard />
@@ -150,6 +151,7 @@ pub fn TodayPage() -> impl IntoView {
                         </section>
                         </div>
                     </div>
+                    </Show>
                     <div class="play-side">
                         <SectionHead icon=Glyph::Pin title="Kategorien" />
                         <CategoryArcs />
@@ -309,7 +311,7 @@ fn UpcomingEvents() -> impl IntoView {
                         .map(|i| {
                             let when = crate::time::due_label(i.date, today());
                             let time = i.start.map(|t| t.format(" · %H:%M").to_string()).unwrap_or_default();
-                            let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or("var(--green)");
+                            let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or_else(|| "var(--green)".to_string());
                             view! {
                                 <li>
                                     <a class="upcoming-item" href=format!("{}/kalender", crate::BASE) style=format!("--c:{color}")>
@@ -491,7 +493,7 @@ fn HeroUpcoming() -> impl IntoView {
                         crate::time::due_label(i.date, today()),
                         i.start.map(|t| t.format(" · %H:%M Uhr").to_string()).unwrap_or_default()
                     );
-                    let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or("#16a34a");
+                    let color = i.category.as_deref().map(crate::ui::area_color).unwrap_or_else(|| "#16a34a".to_string());
                     view! {
                         <div class="upnext-head">
                             <span class="upnext-kicker">"Als Nächstes"</span>
@@ -525,7 +527,7 @@ fn HeroUpcoming() -> impl IntoView {
                                 .iter()
                                 .take(3)
                                 .map(|i| {
-                                    let c = i.category.as_deref().map(crate::ui::area_color).unwrap_or("#16a34a");
+                                    let c = i.category.as_deref().map(crate::ui::area_color).unwrap_or_else(|| "#16a34a".to_string());
                                     view! { <span class="strip-dot" style=format!("background:{c}")></span> }
                                 })
                                 .collect_view();

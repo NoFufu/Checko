@@ -1,4 +1,5 @@
 pub mod area_filter;
+pub mod categories;
 pub mod celebrate;
 pub mod data_tools;
 // Visual effects kept for later use.

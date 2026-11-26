@@ -44,7 +44,7 @@ pub fn SettingsPage() -> impl IntoView {
             <div class="page-head">
                 <div>
                     <h1 class="page-h1">"Einstellungen"</h1>
-                    <p class="text-muted">"Konto, Sync zwischen PC und Handy, Darstellung."</p>
+                    <p class="text-muted">"Konto, Sync, Kategorien, Fokus-Modus und Darstellung."</p>
                 </div>
             </div>
 
@@ -60,6 +60,20 @@ pub fn SettingsPage() -> impl IntoView {
                 <h2 class="section-head"><Icon glyph=Glyph::Notes size=18 />"Datensicherung"</h2>
                 <p class="text-sm text-muted">"Alle Aufgaben, Termine, Notizen und Einkäufe als Datei sichern – und bei Bedarf wieder einspielen."</p>
                 <crate::components::data_tools::BackupTools />
+            </section>
+
+            <section class="panel settings-section">
+                <h2 class="section-head"><Icon glyph=Glyph::Pin size=18 />"Kategorien"</h2>
+                <p class="text-sm text-muted">"Umbenennen, Emoji und Farbe wählen oder löschen. Gilt für alle Aufgaben und Termine."</p>
+                <crate::components::categories::CategoryManager />
+            </section>
+
+            <section class="panel settings-section settings-row">
+                <span>
+                    <span class="block font-semibold">"Fokus-Modus"</span>
+                    <span class="block text-sm text-muted">"Blendet XP, Level, Streak, Erfolge und Konfetti aus."</span>
+                </span>
+                <crate::components::categories::FocusSwitch />
             </section>
 
             <section class="panel settings-section settings-row">
