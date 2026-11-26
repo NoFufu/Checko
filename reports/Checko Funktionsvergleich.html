@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Checko Funktionsvergleich</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f6f5f8;--card:#fff;--text:#251e2e;--muted:#6b6475;--line:#e8e4ee;--soft:#f3f0f7;--green:#1fa463;--lav:#7c5cd6;--peach:#f08a64;--has:#1fa463;--part:#e6a10b;--miss:#e5484d;--unk:#b9b2c3}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131016;--card:#1c1820;--text:#f4f1f6;--muted:#a69fb0;--line:#2e2834;--soft:#241f29;--unk:#5d566a}}
+:root[data-theme="dark"]{--bg:#131016;--card:#1c1820;--text:#f4f1f6;--muted:#a69fb0;--line:#2e2834;--soft:#241f29;--unk:#5d566a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 "Plus Jakarta Sans",system-ui,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 16px 64px}
+.hero{position:relative;overflow:hidden;padding:28px;border-radius:24px;color:#fff;background:radial-gradient(120% 140% at 100% 0%,#22c55e 0%,transparent 55%),linear-gradient(135deg,#5b3df5 0%,#6d4aff 45%,#1f9d63 100%);box-shadow:0 24px 48px -24px rgb(91 61 245/.7)}
+.hero::after{content:"";position:absolute;right:-80px;bottom:-140px;width:340px;height:340px;border-radius:50%;background:rgb(255 255 255/.08)}
+.kicker{margin:0 0 6px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;opacity:.85}
+h1{margin:0;font-size:clamp(26px,4vw,38px);line-height:1.12;letter-spacing:-.02em;max-width:24ch}
+.hero p.lead{margin:12px 0 0;max-width:60ch;opacity:.92}
+.apps{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;position:relative;z-index:1}
+.apps span{padding:4px 11px;border-radius:99px;background:rgb(255 255 255/.16);font-size:13px;font-weight:700}
+.apps span.me{background:#fff;color:#251e2e}
+h2{margin:40px 0 6px;font-size:21px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+h2::before{content:"";width:10px;height:10px;border-radius:3px;background:var(--lav)}
+.sub{margin:0 0 14px;color:var(--muted);font-size:14px}
+.grid4{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.card{padding:16px 18px;border-radius:18px;background:var(--card);border:1px solid var(--line);box-shadow:0 8px 20px -16px rgb(37 30 46/.35)}
+.win .ico{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;font-size:20px;background:var(--soft)}
+.win h3{margin:12px 0 4px;font-size:16px}
+.win p{margin:0;color:var(--muted);font-size:13.5px}
+/* matrix */
+.matrix{background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.mx-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{padding:9px 10px;text-align:center;font-size:13.5px}
+th{position:sticky;top:0;background:var(--card);font-size:12.5px;font-weight:800;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;padding-left:16px}
+th.me,td.me{background:color-mix(in srgb,var(--green) 9%,transparent)}
+tr.grp td{background:var(--soft);font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:7px 16px}
+tbody tr:not(.grp)+tr:not(.grp) td{border-top:1px solid var(--line)}
+.d{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle}
+.h{background:var(--has)}.p{background:var(--part)}.m{background:transparent;box-shadow:inset 0 0 0 2px var(--miss)}.u{background:var(--unk)}
+.legend{display:flex;flex-wrap:wrap;gap:16px;padding:12px 16px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+/* wishes */
+.wish{display:grid;grid-template-columns:26px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.wish:first-child{border-top:0}
+.wish .n{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--soft);font-weight:800;font-size:13px}
+.wish b{display:block;font-size:14.5px}
+.wish small{display:block;color:var(--muted);font-size:12.5px}
+.bar{height:6px;margin-top:6px;border-radius:99px;background:var(--soft);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--lav),#a48cd9)}
+.pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:800;white-space:nowrap}
+.ok{background:color-mix(in srgb,var(--has) 16%,transparent);color:var(--has)}
+.half{background:color-mix(in srgb,var(--part) 20%,transparent);color:#b07800}
+.no{background:color-mix(in srgb,var(--miss) 15%,transparent);color:var(--miss)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .half{color:#f5c04a}}
+/* callout */
+.callout{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:20px 22px;border-radius:20px;background:color-mix(in srgb,var(--peach) 14%,var(--card));border:1px solid color-mix(in srgb,var(--peach) 40%,var(--line))}
+.count{display:grid;place-items:center;width:96px;height:96px;border-radius:22px;background:var(--card);border:1px solid var(--line);text-align:center;line-height:1.05}
+.count b{font-size:32px;letter-spacing:-.03em}.count small{font-size:11px;color:var(--muted);font-weight:700}
+.callout h3{margin:0 0 4px;font-size:17px}.callout p{margin:0;font-size:14px}
+@media (max-width:560px){.callout{grid-template-columns:1fr}}
+/* build list */
+.build{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.bi{position:relative;padding:16px 18px 16px 62px;border-radius:18px;background:var(--card);border:1px solid var(--line)}
+.bi .rank{position:absolute;left:16px;top:16px;display:grid;place-items:center;width:32px;height:32px;border-radius:10px;color:#fff;font-weight:800;background:linear-gradient(135deg,#6d4aff,#1f9d63)}
+.bi:nth-child(n+4) .rank{background:var(--soft);color:var(--text)}
+.bi h3{margin:0 0 4px;font-size:15.5px}
+.bi p{margin:0 0 10px;color:var(--muted);font-size:13.5px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.e-k{background:color-mix(in srgb,var(--has) 15%,transparent);color:var(--has)}
+.e-m{background:color-mix(in srgb,var(--part) 20%,transparent);color:#b07800}
+.e-g{background:color-mix(in srgb,var(--miss) 14%,transparent);color:var(--miss)}
+.why{background:var(--soft);color:var(--muted)}
+/* prices */
+.prices{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px}
+.pr b{display:block;font-size:22px;letter-spacing:-.02em}
+.pr .app{font-weight:800}.pr small{display:block;color:var(--muted);font-size:12.5px;margin-top:4px}
+.pr.me{border-color:color-mix(in srgb,var(--green) 50%,var(--line));background:color-mix(in srgb,var(--green) 8%,var(--card))}
+.note{margin-top:36px;padding:14px 16px;border-radius:14px;background:var(--soft);color:var(--muted);font-size:13px}
+.question{margin-top:16px;padding:16px 18px;border-radius:16px;border:2px dashed color-mix(in srgb,var(--lav) 55%,var(--line));font-size:14.5px}
+.question b{color:var(--lav)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<section class="hero">
+  <p class="kicker">Recherche · Stand November 2026</p>
+  <h1>Checko hält mit – und kann To-Do-Umsteiger jetzt abholen</h1>
+  <p class="lead">Bei den Grundlagen ist Checko auf Augenhöhe mit den großen Aufgaben-Apps. Bei Kalender, deutscher Schnell-Eingabe, Einkauf und Preis liegt Checko sogar vorn. Es fehlen vor allem Listen, „Mein Tag“, Import/Export und Teilen.</p>
+  <div class="apps"><span class="me">Checko</span><span>Microsoft To Do</span><span>Todoist</span><span>TickTick</span><span>Apple Erinnerungen</span></div>
+</section>
+
+<h2>Wo Checko schon vorn liegt</h2>
+<p class="sub">Genau das, was Nutzer der anderen Apps sich wünschen.</p>
+<div class="grid4">
+  <div class="card win"><span class="ico">📅</span><h3>Kalender gratis</h3><p>Todoist und TickTick verlangen dafür ein Abo, To Do hat gar keinen. Nutzerwunsch Nr. 1.</p></div>
+  <div class="card win"><span class="ico">⌨️</span><h3>Deutsche Schnell-Eingabe</h3><p>„Zahnarzt morgen 14:00 #Gesundheit !1“ – mit Live-Chips. To Do kann das nur auf Englisch.</p></div>
+  <div class="card win"><span class="ico">🛒</span><h3>Einkauf, der mitdenkt</h3><p>Gänge, Mengen, Amazon-Links, Verlauf. Vergleichbar ist nur Apples Einkaufsliste.</p></div>
+  <div class="card win"><span class="ico">🦎</span><h3>Alles in einer App, ohne Abo</h3><p>Aufgaben, Termine, Notizen, Einkauf, XP und Streak – local-first und offline.</p></div>
+</div>
+
+<h2>Funktionen im Vergleich</h2>
+<p class="sub">Eine Auswahl der wichtigsten Punkte. Die vollständigen Tabellen mit Quellen stehen im Bericht.</p>
+<div class="matrix"><div class="mx-scroll">
+<table>
+<thead><tr><th>Funktion</th><th class="me">Checko</th><th>To Do</th><th>Todoist</th><th>TickTick</th><th>Apple</th></tr></thead>
+<tbody>
+<tr class="grp"><td colspan="6">Aufgaben</td></tr>
+<tr><td>Datum + Uhrzeit</td><td class="me"><i class="d h"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Flexible Wiederholung</td><td class="me"><i class="d p"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d p"></i></td><td><i class="d p"></i></td></tr>
+<tr><td>Schritte / Unteraufgaben</td><td class="me"><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d u"></i></td></tr>
+<tr><td>Prioritäten</td><td class="me"><i class="d h"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Anhänge / Bilder</td><td class="me"><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Papierkorb + Rückgängig</td><td class="me"><i class="d h"></i></td><td><i class="d u"></i></td><td><i class="d u"></i></td><td><i class="d u"></i></td><td><i class="d h"></i></td></tr>
+<tr class="grp"><td colspan="6">Organisation</td></tr>
+<tr><td>Eigene Listen / Projekte</td><td class="me"><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Kategorien verwalten</td><td class="me"><i class="d m"></i></td><td><i class="d u"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>„Mein Tag“ mit Vorschlägen</td><td class="me"><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Sortierung / Reihenfolge per Ziehen</td><td class="me"><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d u"></i></td><td><i class="d u"></i></td></tr>
+<tr><td>Globale Suche</td><td class="me"><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr class="grp"><td colspan="6">Planung &amp; Kalender</td></tr>
+<tr><td>Monatskalender (gratis)</td><td class="me"><i class="d h"></i></td><td><i class="d m"></i></td><td><i class="d p"></i></td><td><i class="d p"></i></td><td><i class="d p"></i></td></tr>
+<tr><td>Woche / Tag / Zeitblöcke</td><td class="me"><i class="d m"></i></td><td><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d p"></i></td></tr>
+<tr><td>Deutsche Schnell-Eingabe</td><td class="me"><i class="d h"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d p"></i></td></tr>
+<tr><td>Habits / Fokus-Timer</td><td class="me"><i class="d m"></i></td><td><i class="d m"></i></td><td><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d m"></i></td></tr>
+<tr class="grp"><td colspan="6">Erinnerungen</td></tr>
+<tr><td>Push ohne geöffnete App</td><td class="me"><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Freie Uhrzeit / mehrere</td><td class="me"><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Schlummern / Ort</td><td class="me"><i class="d m"></i></td><td><i class="d m"></i></td><td><i class="d p"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td></tr>
+<tr class="grp"><td colspan="6">Teilen &amp; Plattformen</td></tr>
+<tr><td>Geteilte Listen</td><td class="me"><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td></tr>
+<tr><td>Web-App + Android</td><td class="me"><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d m"></i></td></tr>
+<tr><td>Offline (local-first)</td><td class="me"><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d h"></i></td><td><i class="d u"></i></td></tr>
+<tr><td>Import / Export</td><td class="me"><i class="d m"></i></td><td><i class="d p"></i></td><td><i class="d h"></i></td><td><i class="d u"></i></td><td><i class="d u"></i></td></tr>
+<tr><td>Notizen + Einkaufsliste</td><td class="me"><i class="d h"></i></td><td><i class="d m"></i></td><td><i class="d m"></i></td><td><i class="d p"></i></td><td><i class="d p"></i></td></tr>
+<tr><td>Spielerisches (XP, Level, Streak)</td><td class="me"><i class="d h"></i></td><td><i class="d m"></i></td><td><i class="d h"></i></td><td><i class="d p"></i></td><td><i class="d m"></i></td></tr>
+</tbody>
+</table>
+</div>
+<div class="legend"><span><i class="d h"></i> hat</span><span><i class="d p"></i> teilweise / nur mit Abo</span><span><i class="d m"></i> fehlt</span><span><i class="d u"></i> unsicher</span></div>
+</div>
+
+<h2>Was Nutzer am meisten vermissen</h2>
+<p class="sub">Aus Reviews und Foren. Die Rangfolge ist eine eigene Einschätzung, Stimmenzahlen waren nicht abrufbar.</p>
+<div class="card">
+  <div class="wish"><span class="n">1</span><div><b>Aufgaben im Kalender – ohne Abo</b><small>Hauptbeschwerde bei To Do; Todoist und TickTick nur mit Abo</small><div class="bar"><i style="width:100%"></i></div></div><span class="pill ok">Checko: gut</span></div>
+  <div class="wish"><span class="n">2</span><div><b>Flexible Wiederholungen</b><small>Werktags, Mo + Mi, „X Tage nach Erledigung“</small><div class="bar"><i style="width:88%"></i></div></div><span class="pill half">teilweise</span></div>
+  <div class="wish"><span class="n">3</span><div><b>Auf allen Geräten inkl. Web &amp; Android</b><small>Größter Nachteil von Apple Erinnerungen</small><div class="bar"><i style="width:78%"></i></div></div><span class="pill ok">gut</span></div>
+  <div class="wish"><span class="n">4</span><div><b>Faire Preise statt Abo</b><small>Todoist +25 % seit Dez. 2025</small><div class="bar"><i style="width:70%"></i></div></div><span class="pill ok">gut</span></div>
+  <div class="wish"><span class="n">5</span><div><b>Habits + Fokus-Timer</b><small>„Todoist doesn't do habits. At all.“</small><div class="bar"><i style="width:62%"></i></div></div><span class="pill no">fehlt</span></div>
+  <div class="wish"><span class="n">6</span><div><b>Zuverlässige Erinnerungen &amp; Schlummern</b><small>Android-Akkuprobleme, Schlummern bei Apple</small><div class="bar"><i style="width:55%"></i></div></div><span class="pill half">teilweise</span></div>
+  <div class="wish"><span class="n">7</span><div><b>Geteilte Listen, die zuverlässig syncen</b><small>vor allem Einkaufslisten</small><div class="bar"><i style="width:48%"></i></div></div><span class="pill no">fehlt</span></div>
+  <div class="wish"><span class="n">8</span><div><b>Ruhige, aufgeräumte Oberfläche</b><small>Kritik an TickTick: „cluttered“</small><div class="bar"><i style="width:40%"></i></div></div><span class="pill ok">gut</span></div>
+</div>
+
+<h2>Die Chance: Microsoft To Do wird eingestellt</h2>
+<div class="callout">
+  <div class="count"><div><b>30.06.</b><small>2027</small></div></div>
+  <div><h3>Privatnutzer bekommen keinen Ersatz</h3>
+  <p>Am 18.11.2026 angekündigt: Die To-Do-Apps enden am 30. Juni 2027. Firmenkonten wechseln zu Planner, Privatkonten gehen leer aus. Viele suchen eine kostenlose, schlichte App – mit Listen, „Mein Tag“, Erinnerung, Wiederholung und Import ihrer Daten. Das Exportformat von Microsoft ist noch nicht bekannt.</p></div>
+</div>
+
+<h2>Was Checko als Nächstes bauen sollte</h2>
+<p class="sub">Sortiert danach, was Umsteiger brauchen, was Nutzer am häufigsten vermissen und was im Verhältnis zum Aufwand am meisten bringt.</p>
+<div class="build">
+  <div class="bi"><span class="rank">1</span><h3>Import &amp; Export</h3><p>Backup als Datei, Import von To Do (sobald das Format bekannt ist) und Todoist-CSV.</p><div class="tags"><span class="pill e-m">mittel</span><span class="pill why">To-Do-Aus</span></div></div>
+  <div class="bi"><span class="rank">2</span><h3>Listen &amp; Kategorien verwalten</h3><p>Umbenennen, Farbe, Emoji, löschen, Reihenfolge – später Listengruppen.</p><div class="tags"><span class="pill e-m">mittel–groß</span><span class="pill why">alle 4 Apps haben es</span></div></div>
+  <div class="bi"><span class="rank">3</span><h3>„Mein Tag“ / Morgen-Plan</h3><p>Morgens Vorschläge übernehmen (überfällig, heute, liegen geblieben), abends zurücksetzen.</p><div class="tags"><span class="pill e-m">mittel</span><span class="pill why">Markenzeichen von To Do</span></div></div>
+  <div class="bi"><span class="rank">4</span><h3>Flexible Wiederholungen</h3><p>Mehrere Wochentage, n-ter Wochentag, Enddatum, „X Tage nach Erledigung“.</p><div class="tags"><span class="pill e-m">mittel</span><span class="pill why">Wunsch Nr. 2</span></div></div>
+  <div class="bi"><span class="rank">5</span><h3>Erinnerungen ausbauen</h3><p>Freie Uhrzeit, mehrere pro Aufgabe, „Erledigt“ und „10 Min. später“ direkt in der Benachrichtigung.</p><div class="tags"><span class="pill e-k">klein–mittel</span><span class="pill why">Schlummern</span></div></div>
+  <div class="bi"><span class="rank">6</span><h3>Woche- &amp; Tagesansicht</h3><p>Zeitblöcke im Kalender, Ziehen auch am Handy.</p><div class="tags"><span class="pill e-g">groß</span><span class="pill why">bei anderen nur mit Abo</span></div></div>
+  <div class="bi"><span class="rank">7</span><h3>Fokus-Modus &amp; sanfte Gamification</h3><p>Alles abschaltbar, Ruhetage, Streak-Schutz.</p><div class="tags"><span class="pill e-k">klein</span><span class="pill why">Streak-Druck</span></div></div>
+  <div class="bi"><span class="rank">8</span><h3>Geteilte Einkaufsliste</h3><p>Einladung per Link, fast in Echtzeit, „zuletzt synchronisiert“.</p><div class="tags"><span class="pill e-g">groß</span><span class="pill why">größte Lücke</span></div></div>
+  <div class="bi"><span class="rank">9</span><h3>Gewohnheiten (Habits)</h3><p>Passt zu XP und Streak, optional mit Fokus-Timer.</p><div class="tags"><span class="pill e-m">mittel</span><span class="pill why">Grund für TickTick</span></div></div>
+  <div class="bi"><span class="rank">10</span><h3>Kalender-Abo (ICS)</h3><p>Checko-Termine lesend in Google, Apple oder Outlook anzeigen.</p><div class="tags"><span class="pill e-k">klein–mittel</span><span class="pill why">Google-Anbindung</span></div></div>
+</div>
+
+<h2>Preise</h2>
+<div class="prices">
+  <div class="card pr me"><span class="app">Checko</span><b>0 €</b><small>komplett gratis, eigener Server</small></div>
+  <div class="card pr"><span class="app">Microsoft To Do</span><b>0 €</b><small>gratis – endet am 30.06.2027</small></div>
+  <div class="card pr"><span class="app">Todoist Pro</span><b>60 $ / Jahr</b><small>Kalender, eigene Erinnerungen nur mit Pro</small></div>
+  <div class="card pr"><span class="app">TickTick Premium</span><b>49,99 $ / Jahr</b><small>offiziell; ältere Quellen nennen 35,99 $</small></div>
+  <div class="card pr"><span class="app">Apple Erinnerungen</span><b>0 €</b><small>nur auf Apple-Geräten</small></div>
+</div>
+
+<div class="question"><b>Offene Frage:</b> Ist Checko nur für dich – oder soll es auch andere ansprechen, z. B. To-Do-Umsteiger? Davon hängt ab, ob Import und Teilen ganz nach vorn rücken.</div>
+
+<p class="note">Datenlage: Checko im Code geprüft (Nov. 2026). Andere Apps aus offiziellen Hilfe- und Preisseiten, ergänzt um Reviews. Graue Punkte sind nicht belegt oder in den Quellen widersprüchlich. Vollständiger Bericht mit allen Quellen: <code>reports/Checko Funktionsvergleich Todo Apps.md</code>.</p>
+</div>
+</body>
+</html>
