@@ -1212,10 +1212,9 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .plan-group.overdue .list-heading { color: var(--danger, #b4472a); }
 
 /* kleine XP-Leiste oben auf der Startseite */
-.xp-mini { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; padding: 0.3rem 0.65rem; border-radius: 999px; border: 1px solid var(--border); background: var(--panel-soft); color: var(--text); font-size: 0.75rem; font-weight: 700; text-decoration: none; transition: border-color 200ms cubic-bezier(.34,1.56,.64,1); }
-.xp-mini:hover { border-color: var(--green); }
+.xp-mini { display: inline-flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; padding: 0.2rem 0; border-radius: 999px; background: none; color: var(--text); font-size: 0.75rem; font-weight: 700; text-decoration: none; transition: border-color 200ms cubic-bezier(.34,1.56,.64,1); }
+.xp-mini:hover .xp-mini-bar { background: var(--border-strong); }
 .xp-mini:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
-.xp-mini-bar { display: block; width: 6.5rem; height: 0.4rem; border-radius: 999px; background: var(--border); overflow: hidden; }
+.xp-mini-bar { display: block; width: 8rem; height: 0.35rem; border-radius: 999px; background: var(--border); overflow: hidden; }
 .xp-mini-bar .xp-fill { display: block; }
-.xp-mini-text { color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
 .play-zone { scroll-margin-top: 1rem; }

@@ -68,11 +68,10 @@ pub fn TodayPage() -> impl IntoView {
                     <Show when=move || !store.focus()>
                         <a class="xp-mini" href="#fortschritt"
                             aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {}", p.level, p.current, p.needed, p.level + 1) }>
-                            <span class="xp-mini-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
                             <span class="xp-mini-bar" aria-hidden="true">
                                 <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
                             </span>
-                            <span class="xp-mini-text" aria-hidden="true">{move || { let p = progress(); format!("{} / {} XP", p.current, p.needed) }}</span>
+                            <span class="xp-mini-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
                         </a>
                     </Show>
                     <h1 class="hero-title">{format!("{}!", greeting())}</h1>
