@@ -10,6 +10,6 @@ jobs:
           targets: wasm32-unknown-unknown
           components: clippy, rustfmt
       - run: cargo fmt --all --check
-      - run: cargo test -p checko-core
+      - run: cargo test -p checko-core -p checko-pst
       - run: cargo clippy -p checko-web --target wasm32-unknown-unknown -- -D warnings
-      - run: cargo clippy -p checko-core -p checko-server --all-targets -- -D warnings
+      - run: cargo clippy -p checko-core -p checko-pst -p checko-server --all-targets -- -D warnings

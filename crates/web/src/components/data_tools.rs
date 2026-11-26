@@ -22,6 +22,18 @@ async fn read_file(file: Option<web_sys::File>) -> Option<(String, String)> {
     Some((file.name(), text))
 }
 
+/// Bytes of a file (for Outlook `.pst`).
+async fn read_bytes(file: &web_sys::File) -> Option<Vec<u8>> {
+    let buf = JsFuture::from(file.array_buffer()).await.ok()?;
+    Some(js_sys::Uint8Array::new(&buf).to_vec())
+}
+
+/// UTC to local time of this browser (with summer time for that date).
+fn to_local(t: chrono::DateTime<chrono::Utc>) -> chrono::NaiveDateTime {
+    let d = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(t.timestamp_millis() as f64));
+    t.naive_utc() - chrono::Duration::minutes(d.get_timezone_offset() as i64)
+}
+
 fn utc_offset_min() -> i32 {
     -(js_sys::Date::new_0().get_timezone_offset() as i32)
 }
@@ -37,11 +49,31 @@ pub fn IcsImport(#[prop(optional)] compact: bool) -> impl IntoView {
     let import = move |files: Option<web_sys::FileList>| {
         let file = first(files);
         leptos::task::spawn_local(async move {
-            let Some((name, text)) = read_file(file).await else {
-                result.set(Some("Datei konnte nicht gelesen werden.".into()));
-                return;
+            let is_pst = file
+                .as_ref()
+                .is_some_and(|f| f.name().to_lowercase().ends_with(".pst"));
+            let (name, parsed) = if is_pst {
+                let Some(f) = file else { return };
+                result.set(Some(format!("„{}“ wird gelesen …", f.name())));
+                let Some(bytes) = read_bytes(&f).await else {
+                    result.set(Some("Datei konnte nicht gelesen werden – ist sie sehr groß? Dann in Outlook nur den Kalender exportieren.".into()));
+                    return;
+                };
+                match checko_pst::read_pst_events(bytes, to_local) {
+                    Ok(v) => (f.name(), v),
+                    Err(e) => {
+                        result.set(Some(e));
+                        return;
+                    }
+                }
+            } else {
+                let Some((name, text)) = read_file(file).await else {
+                    result.set(Some("Datei konnte nicht gelesen werden.".into()));
+                    return;
+                };
+                let parsed = parse_ics(&text, utc_offset_min());
+                (name, parsed)
             };
-            let parsed = parse_ics(&text, utc_offset_min());
             if parsed.is_empty() {
                 result.set(Some(format!("In „{name}“ wurden keine Termine gefunden.")));
                 return;
@@ -85,7 +117,7 @@ pub fn IcsImport(#[prop(optional)] compact: bool) -> impl IntoView {
             >
                 <input
                     type="file"
-                    accept=".ics,text/calendar"
+                    accept=".ics,.pst,text/calendar"
                     class="sr-only"
                     on:change=move |e| {
                         let input: web_sys::HtmlInputElement = event_target(&e);
@@ -96,7 +128,7 @@ pub fn IcsImport(#[prop(optional)] compact: bool) -> impl IntoView {
                 <span class="ics-icon" aria-hidden="true"><Icon glyph=Glyph::Calendar size=20 /></span>
                 <span class="min-w-0">
                     <span class="block font-semibold">"Kalender-Datei importieren"</span>
-                    <span class="block text-sm text-muted">".ics hierher ziehen oder antippen – erneuter Import aktualisiert, statt zu verdoppeln"</span>
+                    <span class="block text-sm text-muted">".ics oder .pst hierher ziehen oder antippen – erneuter Import aktualisiert, statt zu verdoppeln"</span>
                 </span>
             </label>
             <label class="ics-cat">

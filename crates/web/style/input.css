@@ -1083,7 +1083,7 @@ body { touch-action: manipulation; }
 
   /* logo: px-2 py-1, mark + wordmark */
   .sidebar-brand { display: flex; align-items: center; gap: 0.5rem; height: auto; padding: 4px 8px; margin: 0; }
-  .brand-mark { flex: none; width: 24px; height: 24px; border-radius: 7px; }
+  .brand-mark { flex: none; width: 24px; height: 24px; }
   .sidebar .wordmark { width: 7.4rem; }
   .sidebar.open .brand-mark { display: none; }   /* the logo already has the gecko as "C" */
   .sidebar.collapsed .wordmark { display: none; }

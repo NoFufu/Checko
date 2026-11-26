@@ -52,7 +52,7 @@ pub fn SettingsPage() -> impl IntoView {
 
             <section class="panel settings-section">
                 <h2 class="section-head"><Icon glyph=Glyph::Calendar size=18 />"Kalender importieren"</h2>
-                <p class="text-sm text-muted">"Outlook: Kalender als Datei speichern (.ics) und hier einfügen. Termine erscheinen im Checko-Kalender."</p>
+                <p class="text-sm text-muted">"Outlook-Kalender als .ics-Datei oder Outlook-Datendatei (.pst) hier einfügen – die Datei bleibt auf deinem Gerät. Termine erscheinen im Checko-Kalender."</p>
                 <crate::components::data_tools::IcsImport />
             </section>
 

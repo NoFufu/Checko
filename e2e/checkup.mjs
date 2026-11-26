@@ -237,6 +237,13 @@ async function main() {
       expect(n === 1, `Termin ${n}× vorhanden`);
     });
 
+    await flow('Outlook-Datei (.pst): ungültige Datei wird freundlich abgelehnt', async () => {
+      await page.locator('.cal-import input[type="file"]').setInputFiles({ name: 'kaputt.pst', mimeType: 'application/octet-stream', buffer: Buffer.from('keine pst') });
+      const res = page.locator('.cal-import .ics-result');
+      await page.waitForFunction(() => /gültige Outlook/.test(document.querySelector('.cal-import .ics-result')?.textContent || ''), null, { timeout: 5000 });
+      expect((await res.innerText()).includes('Outlook'), `Meldung: ${await res.innerText()}`);
+    });
+
     await flow('Einkauf: Amazon-Link wird zum Eintrag mit Namen', async () => {
       await nav(page, 'Einkauf');
       const input = page.locator('input[aria-label="Artikel hinzufügen"]');

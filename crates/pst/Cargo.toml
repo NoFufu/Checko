@@ -1,0 +1,10 @@
+[package]
+name = "checko-pst"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+checko-core = { path = "../core" }
+chrono.workspace = true
+outlook-pst = { package = "outlook-pst-ost", version = "1.3" }

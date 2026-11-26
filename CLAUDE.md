@@ -42,7 +42,7 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Der Link zur App steht immer ganz oben in der `README.md` und muss dort bleiben.
 
 ## Arbeitsweise
-- Arbeite in **kleinen, lauffähigen Schritten**; nach jedem Schritt müssen `cargo test -p checko-core`, `cargo clippy -p checko-web --target wasm32-unknown-unknown -- -D warnings` und `cargo clippy -p checko-core -p checko-server --all-targets -- -D warnings` grün sein.
+- Arbeite in **kleinen, lauffähigen Schritten**; nach jedem Schritt müssen `cargo test -p checko-core -p checko-pst`, `cargo clippy -p checko-web --target wasm32-unknown-unknown -- -D warnings` und `cargo clippy -p checko-core -p checko-pst -p checko-server --all-targets -- -D warnings` grün sein.
 - Schreibe Tests für jede Logik im `core` (vor allem Parser, XP, Wiederholungen).
 - Erkläre kurz auf **Deutsch**, was du gemacht hast und wie ich es starte (`trunk serve`).
 - Keine Platzhalter‑„TODO“-Implementierungen ohne Hinweis; keine unnötigen Abhängigkeiten.
@@ -74,5 +74,6 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Phase 7 fertig: `.ics`-Import (`core/ics.rs`), Backup (`components/data_tools.rs`), Barrierefreiheit 0 Verstöße, Kategorien verwalten (`core/categories.rs`, Stil/Emoji/Farbe im `Profile.category_styles`, UI `components/categories.rs` in den Einstellungen), Fokus-Modus (`Profile.focus_mode`, blendet Level/Streak/Erfolge/Konfetti/XP aus).
 - Phase 8.3 fertig: Outlook‑Kalender‑Abo – `core/ics_export.rs` (`write_ics`, Europe/Berlin), Server `POST /api/feed` (Token, Tabelle `feeds`) + `GET /api/feed/<token>.ics`, Einstellungen „In Outlook anzeigen“. Offen in Phase 8: optional Graph API.
 - Phase 9 begonnen: ✅ Geplant‑Ansicht (`core/planned.rs`, Tab „Geplant“ in Aufgaben, `?ansicht=geplant`). Offen: Mein Tag/Morgen‑Plan, flexible Wiederholungen, Erinnerungen ausbauen, Reihenfolge per Ziehen.
+- Outlook‑`.pst` importieren: Crate `crates/pst` (outlook-pst, liest Termine inkl. benannter Felder, Ort, Wiederholung) → `merge_ics`; im Browser, Datei verlässt das Gerät nicht.
 - Push bei geschlossener App: im Firmennetz oft gesperrt (Zeitlimit + Hinweis eingebaut); in der App funktionieren Erinnerungen.
 - **Nächstes: Phasenplan in `docs/PLAN.md` (Abschnitt 5, „Neuer Plan“).** Checko ist für NoFufu persönlich; Schwerpunkt: Arbeit (Outlook/To Do) und Zuhause an einem Ort. Reihenfolge: ~~7~~ ✅ → 8 Arbeit ↔ Zuhause → 9 Planen wie in To Do → 10 Kalender komplett → 11 Komfort → 12 KI.

@@ -139,7 +139,7 @@ pub fn Sidebar() -> impl IntoView {
             </button>
             <div class="sidebar-scroll">
                 <a href=format!("{BASE}/") class="sidebar-brand" aria-label="Checko Startseite">
-                    <img class="brand-mark" src=crate::asset("brand/icon-192.png") alt="" width="24" height="24" />
+                    <img class="brand-mark" src=crate::asset("brand/gecko-mark.png") alt="" width="24" height="24" />
                     <Logo />
                 </a>
 
