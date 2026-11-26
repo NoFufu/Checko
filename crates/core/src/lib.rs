@@ -9,6 +9,7 @@ pub mod ics_export;
 pub mod model;
 pub mod notes;
 pub mod parse;
+pub mod planned;
 pub mod shopping;
 pub mod tasks;
 
@@ -24,5 +25,6 @@ pub use ics_export::write_ics;
 pub use model::*;
 pub use notes::*;
 pub use parse::{parse_quick_add, ParsedTask, Token, TokenKind};
+pub use planned::{planned_groups, PlanGroup};
 pub use shopping::*;
 pub use tasks::*;

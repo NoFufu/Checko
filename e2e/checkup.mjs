@@ -177,6 +177,20 @@ async function main() {
       expect(!(await page.locator('.task-row', { hasText: 'Zahnarzt' }).locator('.appt-time').count()), 'Ist nach Umschalten noch ein Termin');
     });
 
+    await flow('Geplant: Aufgaben nach Datum gruppiert', async () => {
+      await nav(page, 'Aufgaben');
+      const input = page.locator('.task-form input').first();
+      await input.fill('Checkup geplant übermorgen');
+      await input.press('Enter');
+      await page.waitForTimeout(300);
+      await page.locator('.segment', { hasText: 'Geplant' }).click();
+      const group = page.locator('.plan-group', { hasText: 'Checkup geplant' });
+      await group.waitFor();
+      const head = await group.locator('.list-heading').innerText();
+      expect(/Diese Woche|Nächste Woche/.test(head), `falsche Gruppe: ${head}`);
+      await page.locator('.segment', { hasText: 'Offen' }).click();
+    });
+
     await flow('Kalender: Doppelklick legt Eintrag an', async () => {
       await nav(page, 'Kalender');
       await page.locator('.cal-day').nth(17).dblclick();

@@ -1,4 +1,6 @@
-use checko_core::{done_tasks, open_appointments, open_tasks, open_todos, trashed_tasks};
+use checko_core::{
+    done_tasks, open_appointments, open_tasks, open_todos, planned_groups, trashed_tasks, PlanGroup,
+};
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 
@@ -14,6 +16,7 @@ use crate::store::Store;
 #[derive(Clone, Copy, PartialEq)]
 enum View {
     Open,
+    Planned,
     Done,
     Trash,
 }
@@ -27,6 +30,9 @@ pub fn TasksPage() -> impl IntoView {
     // "?kategorie=Bad" (from a category block or the sidebar) sets the filter.
     let query = use_query_map();
     Effect::new(move |_| {
+        if query.with(|q| q.get("ansicht")).as_deref() == Some("geplant") {
+            view_tab.set(View::Planned);
+        }
         if let Some(k) = query.with(|q| q.get("kategorie")) {
             area.set(Some(k));
             view_tab.set(View::Open);
@@ -35,6 +41,16 @@ pub fn TasksPage() -> impl IntoView {
 
     let open_count = move || store.tasks.with(|t| open_tasks(t, None).len());
     let done_count = move || store.tasks.with(|t| done_tasks(t, None).len());
+    let planned = move || {
+        let a = area.get();
+        store.tasks.with(|ts| {
+            planned_groups(ts, a.as_deref(), crate::time::today())
+                .into_iter()
+                .map(|(g, v)| (g, v.into_iter().cloned().collect::<Vec<_>>()))
+                .collect::<Vec<_>>()
+        })
+    };
+    let planned_count = move || planned().iter().map(|(_, v)| v.len()).sum::<usize>();
     let trash_count = move || store.tasks.with(|t| trashed_tasks(t).len());
 
     let list = move || {
@@ -42,6 +58,7 @@ pub fn TasksPage() -> impl IntoView {
         store.tasks.with(|ts| {
             let items: Vec<_> = match view_tab.get() {
                 View::Open => open_todos(ts, a.as_deref()),
+                View::Planned => Vec::new(),
                 View::Done => done_tasks(ts, a.as_deref()),
                 View::Trash => trashed_tasks(ts),
             }
@@ -104,6 +121,7 @@ pub fn TasksPage() -> impl IntoView {
             <div class="toolbar">
                 <div class="segmented" role="tablist" aria-label="Ansicht">
                     {tab(View::Open, "Offen", Box::new(open_count))}
+                    {tab(View::Planned, "Geplant", Box::new(planned_count))}
                     {tab(View::Done, "Erledigt", Box::new(done_count))}
                     {tab(View::Trash, "Papierkorb", Box::new(trash_count))}
                 </div>
@@ -129,6 +147,34 @@ pub fn TasksPage() -> impl IntoView {
                 </Show>
             </div>
 
+            <Show when=move || view_tab.get() == View::Planned>
+                <div class="planned">
+                    <Show
+                        when=move || planned_count() != 0
+                        fallback=|| view! { <section class="panel"><p class="empty-line px-3">"Nichts geplant. Gib einer Aufgabe ein Datum, z. B. „Steuer machen nächste Woche“."</p></section> }
+                    >
+                        <For
+                            each=planned
+                            key=|(g, v)| (*g as u8, v.iter().map(|t| (t.meta.id, t.meta.updated_at)).collect::<Vec<_>>())
+                            children=move |(g, v)| view! {
+                                <section class="plan-group" class:overdue=g == PlanGroup::Overdue>
+                                    <h2 class="list-heading">
+                                        {g.label()}
+                                        <span class="count">{v.len()}</span>
+                                    </h2>
+                                    <section class="panel list-panel">
+                                        <ul class="task-list">
+                                            {v.into_iter().map(|t| view! { <TaskItem task=t /> }).collect_view()}
+                                        </ul>
+                                    </section>
+                                </section>
+                            }
+                        />
+                    </Show>
+                </div>
+            </Show>
+
+            <Show when=move || view_tab.get() != View::Planned>
             <div class="task-columns" class:split=move || view_tab.get() == View::Open>
                 <div class="task-col">
                     <Show when=move || view_tab.get() == View::Open>
@@ -142,7 +188,7 @@ pub fn TasksPage() -> impl IntoView {
                             when=move || !list().is_empty()
                             fallback=move || {
                                 let text = match view_tab.get() {
-                                    View::Open => "Keine offenen To-dos. Füge oben eins hinzu!",
+                                    View::Open | View::Planned => "Keine offenen To-dos. Füge oben eins hinzu!",
                                     View::Done => "Noch nichts erledigt. Das erste Häkchen wartet!",
                                     View::Trash => "Der Papierkorb ist leer.",
                                 };
@@ -182,6 +228,7 @@ pub fn TasksPage() -> impl IntoView {
                     </div>
                 </Show>
             </div>
+            </Show>
         </div>
     }
 }
