@@ -17,4 +17,4 @@ console_error_panic_hook = "0.1"
 js-sys = "0.3"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Blob", "BlobPropertyBag", "Clipboard", "DataTransfer", "File", "FileList", "HtmlAnchorElement", "Url", "Document", "DomRect", "DragEvent", "Element", "HtmlElement", "HtmlInputElement", "KeyboardEvent", "MediaQueryList", "MouseEvent", "Navigator", "Notification", "NotificationOptions", "NotificationPermission", "PushManager", "PushSubscription", "PushSubscriptionOptionsInit", "ServiceWorkerContainer", "ServiceWorkerRegistration", "Storage", "Window"] }
+web-sys = { version = "0.3", features = ["AbortController", "AbortSignal", "Blob", "BlobPropertyBag", "Clipboard", "DataTransfer", "File", "FileList", "HtmlAnchorElement", "Url", "Document", "DomRect", "DragEvent", "Element", "HtmlElement", "HtmlInputElement", "KeyboardEvent", "MediaQueryList", "MouseEvent", "Navigator", "Notification", "NotificationOptions", "NotificationPermission", "PushManager", "PushSubscription", "PushSubscriptionOptionsInit", "ServiceWorkerContainer", "ServiceWorkerRegistration", "Storage", "Window"] }

@@ -267,6 +267,7 @@ fn NotifySetup() -> impl IntoView {
     let perm = RwSignal::new(crate::notify::permission());
     let push = RwSignal::new(false);
     let busy = RwSignal::new(false);
+    let step = RwSignal::new(None::<&'static str>);
     let msg = RwSignal::new(None::<String>);
     let sync = Sync::get();
     let signed_in = move || sync.config.with(|c| c.token.is_some());
@@ -275,7 +276,7 @@ fn NotifySetup() -> impl IntoView {
         busy.set(true);
         msg.set(None);
         leptos::task::spawn_local(async move {
-            match crate::notify::enable_push().await {
+            match crate::notify::enable_push(move |t| step.set(Some(t))).await {
                 Ok(()) => {
                     push.set(crate::notify::push_active().await);
                     msg.set(Some("Fertig! Erinnerungen sind an.".into()));
@@ -283,6 +284,7 @@ fn NotifySetup() -> impl IntoView {
                 Err(e) => msg.set(Some(e)),
             }
             perm.set(crate::notify::permission());
+            step.set(None);
             busy.set(false);
         });
     };
@@ -324,7 +326,7 @@ fn NotifySetup() -> impl IntoView {
             <div class="flex flex-wrap items-center gap-2">
                 <Show when=move || !(perm.get() == P::Granted && (push.get() || !signed_in()))>
                     <button type="button" class="btn btn-primary" disabled=move || busy.get() on:click=enable>
-                        {move || if busy.get() { "Einen Moment …" } else { "Erinnerungen aktivieren" }}
+                        {move || if busy.get() { step.get().unwrap_or("Einen Moment …") } else { "Erinnerungen aktivieren" }}
                     </button>
                 </Show>
                 <Show when=move || perm.get() == P::Granted>

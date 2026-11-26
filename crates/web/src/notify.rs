@@ -53,7 +53,8 @@ pub fn ensure_permission() {
 
 pub async fn request_permission() -> NotificationPermission {
     if let Ok(p) = web_sys::Notification::request_permission() {
-        let _ = JsFuture::from(p).await;
+        // a dismissed or quiet prompt can stay open for a long time
+        let _ = within(p, 60_000).await;
     }
     permission()
 }
@@ -104,6 +105,20 @@ async fn within(p: js_sys::Promise, ms: i32) -> Result<JsValue, &'static str> {
         Err(_) => Err("error"),
     }
 }
+
+/// Abort signal that fires after `ms` (so a hanging request cannot block forever).
+fn deadline(ms: i32) -> Option<web_sys::AbortSignal> {
+    let c = web_sys::AbortController::new().ok()?;
+    let signal = c.signal();
+    let abort = wasm_bindgen::closure::Closure::once_into_js(move || c.abort());
+    web_sys::window()?
+        .set_timeout_with_callback_and_timeout_and_arguments_0(abort.unchecked_ref(), ms)
+        .ok()?;
+    Some(signal)
+}
+
+const SLOW_SERVER: &str = "Server antwortet nicht. Der Gratis-Server schläft manchmal – in einer Minute noch einmal tippen. \
+     Im Firmennetz kann er auch gesperrt sein.";
 
 async fn registration() -> Option<ServiceWorkerRegistration> {
     let sw = web_sys::window()?.navigator().service_worker();
@@ -180,7 +195,9 @@ struct Subscribe {
 
 /// Turn on push (server sends reminders while Checko is closed).
 /// Returns a German error text on failure.
-pub async fn enable_push() -> Result<(), String> {
+/// Turn on push. `step` shows what is happening right now (for the button).
+pub async fn enable_push(step: impl Fn(&'static str)) -> Result<(), String> {
+    step("Frage nach Erlaubnis …");
     if request_permission().await != NotificationPermission::Granted {
         return Err("Benachrichtigungen wurden nicht erlaubt. Du kannst sie in den Browser-/iPhone-Einstellungen freigeben.".into());
     }
@@ -190,13 +207,17 @@ pub async fn enable_push() -> Result<(), String> {
         // no account: in-app reminders only
         return Ok(());
     };
-    let key = Request::get(&format!("{}/api/push/key", cfg.server))
+    let server = cfg.server.trim_end_matches('/').to_string();
+    step("Verbinde mit dem Server …");
+    let key = Request::get(&format!("{server}/api/push/key"))
+        .abort_signal(deadline(70_000).as_ref())
         .send()
         .await
-        .map_err(|_| "Server nicht erreichbar.".to_string())?
+        .map_err(|_| SLOW_SERVER.to_string())?
         .text()
         .await
         .map_err(|e| e.to_string())?;
+    step("Starte Hintergrund-Dienst …");
     let reg = registration()
         .await
         .ok_or("Kein Service Worker – bitte Seite neu laden (privates Fenster und manche Firmen-Richtlinien blockieren ihn).")?;
@@ -206,6 +227,7 @@ pub async fn enable_push() -> Result<(), String> {
     let push = reg.push_manager().map_err(|_| {
         "Push wird hier nicht unterstützt (iPhone: Checko zum Home-Bildschirm hinzufügen)."
     })?;
+    step("Melde beim Push-Dienst des Browsers an …");
     let sub = match within(
         push.subscribe_with_options(&opts)
             .map_err(|_| "Push wird nicht unterstützt.")?,
@@ -225,13 +247,15 @@ pub async fn enable_push() -> Result<(), String> {
     let subscription: serde_json::Value =
         serde_json::from_str(&String::from(json)).map_err(|e| e.to_string())?;
     let tz = -(js_sys::Date::new_0().get_timezone_offset() as i32);
-    let resp = Request::post(&format!("{}/api/push/subscribe", cfg.server))
+    step("Speichere auf dem Server …");
+    let resp = Request::post(&format!("{server}/api/push/subscribe"))
         .header("Authorization", &format!("Bearer {token}"))
+        .abort_signal(deadline(70_000).as_ref())
         .json(&Subscribe { subscription, tz })
         .map_err(|e| e.to_string())?
         .send()
         .await
-        .map_err(|_| "Server nicht erreichbar.".to_string())?;
+        .map_err(|_| SLOW_SERVER.to_string())?;
     if resp.ok() {
         Ok(())
     } else {
