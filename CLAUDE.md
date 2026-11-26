@@ -38,6 +38,7 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 ## Zusammenarbeit
 - Claude ist für das gesamte Projekt zuständig (Code, Optik, CSS) und darf frühere Arbeit von Codex ändern oder ersetzen.
 - Codex liefert nur noch Grafiken (`assets/**`, siehe `AGENTS.md`). NoFufu kann Grafiken auch direkt an Claude schicken, Claude legt sie ab und pusht sie.
+- **Dauerfreigabe von NoFufu:** Claude darf nach grünen Checks (Tests, Clippy, Check‑up) immer direkt nach `main` pushen, ohne nachzufragen.
 - Fertige Phasen landen in `main`; GitHub Pages veröffentlicht automatisch unter https://nofufu.github.io/Checko/.
 - Der Link zur App steht immer ganz oben in der `README.md` und muss dort bleiben.
 
