@@ -72,3 +72,4 @@ Du bist ein erfahrener **Rust‑Fullstack‑Entwickler und UI/UX‑Designer**. W
 - Zurückgestellt: Themes per Level, Fokus‑Modus, Maskottchen, native App.
 - Erinnerungen: Feld „Erinnerung“ an Aufgaben/Terminen (`remind` Minuten vorher, ganztägig vor 09:00), `core::reminders_between`; im Browser `web/src/notify.rs` (Timer + Service Worker), Web Push vom Server (`server/src/push.rs`, VAPID-Schlüssel in der DB, Planer jede Minute). Kalender-Termine haben eine eigene Detail-Ansicht (`EventDetail`).
 - Offene Empfehlungen aus dem Check-up: Kontrast `--muted`, Kalender-Tabs (ARIA).
+- **Nächstes: Phasenplan in `docs/PLAN.md` (Abschnitt 5, „Neuer Plan“).** Checko ist für NoFufu persönlich; Schwerpunkt: Arbeit (Outlook/To Do) und Zuhause an einem Ort. Reihenfolge: Phase 7 Aufräumen & Backup → 8 Arbeit ↔ Zuhause → 9 Planen wie in To Do → 10 Kalender komplett → 11 Komfort → 12 KI.

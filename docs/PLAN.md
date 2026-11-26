@@ -100,18 +100,31 @@ checko/
 - IDs: UUID v7 (sync‑fähig für später), Soft‑Delete → Papierkorb.
 
 ## 5. Roadmap
-| Phase | Inhalt | Ergebnis |
-|---|---|---|
-| ✅ **0 – Setup** | Workspace, Leptos + Trunk + Tailwind, Aurora‑Hintergrund, Dock‑Navigation, leere Seiten | `trunk serve` zeigt die App |
-| ✅ **1 – To‑Do** | Aufgaben anlegen/erledigen/löschen, Prioritäten, Bereiche, Spring‑Check, Undo, localStorage | Erste nutzbare App |
-| ✅ **2 – Quick‑Add & Heute** | Parser („morgen 14:00 #arbeit !1“), Strg+K‑Fenster, Heute‑Dashboard (Morgen‑Plan/Abend‑Check‑in folgen später) | Tägliche Nutzung möglich |
-| ✅ **3 – Einkauf & Notizen** | Einkaufsliste mit Kategorien, Markdown‑Notizen, globale Suche | Alle Hauptmodule |
-| **4 – Gamification** | XP, Level, Streaks, Achievements, Axolotl‑Reaktionen, Konfetti, Themes | Spielerisch 🎉 |
-| ✅ **5 – Sync‑Server** | Axum + SQLite, Login, Änderungs‑Sync (UUID v7, `updated_at`, Soft‑Delete), Hosting (z. B. kleiner VPS/Fly.io) | PC‑Eingabe sofort am Handy |
-| 🟡 **6 – Kalender & Erinnerungen** | Monat/Woche/Agenda, Wiederholungen, Benachrichtigungen (Web Push) | Kalender komplett |
-| **7 – Handy & PWA** | Mobile Layout, Gesten, installierbar, offline mit IndexedDB | App‑Gefühl am Handy |
-| **8 – KI‑Assistent** | Claude über den Server: natürliche Sprache, Morgen‑Briefing, Auto‑Kategorien, Wochenrückblick | „Sag's einfach“ |
-| Später | Tauri‑Desktop/Mobile‑App, geteilte Einkaufslisten | |
+
+### Bisher erledigt
+| Phase | Inhalt |
+|---|---|
+| ✅ 0–3 | Setup, Aufgaben, Schnell‑Eingabe (Strg K), Heute‑Dashboard, Einkauf, Notizen, Suche |
+| 🟡 4 | Gamification: XP, Level, Streak, Erfolge ✅ – Themes, Maskottchen zurückgestellt |
+| ✅ 5 | Sync‑Server (Axum + Postgres/Neon auf Render), PC ↔ Handy |
+| ✅ 6 | Kalender (Monat/Agenda, Doppelklick, Termin‑Details), Wiederholungen, Erinnerungen mit Web Push |
+| ✅ extra | PWA, iPhone‑Widget (Scriptable), Gecko‑Icon und Logo, Grouped Sidebar, Check‑up mit Bewertungsbogen |
+
+### Neuer Plan (Stand 26.11.2026)
+Checko ist **für NoFufu persönlich** – Ziel: *alles an einem Ort*, auch was auf der Arbeit (Outlook / To Do) anfällt.
+Grundlage: Recherche `reports/Checko Funktionsvergleich Todo Apps.md`. Import für fremde Umsteiger und Teilen sind deshalb nach hinten gerückt.
+
+| Phase | Inhalt | Ergebnis | Aufwand |
+|---|---|---|---|
+| **7 – Aufräumen & Sicherheit** | Kontrast `--muted` + Kalender‑Tabs (Check‑up), Kategorien verwalten (umbenennen, Farbe/Emoji, löschen), **Backup: Export/Import als Datei**, Fokus‑Modus (Spielerisches abschaltbar) | Solide Basis, Daten gesichert | klein–mittel |
+| **8 – Arbeit ↔ Zuhause** | 8.1 Checko am Arbeits‑PC nutzen (Browser/Edge‑App, prüfen ob erreichbar) · 8.2 **Outlook‑Kalender in Checko** (veröffentlichter ICS‑Link, Server holt ihn regelmäßig, nur lesend) · 8.3 **Checko‑Termine in Outlook** (ICS‑Abo vom Server) · 8.4 optional: Outlook/To‑Do‑Aufgaben übernehmen (Microsoft‑Anmeldung über Graph API – nur wenn die IT es erlaubt; einmaliger Import der bestehenden To‑Do‑Aufgaben) | Arbeit und Zuhause in einer Ansicht | mittel |
+| **9 – Planen wie in To Do** | „Mein Tag“ / Morgen‑Plan mit Vorschlägen, Geplant‑Ansicht (Überfällig/Heute/Morgen/Woche/Später), flexible Wiederholungen in der Oberfläche (Wochentage, n‑ter Wochentag, Enddatum, nach Erledigung), Erinnerungen ausbauen (freie Uhrzeit, mehrere, „Erledigt“/„10 Min. später“ in der Benachrichtigung), eigene Reihenfolge per Ziehen | Tägliche Planung angenehm | mittel |
+| **10 – Kalender komplett** | Wochen‑ und Tagesansicht mit Zeitblöcken, Ziehen auch am Handy | Termine planen wie im Outlook | groß |
+| **11 – Komfort** | Gewohnheiten (Habits) mit Streak, Fotos/Anhänge an Aufgaben, Abend‑Check‑in & Wochenrückblick | Mehr Alltag in Checko | mittel |
+| **12 – KI‑Assistent** | Claude über den Server: „Sag's einfach“, Aufgaben zerlegen, Morgen‑Briefing | Schneller erfassen | mittel (+ laufende API‑Kosten) |
+| Später / optional | Geteilte Einkaufsliste, Themes/Maskottchen, Tauri‑App, Android‑Widget | | |
+
+Jede Phase: kleine Schritte, Tests im `core`, neuer Ablauf im Check‑up, Bewertungsbogen am Ende.
 
 ## 6. Qualität
 - `cargo fmt`, `cargo clippy -D warnings`, `cargo test` (core) bei jedem Schritt.
