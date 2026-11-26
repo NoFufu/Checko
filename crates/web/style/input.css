@@ -962,7 +962,7 @@ body { touch-action: manipulation; }
 .agenda-check { flex: none; }
 @media (max-width: 700px) { .cal-chip.task { padding-left: 0; } .cal-chip.task::before { display: none; } }
 @media (max-width: 639px) { .cal-chip.task { background: transparent !important; box-shadow: inset 0 0 0 1.5px var(--c); } }
-.settings-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.settings-section.settings-row { flex-direction: row; align-items: center; justify-content: space-between; gap: 1rem; text-align: left; }
 
 /* calendar: readable entries */
 .agenda-row.clickable { cursor: pointer; transition: border-color 0.15s, background 0.15s; }

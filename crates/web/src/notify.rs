@@ -85,9 +85,29 @@ fn mark_sent(key: &str) {
     }
 }
 
+/// Wait for a JS promise, but give up after `ms` (some company networks block
+/// the browser's push service, then `subscribe()` never answers).
+async fn within(p: js_sys::Promise, ms: i32) -> Result<JsValue, &'static str> {
+    let timer = js_sys::Promise::new(&mut |resolve, _| {
+        if let Some(w) = web_sys::window() {
+            let _ = w.set_timeout_with_callback_and_timeout_and_arguments_1(
+                &resolve,
+                ms,
+                &JsValue::from_str("__timeout__"),
+            );
+        }
+    });
+    let race = js_sys::Promise::race(&js_sys::Array::of2(&p, &timer));
+    match JsFuture::from(race).await {
+        Ok(v) if v.as_string().as_deref() == Some("__timeout__") => Err("timeout"),
+        Ok(v) => Ok(v),
+        Err(_) => Err("error"),
+    }
+}
+
 async fn registration() -> Option<ServiceWorkerRegistration> {
     let sw = web_sys::window()?.navigator().service_worker();
-    let reg = JsFuture::from(sw.ready().ok()?).await.ok()?;
+    let reg = within(sw.ready().ok()?, 8000).await.ok()?;
     reg.dyn_into().ok()
 }
 
@@ -167,19 +187,28 @@ pub async fn enable_push() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let reg = registration()
         .await
-        .ok_or("Kein Service Worker – bitte Seite neu laden.")?;
+        .ok_or("Kein Service Worker – bitte Seite neu laden (privates Fenster und manche Firmen-Richtlinien blockieren ihn).")?;
     let opts = PushSubscriptionOptionsInit::new();
     opts.set_user_visible_only(true);
     opts.set_application_server_key(&JsValue::from_str(key.trim()));
     let push = reg.push_manager().map_err(|_| {
         "Push wird hier nicht unterstützt (iPhone: Checko zum Home-Bildschirm hinzufügen)."
     })?;
-    let sub = JsFuture::from(
+    let sub = match within(
         push.subscribe_with_options(&opts)
             .map_err(|_| "Push wird nicht unterstützt.")?,
+        20000,
     )
     .await
-    .map_err(|_| "Push-Anmeldung abgelehnt.".to_string())?;
+    {
+        Ok(sub) => sub,
+        Err("timeout") => return Err(
+            "Der Push-Dienst des Browsers antwortet nicht – im Firmennetz ist er oft gesperrt. \
+             Erinnerungen kommen trotzdem, solange Checko geöffnet ist. Zu Hause oder am Handy klappt Push meist."
+                .into(),
+        ),
+        Err(_) => return Err("Push-Anmeldung abgelehnt (Browser-Einstellungen prüfen).".into()),
+    };
     let json = js_sys::JSON::stringify(&sub).map_err(|_| "Fehler beim Lesen der Anmeldung.")?;
     let subscription: serde_json::Value =
         serde_json::from_str(&String::from(json)).map_err(|e| e.to_string())?;
