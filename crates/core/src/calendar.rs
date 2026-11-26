@@ -104,6 +104,9 @@ pub struct Event {
     /// Reminder: minutes before the start (all-day: before 09:00). `None` = off.
     #[serde(default)]
     pub remind: Option<u32>,
+    /// UID from an imported calendar file, so a re-import updates instead of duplicating.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_uid: Option<String>,
 }
 
 impl Event {
@@ -118,6 +121,7 @@ impl Event {
             notes: String::new(),
             recurrence: None,
             remind: None,
+            source_uid: None,
         }
     }
 

@@ -102,6 +102,7 @@ async function auditPage(page, { route, label, device, scheme }) {
     const a = (results.a11y[v.id] ||= { ...v, pages: [] });
     a.pages.push(`${label} (${device}, ${scheme})`);
     a.nodes = Math.max(a.nodes, v.nodes);
+    for (const ex of v.examples || []) if (a.examples.length < 8 && !a.examples.some((x) => x.html === ex.html)) a.examples.push(ex);
   }
   results.pages.push({ route, label, device, scheme, overflow: Math.max(0, overflow), shot, axe: axe.length });
 }
@@ -203,6 +204,23 @@ async function main() {
       await page.locator('.cal-chip', { hasText: 'Elternabend Grundschule' }).first().waitFor();
       const remind = await page.evaluate(() => JSON.parse(localStorage.getItem('checko.events.v1') || '[]').find((e) => e.title === 'Elternabend Grundschule')?.remind);
       expect(remind === 15, `Erinnerung nicht gespeichert (${remind})`);
+    });
+
+    await flow('Kalender-Datei (.ics) importieren, erneuter Import ohne Doppelungen', async () => {
+      await page.locator('.cal-import summary').click();
+      const ics = ['BEGIN:VCALENDAR','VERSION:2.0','BEGIN:VEVENT','UID:checkup-1','SUMMARY:Outlook Teammeeting',
+        'DTSTART;TZID=W. Europe Standard Time:' + new Date().toISOString().slice(0,10).replace(/-/g,'') + 'T100000',
+        'DTEND;TZID=W. Europe Standard Time:' + new Date().toISOString().slice(0,10).replace(/-/g,'') + 'T110000',
+        'END:VEVENT','END:VCALENDAR'].join('\r\n');
+      const file = { name: 'outlook.ics', mimeType: 'text/calendar', buffer: Buffer.from(ics) };
+      await page.locator('.cal-import input[type="file"]').setInputFiles(file);
+      const res = page.locator('.cal-import .ics-result');
+      await res.waitFor();
+      expect((await res.innerText()).includes('1 neu'), `Import-Meldung: ${await res.innerText()}`);
+      await page.locator('.cal-import input[type="file"]').setInputFiles(file);
+      await page.waitForTimeout(400);
+      const n = await page.evaluate(() => JSON.parse(localStorage.getItem('checko.events.v1') || '[]').filter((e) => e.title === 'Outlook Teammeeting').length);
+      expect(n === 1, `Termin ${n}× vorhanden`);
     });
 
     await flow('Einkauf: Amazon-Link wird zum Eintrag mit Namen', async () => {

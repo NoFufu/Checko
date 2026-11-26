@@ -50,6 +50,18 @@ pub fn SettingsPage() -> impl IntoView {
 
             <NotifySetup />
 
+            <section class="panel settings-section">
+                <h2 class="section-head"><Icon glyph=Glyph::Calendar size=18 />"Kalender importieren"</h2>
+                <p class="text-sm text-muted">"Outlook: Kalender als Datei speichern (.ics) und hier einfügen. Termine erscheinen im Checko-Kalender."</p>
+                <crate::components::data_tools::IcsImport />
+            </section>
+
+            <section class="panel settings-section">
+                <h2 class="section-head"><Icon glyph=Glyph::Notes size=18 />"Datensicherung"</h2>
+                <p class="text-sm text-muted">"Alle Aufgaben, Termine, Notizen und Einkäufe als Datei sichern – und bei Bedarf wieder einspielen."</p>
+                <crate::components::data_tools::BackupTools />
+            </section>
+
             <section class="panel settings-section settings-row">
                 <span>
                     <span class="block font-semibold">"Darstellung"</span>
@@ -180,13 +192,21 @@ fn NotifySetup() -> impl IntoView {
         });
     };
     let test = move |_| {
-        leptos::task::spawn_local(async {
-            crate::notify::show(
+        leptos::task::spawn_local(async move {
+            let r = crate::notify::try_show(
                 "Checko",
                 "So sehen deine Erinnerungen aus. 🦎",
                 "checko-test",
             )
-            .await
+            .await;
+            msg.set(Some(match r {
+                Ok(how) => format!(
+                    "Gesendet ({how}). Nichts gesehen? Dann blockiert Windows/der Browser die Anzeige: \
+                     „Nicht stören“ bzw. Fokus aus, und im Browser beim Schloss-Symbol links neben der Adresse \
+                     „Benachrichtigungen: Zulassen“ prüfen."
+                ),
+                Err(e) => e,
+            }));
         })
     };
     let status = move || {

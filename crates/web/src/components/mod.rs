@@ -1,5 +1,6 @@
 pub mod area_filter;
 pub mod celebrate;
+pub mod data_tools;
 // Visual effects kept for later use.
 #[allow(dead_code)]
 pub mod blur_text;

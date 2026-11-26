@@ -3,6 +3,7 @@
 pub mod achievements;
 pub mod calendar;
 pub mod gamification;
+pub mod ics;
 pub mod model;
 pub mod notes;
 pub mod parse;
@@ -15,6 +16,7 @@ pub use calendar::{
     Recurrence, Reminder, ALL_DAY_REMINDER,
 };
 pub use gamification::{level_for_xp, xp_for_task, LevelProgress};
+pub use ics::{merge_ics, parse_ics, IcsEvent, ImportStats};
 pub use model::*;
 pub use notes::*;
 pub use parse::{parse_quick_add, ParsedTask, Token, TokenKind};

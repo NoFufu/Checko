@@ -255,16 +255,13 @@ fn EventRow(item: checko_core::CalendarItem) -> impl IntoView {
         .map(|t| t.format("%H:%M").to_string())
         .unwrap_or_else(|| "Ganzer Tag".into());
     view! {
-        <li class="task-row appt event-row" role="button" tabindex="0" title="Termin öffnen"
-            on:click=move |_| store.event_detail.set(Some(id))
-            on:keydown=move |e| if e.key() == "Enter" { store.event_detail.set(Some(id)) }
-        >
+        <li class="task-row appt event-row" on:click=move |_| store.event_detail.set(Some(id))>
             <span class="appt-time urgency-4">
                 <span class="appt-clock">{time}</span>
                 <span class="appt-day">"Heute"</span>
             </span>
             <div class="task-body">
-                <span class="task-title event-title">{item.title.clone()}</span>
+                <button type="button" class="task-title event-title" title="Termin öffnen">{item.title.clone()}</button>
                 <div class="task-meta">
                     {item.repeats.then(|| view! { <span class="meta-item" title="Wiederholt sich"><Icon glyph=Glyph::Repeat size=13 /></span> })}
                     {item.remind.is_some().then(|| view! { <span class="meta-item" title="Erinnerung an"><Icon glyph=Glyph::Bell size=13 /></span> })}

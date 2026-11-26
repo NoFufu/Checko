@@ -107,8 +107,8 @@ pub fn CalendarPage() -> impl IntoView {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <div class="segmented" role="tablist" aria-label="Ansicht">
-                        <button type="button" class="segment" class:active=move || view_mode.get() == View::Month on:click=move |_| view_mode.set(View::Month)>"Monat"</button>
-                        <button type="button" class="segment" class:active=move || view_mode.get() == View::Agenda on:click=move |_| view_mode.set(View::Agenda)>"Agenda"</button>
+                        <button type="button" role="tab" aria-selected=move || (view_mode.get() == View::Month).to_string() class="segment" class:active=move || view_mode.get() == View::Month on:click=move |_| view_mode.set(View::Month)>"Monat"</button>
+                        <button type="button" role="tab" aria-selected=move || (view_mode.get() == View::Agenda).to_string() class="segment" class:active=move || view_mode.get() == View::Agenda on:click=move |_| view_mode.set(View::Agenda)>"Agenda"</button>
                     </div>
                     <button type="button" class="btn-icon" aria-label="Vorheriger Monat" on:click=move |_| month.update(|m| *m = shift_month(*m, -1))>
                         <Icon glyph=Glyph::ChevronLeft size=18 />
@@ -318,6 +318,10 @@ fn DayPanel(selected: RwSignal<NaiveDate>) -> impl IntoView {
                 </div>
                 <button type="submit" class="btn btn-primary" disabled=move || title.get().trim().is_empty()>"Termin speichern"</button>
             </form>
+            <details class="cal-import">
+                <summary>"Outlook-Kalender importieren"</summary>
+                <crate::components::data_tools::IcsImport compact=true />
+            </details>
         </aside>
     }
 }

@@ -113,17 +113,29 @@ async fn registration() -> Option<ServiceWorkerRegistration> {
 
 /// Show one notification (via the service worker so it also works in the PWA).
 pub async fn show(title: &str, body: &str, tag: &str) {
+    let _ = try_show(title, body, tag).await;
+}
+
+/// Like `show`, but says which way worked or why it failed (for the test button).
+pub async fn try_show(title: &str, body: &str, tag: &str) -> Result<&'static str, String> {
+    if permission() != NotificationPermission::Granted {
+        return Err("Benachrichtigungen sind für Checko in diesem Browser nicht erlaubt.".into());
+    }
     let opts = NotificationOptions::new();
     opts.set_body(body);
     opts.set_tag(tag);
     opts.set_icon(&crate::asset("brand/icon-192.png"));
     if let Some(reg) = registration().await {
         if let Ok(p) = reg.show_notification_with_options(title, &opts) {
-            let _ = JsFuture::from(p).await;
-            return;
+            return match within(p, 5000).await {
+                Ok(_) => Ok("über den Service Worker"),
+                Err(e) => Err(format!("Service Worker hat abgelehnt ({e}).")),
+            };
         }
     }
-    let _ = web_sys::Notification::new_with_options(title, &opts);
+    web_sys::Notification::new_with_options(title, &opts)
+        .map(|_| "direkt")
+        .map_err(|_| "Der Browser hat die Benachrichtigung abgelehnt.".to_string())
 }
 
 pub fn body_for(date: NaiveDate, start: Option<chrono::NaiveTime>) -> String {

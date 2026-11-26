@@ -191,7 +191,7 @@ impl Store {
         expect_context::<Store>()
     }
 
-    fn notify(&self, text: impl Into<String>, undo: Option<Undo>) {
+    pub fn notify(&self, text: impl Into<String>, undo: Option<Undo>) {
         let id = self
             .toast
             .with_untracked(|t| t.as_ref().map_or(0, |t| t.id + 1));
