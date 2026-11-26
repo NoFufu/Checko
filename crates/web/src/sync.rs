@@ -208,6 +208,29 @@ impl Sync {
         expect_context::<Sync>()
     }
 
+    /// Address of the calendar feed for Outlook (`reset` makes a new one).
+    pub async fn feed_url(&self, reset: bool) -> Result<String, String> {
+        #[derive(Deserialize)]
+        struct FeedResponse {
+            token: String,
+        }
+        let cfg = self.config.get_untracked();
+        let token = cfg.token.clone().ok_or("Nicht angemeldet")?;
+        let server = base(&cfg.server);
+        let resp = Request::post(&format!("{server}/api/feed"))
+            .header("Authorization", &format!("Bearer {token}"))
+            .json(&serde_json::json!({ "reset": reset }))
+            .map_err(|e| e.to_string())?
+            .send()
+            .await
+            .map_err(|_| "Server nicht erreichbar – gleich noch einmal versuchen.".to_string())?;
+        if !resp.ok() {
+            return Err(error_text(resp).await);
+        }
+        let f: FeedResponse = resp.json().await.map_err(|e| e.to_string())?;
+        Ok(format!("{server}/api/feed/{}.ics", f.token))
+    }
+
     pub fn signed_in(&self) -> bool {
         self.config.with(|c| c.token.is_some())
     }

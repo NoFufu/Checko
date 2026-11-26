@@ -125,9 +125,90 @@ pub fn SettingsPage() -> impl IntoView {
             </section>
 
             <Show when=signed_in>
+                <OutlookFeed />
+            </Show>
+
+            <Show when=signed_in>
                 <WidgetSetup />
             </Show>
         </div>
+    }
+}
+
+/// Calendar feed: show Checko's appointments in Outlook (subscription link).
+#[component]
+fn OutlookFeed() -> impl IntoView {
+    let sync = Sync::get();
+    let url = RwSignal::new(None::<String>);
+    let busy = RwSignal::new(false);
+    let msg = RwSignal::new(None::<String>);
+    let fetch = move |reset: bool| {
+        busy.set(true);
+        msg.set(None);
+        leptos::task::spawn_local(async move {
+            match sync.feed_url(reset).await {
+                Ok(u) => {
+                    url.set(Some(u));
+                    if reset {
+                        msg.set(Some(
+                            "Neuer Link erstellt – der alte funktioniert nicht mehr.".into(),
+                        ));
+                    }
+                }
+                Err(e) => msg.set(Some(e)),
+            }
+            busy.set(false);
+        });
+    };
+    let copy = move |_| {
+        if let (Some(w), Some(u)) = (web_sys::window(), url.get_untracked()) {
+            let _ = w.navigator().clipboard().write_text(&u);
+            msg.set(Some("Link kopiert ✓".into()));
+        }
+    };
+    let reset = move |_| {
+        let ok = web_sys::window()
+            .and_then(|w| {
+                w.confirm_with_message("Neuen Link erstellen? Outlook muss dann neu abonnieren.")
+                    .ok()
+            })
+            .unwrap_or(false);
+        if ok {
+            fetch(true);
+        }
+    };
+    view! {
+        <section class="panel settings-section">
+            <h2 class="section-head"><Icon glyph=Glyph::Calendar size=18 />"In Outlook anzeigen"</h2>
+            <p class="text-sm text-muted">
+                "Deine Checko-Termine als Kalender-Abo – Outlook holt Änderungen von selbst (je nach Outlook alle paar Stunden). "
+                "Aus Outlook importierte Termine sind nicht dabei, damit nichts doppelt erscheint."
+            </p>
+            <Show
+                when=move || url.get().is_some()
+                fallback=move || view! {
+                    <div>
+                        <button type="button" class="btn btn-primary" disabled=move || busy.get() on:click=move |_| fetch(false)>
+                            {move || if busy.get() { "Einen Moment …" } else { "Abo-Link anzeigen" }}
+                        </button>
+                    </div>
+                }
+            >
+                <input class="feed-url" readonly=true aria-label="Abo-Link" prop:value=move || url.get().unwrap_or_default()
+                    on:focus=move |e| { event_target::<web_sys::HtmlInputElement>(&e).select(); } />
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" class="btn btn-primary" on:click=copy>"Link kopieren"</button>
+                    <button type="button" class="btn btn-outline" disabled=move || busy.get() on:click=reset>"Neuen Link erstellen"</button>
+                </div>
+                <ol class="widget-steps">
+                    <li><b>"Outlook im Web / neues Outlook:"</b>" Kalender → "<b>"Kalender hinzufügen"</b>" → "<b>"Aus dem Internet abonnieren"</b>" → Link einfügen, Name „Checko“ → Importieren."</li>
+                    <li><b>"Klassisches Outlook:"</b>" Kalender → "<b>"Kalender hinzufügen"</b>" → "<b>"Aus dem Internet …"</b>" → Link einfügen → Ja."</li>
+                    <li>"Geht das in der Firma nicht, blockiert die IT externe Kalender – dann bleibt nur Checko im Browser."</li>
+                </ol>
+                <p class="text-sm text-muted">"Wer den Link hat, sieht deine Termine – nicht weitergeben."</p>
+            </Show>
+            {move || msg.get().map(|m| view! { <p class="text-sm mt-2" role="status">{m}</p> })}
+        </section>
     }
 }
 

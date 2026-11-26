@@ -4,6 +4,8 @@
 //! - `POST /api/sync` (Bearer token): push local changes, get everything newer
 //!   than the client's `since` cursor. Conflicts: last write (by `updated_at`) wins.
 //! - `GET /health` for uptime pings.
+//! - `POST /api/feed` (Bearer) -> `{ token }`; `GET /api/feed/<token>.ics`: calendar
+//!   feed to subscribe in Outlook (Checko events + appointments).
 //! - `GET /api/push/key`, `POST /api/push/subscribe`: reminders via Web Push (see `push.rs`).
 //!
 //! Configuration via environment:
@@ -85,6 +87,10 @@ async fn migrate(db: &PgPool) -> Result<(), sqlx::Error> {
             seq BIGINT NOT NULL DEFAULT nextval('record_seq'),
             PRIMARY KEY (user_id, kind, id))",
         "CREATE INDEX IF NOT EXISTS records_user_seq ON records (user_id, seq)",
+        "CREATE TABLE IF NOT EXISTS feeds (
+            token TEXT PRIMARY KEY,
+            user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT now())",
     ] {
         sqlx::query(stmt).execute(db).await?;
     }
@@ -434,6 +440,90 @@ async fn widget(
     }))
 }
 
+// ---------- calendar feed (subscribe in Outlook) ----------
+
+#[derive(Deserialize, Default)]
+#[serde(default)]
+struct FeedRequest {
+    /// Make a new link; the old one stops working.
+    reset: bool,
+}
+
+#[derive(Serialize)]
+struct FeedResponse {
+    token: String,
+}
+
+/// Get (or create) the secret token for the calendar feed of the signed-in user.
+async fn feed_token(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    Json(req): Json<FeedRequest>,
+) -> ApiResult<FeedResponse> {
+    let user = user_from(&headers, &s.db).await?;
+    if req.reset {
+        sqlx::query("DELETE FROM feeds WHERE user_id = $1")
+            .bind(user)
+            .execute(&s.db)
+            .await?;
+    }
+    let existing = sqlx::query("SELECT token FROM feeds WHERE user_id = $1")
+        .bind(user)
+        .fetch_optional(&s.db)
+        .await?;
+    let token = match existing {
+        Some(r) => r.get("token"),
+        None => {
+            let token = new_token();
+            sqlx::query("INSERT INTO feeds (token, user_id) VALUES ($1, $2)")
+                .bind(&token)
+                .bind(user)
+                .execute(&s.db)
+                .await?;
+            token
+        }
+    };
+    Ok(Json(FeedResponse { token }))
+}
+
+/// The calendar itself: `GET /api/feed/<token>.ics` (no login, the token is the key).
+async fn feed(
+    State(s): State<Shared>,
+    axum::extract::Path(file): axum::extract::Path<String>,
+) -> Result<Response, ApiError> {
+    let token = file.strip_suffix(".ics").unwrap_or(&file);
+    let row = sqlx::query("SELECT user_id FROM feeds WHERE token = $1")
+        .bind(token)
+        .fetch_optional(&s.db)
+        .await?
+        .ok_or(ApiError(StatusCode::NOT_FOUND, "Kalender nicht gefunden"))?;
+    let user: Uuid = row.get("user_id");
+    let rows: Vec<(String, Value)> = sqlx::query(
+        "SELECT kind, data FROM records WHERE user_id = $1 AND data IS NOT NULL AND kind IN ('task','event')",
+    )
+    .bind(user)
+    .fetch_all(&s.db)
+    .await?
+    .into_iter()
+    .map(|r| (r.get("kind"), r.get("data")))
+    .collect();
+    let tasks: Vec<checko_core::Task> = records(&rows, "task");
+    let events: Vec<checko_core::Event> = records(&rows, "event");
+    let body = checko_core::write_ics(&events, &tasks, Utc::now());
+    Ok((
+        [
+            (header::CONTENT_TYPE, "text/calendar; charset=utf-8"),
+            (header::CACHE_CONTROL, "no-cache"),
+            (
+                header::CONTENT_DISPOSITION,
+                "inline; filename=\"checko.ics\"",
+            ),
+        ],
+        body,
+    )
+        .into_response())
+}
+
 async fn health(State(s): State<Shared>) -> Result<&'static str, ApiError> {
     sqlx::query("SELECT 1").execute(&s.db).await?;
     Ok("ok")
@@ -461,6 +551,8 @@ fn app(state: Shared) -> Router {
         .route("/api/logout", post(logout))
         .route("/api/sync", post(sync))
         .route("/api/widget", get(widget))
+        .route("/api/feed", post(feed_token))
+        .route("/api/feed/{file}", get(feed))
         .route("/api/push/key", get(push::key))
         .route("/api/push/subscribe", post(push::subscribe))
         .layer(cors())
