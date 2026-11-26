@@ -61,19 +61,19 @@ pub fn TodayPage() -> impl IntoView {
 
     view! {
         <Topbar />
+        <Show when=move || !store.focus()>
+            <a class="xp-strip" href="#fortschritt"
+                aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {}", p.level, p.current, p.needed, p.level + 1) }>
+                <span class="xp-strip-bar" aria-hidden="true">
+                    <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
+                </span>
+                <span class="xp-strip-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
+            </a>
+        </Show>
         <div class="page">
             <section class="hero">
                 <div class="hero-text">
                     <p class="hero-kicker">{today_label()}</p>
-                    <Show when=move || !store.focus()>
-                        <a class="xp-mini" href="#fortschritt"
-                            aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {}", p.level, p.current, p.needed, p.level + 1) }>
-                            <span class="xp-mini-bar" aria-hidden="true">
-                                <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
-                            </span>
-                            <span class="xp-mini-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
-                        </a>
-                    </Show>
                     <h1 class="hero-title">{format!("{}!", greeting())}</h1>
                     <div class="mt-6 flex flex-wrap gap-3">
                         <a class="btn btn-primary btn-lg" href=format!("{}/aufgaben", crate::BASE)>
