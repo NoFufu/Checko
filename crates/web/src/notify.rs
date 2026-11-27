@@ -68,6 +68,10 @@ pub fn ensure_permission() {
 }
 
 pub async fn request_permission() -> NotificationPermission {
+    // already decided: asking again can hang in installed app windows
+    if permission() != NotificationPermission::Default {
+        return permission();
+    }
     if let Ok(p) = web_sys::Notification::request_permission() {
         // a dismissed or quiet prompt can stay open for a long time
         let _ = within(p, 60_000).await;
