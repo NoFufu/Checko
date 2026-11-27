@@ -59,6 +59,10 @@ pub fn TaskForm(
             if let Some(d) = store.quick_add_date.get() {
                 due.set(d.to_string());
             }
+            // several days picked: every day until the last one
+            if store.quick_add_until.get().is_some() {
+                repeat.set("d".into());
+            }
         });
     }
     // Follow the page filter: adding while "Arbeit" is selected files it under Arbeit.
@@ -103,7 +107,13 @@ pub fn TaskForm(
             tags: p.tags,
             recurrence: p
                 .recurrence
-                .or_else(|| repeat_from(&repeat.get_untracked())),
+                .or_else(|| repeat_from(&repeat.get_untracked()))
+                .map(|mut r| {
+                    if full && r.until.is_none() {
+                        r.until = store.quick_add_until.get_untracked();
+                    }
+                    r
+                }),
             appointment: kind.get_untracked(),
             remind: super::task_detail::remind_from(&remind.get_untracked()),
         });
@@ -223,7 +233,10 @@ pub fn TaskForm(
                             </select>
                         </label>
                         <label class="add-field">
-                            <span>"Wiederholen"</span>
+                            <span>
+                                "Wiederholen"
+                                {move || store.quick_add_until.get().filter(|_| full).map(|u| format!(" · bis {}", u.format("%d.%m.")))}
+                            </span>
                             <select bind:value=repeat>
                                 <option value="">"Nie"</option>
                                 <option value="d">"Jeden Tag"</option>

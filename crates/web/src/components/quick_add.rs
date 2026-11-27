@@ -31,6 +31,7 @@ pub fn QuickAddDialog() -> impl IntoView {
     Effect::new(move |_| {
         if !open.get() {
             store.quick_add_date.set(None);
+            store.quick_add_until.set(None);
         }
     });
 

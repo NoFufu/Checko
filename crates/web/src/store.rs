@@ -93,6 +93,8 @@ pub struct Store {
     pub quick_add_open: RwSignal<bool>,
     /// Day pre-selected in the add dialog (double-click in the calendar).
     pub quick_add_date: RwSignal<Option<NaiveDate>>,
+    /// Last day when several days were picked in the calendar (daily series).
+    pub quick_add_until: RwSignal<Option<NaiveDate>>,
     /// Task shown in the detail panel.
     pub detail: RwSignal<Option<Uuid>>,
     /// Calendar event shown in the detail panel.
@@ -113,6 +115,7 @@ impl Store {
             toast: RwSignal::new(None),
             quick_add_open: RwSignal::new(false),
             quick_add_date: RwSignal::new(None),
+            quick_add_until: RwSignal::new(None),
             detail: RwSignal::new(None),
             event_detail: RwSignal::new(None),
             celebrations: RwSignal::new(Vec::new()),

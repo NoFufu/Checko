@@ -200,49 +200,12 @@ fn ProgressDialog(open: RwSignal<bool>) -> impl IntoView {
 fn ProgressCard() -> impl IntoView {
     let store = Store::get();
     let streak = move || store.profile.with(|p| p.current_streak(today()));
-    let days = move || store.tasks.with(|t| done_last_days(t, today(), 14));
-    let week_total = move || days()[7..].iter().sum::<u32>();
-    const W: f64 = 300.0;
-    const H: f64 = 96.0;
-    let points = move || {
-        let d = days();
-        let max = (*d.iter().max().unwrap_or(&0)).max(1) as f64;
-        d.iter()
-            .enumerate()
-            .map(|(i, v)| {
-                let x = i as f64 * W / 13.0;
-                let y = H - 8.0 - *v as f64 / max * (H - 22.0);
-                (x, y)
-            })
-            .collect::<Vec<_>>()
-    };
-    // Catmull-Rom → cubic Bézier for a soft curve
-    let line = move || {
-        let p = points();
-        let mut d = format!("M{:.1} {:.1}", p[0].0, p[0].1);
-        for i in 0..p.len() - 1 {
-            let p0 = if i == 0 { p[0] } else { p[i - 1] };
-            let (p1, p2) = (p[i], p[i + 1]);
-            let p3 = if i + 2 < p.len() { p[i + 2] } else { p2 };
-            let c1 = (p1.0 + (p2.0 - p0.0) / 6.0, p1.1 + (p2.1 - p0.1) / 6.0);
-            let c2 = (p2.0 - (p3.0 - p1.0) / 6.0, p2.1 - (p3.1 - p1.1) / 6.0);
-            d.push_str(&format!(
-                " C{:.1} {:.1} {:.1} {:.1} {:.1} {:.1}",
-                c1.0, c1.1, c2.0, c2.1, p2.0, p2.1
-            ));
-        }
-        d
-    };
-    let area = move || format!("{} L{W} {H} L0 {H} Z", line());
-    let labels = move || {
-        let t = today();
-        (0..14)
-            .map(|i| {
-                let d = t - chrono::Duration::days(13 - i);
-                let wd = WEEK[d.weekday().num_days_from_monday() as usize];
-                (wd, i == 13)
-            })
-            .collect::<Vec<_>>()
+    let week_total = move || {
+        store
+            .tasks
+            .with(|t| done_last_days(t, today(), 7))
+            .iter()
+            .sum::<u32>()
     };
     view! {
         <section class="panel progress-card" class:lit=move || { streak() > 0 }>
@@ -261,22 +224,93 @@ fn ProgressCard() -> impl IntoView {
                     </span>
                 </div>
             </div>
-            <svg class="area-chart" viewBox=format!("0 0 {W} {H}") preserveAspectRatio="none" role="img"
-                aria-label=move || format!("Erledigte Aufgaben der letzten 14 Tage: {}", days().iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", "))>
-                <defs>
-                    <linearGradient id="area-fill" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0" stop-color="#22c55e" stop-opacity="0.45" />
-                        <stop offset="1" stop-color="#22c55e" stop-opacity="0" />
-                    </linearGradient>
-                </defs>
-                <line class="area-grid" x1="0" x2=W y1=H - 8.0 y2=H - 8.0 />
-                <path d=area fill="url(#area-fill)" />
-                <path d=line class="area-line" />
-            </svg>
-            <div class="area-labels" aria-hidden="true">
-                {move || labels().into_iter().map(|(d, is_today)| view! { <span class:today=is_today>{d}</span> }).collect_view()}
-            </div>
+            <Heatmap />
         </section>
+    }
+}
+
+const MONTH_SHORT: [&str; 12] = [
+    "Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez",
+];
+const HEAT_WEEKS: u32 = 26;
+
+/// GitHub-style grid: done tasks per day of the last six months, details on hover.
+#[component]
+fn Heatmap() -> impl IntoView {
+    let store = Store::get();
+    let days = Memo::new(move |_| {
+        store
+            .tasks
+            .with(|t| checko_core::heatmap(t, today(), HEAT_WEEKS))
+    });
+    let hover = RwSignal::new(None::<usize>);
+    let total = move || days.with(|d| d.iter().map(|d| d.count).sum::<u32>());
+    // month name above the first column that starts in a new month
+    let months = move || {
+        days.with(|d| {
+            let mut last = 0;
+            (0..HEAT_WEEKS as usize)
+                .filter_map(|w| {
+                    let day = d.get(w * 7)?;
+                    let m = day.date.month();
+                    (m != last).then(|| {
+                        last = m;
+                        (w, MONTH_SHORT[m as usize - 1])
+                    })
+                })
+                .collect::<Vec<_>>()
+        })
+    };
+    let tooltip = move || {
+        let i = hover.get()?;
+        days.with(|d| {
+            let day = d.get(i)?;
+            let (col, row) = (i / 7, i % 7);
+            let head = format!(
+                "{}, {} · {}",
+                WEEK[day.date.weekday().num_days_from_monday() as usize],
+                day.date.format("%d.%m.%Y"),
+                match day.count {
+                    0 => "nichts erledigt".to_string(),
+                    1 => "1 erledigt".to_string(),
+                    n => format!("{n} erledigt"),
+                }
+            );
+            let mut list: Vec<String> = day.titles.iter().take(4).cloned().collect();
+            if day.titles.len() > 4 {
+                list.push(format!("+{} weitere", day.titles.len() - 4));
+            }
+            let flip = col as u32 > HEAT_WEEKS * 2 / 3;
+            Some(view! {
+                <div class="heat-tip" class:flip=flip style=format!("grid-column:{};grid-row:{}", col + 1, row + 1)>
+                    <p class="heat-tip-head">{head}</p>
+                    {list.into_iter().map(|t| view! { <p class="heat-tip-item">{t}</p> }).collect_view()}
+                </div>
+            })
+        })
+    };
+    view! {
+        <div class="heatmap" on:mouseleave=move |_| hover.set(None)>
+            <p class="sr-only">{move || format!("{} Aufgaben in den letzten sechs Monaten erledigt.", total())}</p>
+            <div class="heat-months" aria-hidden="true" style=format!("--weeks:{HEAT_WEEKS}")>
+                {move || months().into_iter().map(|(w, m)| view! { <span style=format!("grid-column:{}", w + 1)>{m}</span> }).collect_view()}
+            </div>
+            <div class="heat-body" aria-hidden="true">
+                <div class="heat-days"><span></span><span>"Mo"</span><span></span><span>"Mi"</span><span></span><span>"Fr"</span><span></span></div>
+                <div class="heat-grid" style=format!("--weeks:{HEAT_WEEKS}")>
+                    {move || days.get().into_iter().enumerate().map(|(i, d)| view! {
+                        <span class=format!("heat-cell l{}", d.level) class:today=d.date == today()
+                            on:mouseenter=move |_| hover.set(Some(i))></span>
+                    }).collect_view()}
+                    {tooltip}
+                </div>
+            </div>
+            <div class="heat-legend" aria-hidden="true">
+                "Weniger"
+                <span class="heat-cell l0"></span><span class="heat-cell l1"></span><span class="heat-cell l2"></span><span class="heat-cell l3"></span><span class="heat-cell l4"></span>
+                "Mehr"
+            </div>
+        </div>
     }
 }
 

@@ -4,6 +4,7 @@ pub mod achievements;
 pub mod calendar;
 pub mod categories;
 pub mod gamification;
+pub mod heatmap;
 pub mod ics;
 pub mod ics_export;
 pub mod imports;
@@ -21,6 +22,7 @@ pub use calendar::{
 };
 pub use categories::*;
 pub use gamification::{level_for_xp, xp_for_task, LevelProgress};
+pub use heatmap::{heatmap, HeatDay};
 pub use ics::{merge_ics, parse_ics, IcsEvent, ImportStats};
 pub use ics_export::write_ics;
 pub use imports::{delete_import, import_batches, ImportBatch};

@@ -4,6 +4,7 @@ use checko_core::{
 use chrono::{Datelike, Duration, NaiveDate, NaiveTime};
 use leptos::prelude::*;
 use uuid::Uuid;
+use wasm_bindgen::JsCast;
 
 use crate::components::{
     icon::{Glyph, Icon},
@@ -84,6 +85,20 @@ pub fn CalendarPage() -> impl IntoView {
     let month = RwSignal::new(shift_month(today(), 0));
     let selected = RwSignal::new(today());
     let view_mode = RwSignal::new(View::Month);
+    // days picked by pressing and dragging the mouse across the month
+    let range = RwSignal::new(None::<(NaiveDate, NaiveDate)>);
+    let finish_range = move |_| {
+        if let Some((a, b)) = range.get_untracked() {
+            range.set(None);
+            if a != b {
+                let (from, to) = if a <= b { (a, b) } else { (b, a) };
+                selected.set(from);
+                store.quick_add_date.set(Some(from));
+                store.quick_add_until.set(Some(to));
+                store.quick_add_open.set(true);
+            }
+        }
+    };
 
     let items = move |from: NaiveDate, to: NaiveDate| {
         store
@@ -97,7 +112,7 @@ pub fn CalendarPage() -> impl IntoView {
 
     view! {
         <Topbar />
-        <div class="page page-wide">
+        <div class="page page-wide" on:pointerup=finish_range on:pointerleave=move |_| range.set(None)>
             <div class="page-head">
                 <div>
                     <h1 class="page-h1">
@@ -121,6 +136,10 @@ pub fn CalendarPage() -> impl IntoView {
             </div>
 
             <div class="cal-layout">
+                {move || range.get().filter(|(a, b)| a != b).map(|(a, b)| {
+                    let (a, b) = if a <= b { (a, b) } else { (b, a) };
+                    view! { <p class="cal-range-hint" role="status">{format!("{} – {} · loslassen für Serientermin", a.format("%d.%m."), b.format("%d.%m."))}</p> }
+                })}
                 <Show
                     when=move || view_mode.get() == View::Month
                     fallback=move || view! { <Agenda selected=selected /> }
@@ -138,7 +157,7 @@ pub fn CalendarPage() -> impl IntoView {
                                 days.into_iter()
                                     .map(|d| {
                                         let day_items: Vec<CalendarItem> = all.iter().filter(|i| i.date == d).cloned().collect();
-                                        view! { <DayCell day=d in_month=d.month() == m.month() items=day_items selected=selected /> }
+                                        view! { <DayCell day=d in_month=d.month() == m.month() items=day_items selected=selected range=range /> }
                                     })
                                     .collect_view()
                             }}
@@ -158,7 +177,13 @@ fn DayCell(
     in_month: bool,
     items: Vec<CalendarItem>,
     selected: RwSignal<NaiveDate>,
+    range: RwSignal<Option<(NaiveDate, NaiveDate)>>,
 ) -> impl IntoView {
+    let in_range = move || {
+        range
+            .get()
+            .is_some_and(|(a, b)| a != b && day >= a.min(b) && day <= a.max(b))
+    };
     let store = Store::get();
     let over = RwSignal::new(false);
     let extra = items.len().saturating_sub(3);
@@ -172,7 +197,16 @@ fn DayCell(
             class:today=is_today
             class:selected=move || selected.get() == day
             class:drop-over=move || over.get()
-            title="Doppelklick: neuer Eintrag an diesem Tag"
+            class:in-range=in_range
+            title="Doppelklick: neuer Eintrag · über mehrere Tage ziehen: Serientermin"
+            on:pointerdown=move |e| {
+                // only a plain press on the day itself (not on a chip) starts a range
+                let on_chip = e.target().and_then(|t| t.dyn_into::<web_sys::Element>().ok()).is_some_and(|el| el.closest(".cal-chip").ok().flatten().is_some());
+                if e.button() == 0 && e.pointer_type() == "mouse" && !on_chip {
+                    range.set(Some((day, day)));
+                }
+            }
+            on:pointerenter=move |_| range.update(|r| if let Some((_, end)) = r { *end = day; })
             on:click=move |_| selected.set(day)
             on:dblclick=move |_| {
                 selected.set(day);
