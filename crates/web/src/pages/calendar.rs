@@ -87,7 +87,7 @@ pub fn CalendarPage() -> impl IntoView {
     let view_mode = RwSignal::new(View::Month);
     // days picked by pressing and dragging the mouse across the month
     let range = RwSignal::new(None::<(NaiveDate, NaiveDate)>);
-    let finish_range = move |_| {
+    let finish = move |range: RwSignal<Option<(NaiveDate, NaiveDate)>>| {
         if let Some((a, b)) = range.get_untracked() {
             range.set(None);
             if a != b {
@@ -99,6 +99,11 @@ pub fn CalendarPage() -> impl IntoView {
             }
         }
     };
+    // phone: hold a day ~0.4 s, then slide over more days
+    let grid_ref = NodeRef::<leptos::html::Div>::new();
+    let touch_selecting = RwSignal::new(false);
+    touch_range(grid_ref, range, touch_selecting, move || finish(range));
+    let finish_range = move |_| finish(range);
 
     let items = move |from: NaiveDate, to: NaiveDate| {
         store
@@ -148,7 +153,7 @@ pub fn CalendarPage() -> impl IntoView {
                         <div class="cal-weekdays">
                             {WEEKDAYS.iter().map(|d| view! { <span>{*d}</span> }).collect_view()}
                         </div>
-                        <div class="cal-grid">
+                        <div class="cal-grid" node_ref=grid_ref class:selecting=move || touch_selecting.get()>
                             {move || {
                                 let days = grid();
                                 let (from, to) = (days[0], days[41]);
@@ -169,6 +174,125 @@ pub fn CalendarPage() -> impl IntoView {
             </div>
         </div>
     }
+}
+
+/// Day under a screen point (cells carry `data-day`).
+fn day_at(x: f64, y: f64) -> Option<NaiveDate> {
+    let el = web_sys::window()?
+        .document()?
+        .element_from_point(x as f32, y as f32)?;
+    el.closest("[data-day]")
+        .ok()??
+        .get_attribute("data-day")?
+        .parse()
+        .ok()
+}
+
+/// Touch: long press starts a range, sliding extends it, lifting the finger finishes.
+/// Listeners are added by hand (not passive) so the page does not scroll while selecting.
+fn touch_range(
+    grid: NodeRef<leptos::html::Div>,
+    range: RwSignal<Option<(NaiveDate, NaiveDate)>>,
+    selecting: RwSignal<bool>,
+    finish: impl Fn() + Copy + 'static,
+) {
+    use wasm_bindgen::closure::Closure;
+    // runs again whenever the grid is created anew (e.g. back from Agenda)
+    Effect::new(move |_| {
+        let Some(el) = grid.get() else { return };
+        let timer = StoredValue::new(None::<i32>);
+        let start = StoredValue::new((0.0f64, 0.0f64));
+        let cancel = move || {
+            if let (Some(t), Some(w)) = (timer.get_value(), web_sys::window()) {
+                w.clear_timeout_with_handle(t);
+            }
+            timer.set_value(None);
+        };
+        let opts = web_sys::AddEventListenerOptions::new();
+        opts.set_passive(false);
+
+        let on_start =
+            Closure::<dyn Fn(web_sys::TouchEvent)>::new(move |e: web_sys::TouchEvent| {
+                let Some(t) = e.touches().get(0) else { return };
+                let (x, y) = (t.client_x() as f64, t.client_y() as f64);
+                if e.target()
+                    .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+                    .is_some_and(|el| el.closest(".cal-chip").ok().flatten().is_some())
+                {
+                    return;
+                }
+                start.set_value((x, y));
+                cancel();
+                let fire = Closure::once_into_js(move || {
+                    timer.set_value(None);
+                    if let Some(d) = day_at(x, y) {
+                        selecting.set(true);
+                        range.set(Some((d, d)));
+                        if let Some(w) = web_sys::window() {
+                            let _ = w.navigator().vibrate_with_duration(15);
+                        }
+                    }
+                });
+                timer.set_value(web_sys::window().and_then(|w| {
+                    w.set_timeout_with_callback_and_timeout_and_arguments_0(
+                        fire.unchecked_ref(),
+                        400,
+                    )
+                    .ok()
+                }));
+            });
+        let on_move = Closure::<dyn Fn(web_sys::TouchEvent)>::new(move |e: web_sys::TouchEvent| {
+            let Some(t) = e.touches().get(0) else { return };
+            let (x, y) = (t.client_x() as f64, t.client_y() as f64);
+            if selecting.get_untracked() {
+                e.prevent_default();
+                if let Some(d) = day_at(x, y) {
+                    range.update(|r| {
+                        if let Some((_, end)) = r {
+                            *end = d;
+                        }
+                    });
+                }
+            } else {
+                let (sx, sy) = start.get_value();
+                if (x - sx).abs() > 8.0 || (y - sy).abs() > 8.0 {
+                    cancel();
+                }
+            }
+        });
+        let on_end = Closure::<dyn Fn(web_sys::TouchEvent)>::new(move |e: web_sys::TouchEvent| {
+            cancel();
+            if selecting.get_untracked() {
+                e.prevent_default();
+                selecting.set(false);
+                finish();
+            }
+        });
+        let _ = el.add_event_listener_with_callback_and_add_event_listener_options(
+            "touchstart",
+            on_start.as_ref().unchecked_ref(),
+            &opts,
+        );
+        let _ = el.add_event_listener_with_callback_and_add_event_listener_options(
+            "touchmove",
+            on_move.as_ref().unchecked_ref(),
+            &opts,
+        );
+        let _ = el.add_event_listener_with_callback_and_add_event_listener_options(
+            "touchend",
+            on_end.as_ref().unchecked_ref(),
+            &opts,
+        );
+        let _ = el.add_event_listener_with_callback_and_add_event_listener_options(
+            "touchcancel",
+            on_end.as_ref().unchecked_ref(),
+            &opts,
+        );
+        // the grid lives as long as the page; keep the handlers alive with it
+        on_start.forget();
+        on_move.forget();
+        on_end.forget();
+    });
 }
 
 #[component]
@@ -198,6 +322,7 @@ fn DayCell(
             class:selected=move || selected.get() == day
             class:drop-over=move || over.get()
             class:in-range=in_range
+            data-day=day.to_string()
             title="Doppelklick: neuer Eintrag · über mehrere Tage ziehen: Serientermin"
             on:pointerdown=move |e| {
                 // only a plain press on the day itself (not on a chip) starts a range
