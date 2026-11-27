@@ -282,11 +282,14 @@ async function main() {
       await page.locator('label.switch').click();
       await nav(page, 'Heute');
       await page.waitForTimeout(400);
-      expect(!(await page.locator('.level-card').count()), 'Level trotz Fokus-Modus sichtbar');
+      expect(!(await page.locator('.xp-strip').count()), 'Level trotz Fokus-Modus sichtbar');
       await dismissPopups(page); await page.locator('.topbar a[aria-label="Einstellungen"]').first().click(); await page.waitForTimeout(400);
       await page.locator('label.switch').click();
       await nav(page, 'Heute');
-      await page.locator('.level-card').waitFor();
+      await page.locator('.xp-strip').waitFor();
+      await page.locator('.xp-strip').click();
+      await page.locator('.progress-dialog .level-card').waitFor();
+      await page.keyboard.press('Escape');
     });
 
     await flow('Hell/Dunkel umschalten', async () => {

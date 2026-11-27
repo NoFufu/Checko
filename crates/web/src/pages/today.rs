@@ -58,19 +58,24 @@ pub fn TodayPage() -> impl IntoView {
             .collect::<Vec<_>>()
     };
     let progress = move || store.profile.with(|p| level_for_xp(p.xp));
+    let show_progress = RwSignal::new(false);
 
     view! {
         <Topbar />
-        <Show when=move || !store.focus()>
-            <a class="xp-strip" href="#fortschritt"
-                aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {}", p.level, p.current, p.needed, p.level + 1) }>
-                <span class="xp-strip-bar" aria-hidden="true">
-                    <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
-                </span>
-                <span class="xp-strip-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
-            </a>
-        </Show>
         <div class="page">
+            <Show when=move || !store.focus()>
+                <button type="button" class="xp-strip" on:click=move |_| show_progress.set(true)
+                    aria-haspopup="dialog"
+                    aria-label=move || { let p = progress(); format!("Level {}, {} von {} XP bis Level {} – Erfolge anzeigen", p.level, p.current, p.needed, p.level + 1) }>
+                    <span class="xp-strip-bar" aria-hidden="true">
+                        <span class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></span>
+                    </span>
+                    <span class="xp-strip-level" aria-hidden="true">{move || format!("Lv {}", progress().level)}</span>
+                </button>
+            </Show>
+            <Show when=move || show_progress.get()>
+                <ProgressDialog open=show_progress />
+            </Show>
             <section class="hero">
                 <div class="hero-text">
                     <p class="hero-kicker">{today_label()}</p>
@@ -136,29 +141,12 @@ pub fn TodayPage() -> impl IntoView {
                 </aside>
             </div>
 
-            <section id="fortschritt" class="play-zone" aria-label=move || if store.focus() { "Kategorien" } else { "Fortschritt, Erfolge und Kategorien" }>
+            <section class="play-zone" aria-label=move || if store.focus() { "Kategorien" } else { "Fortschritt und Kategorien" }>
                 <div class="play-grid" class:play-focus=move || store.focus()>
                     <Show when=move || !store.focus()>
                     <div class="play-main">
-                        <SectionHead icon=Glyph::Level title="Fortschritt & Erfolge" />
+                        <SectionHead icon=Glyph::Streak title="Fortschritt" />
                         <ProgressCard />
-                        <div class="play-row">
-                            <AchievementGrid />
-                        <section class="panel level-card">
-                            <p class="metric-label">"Dein Level"</p>
-                            <p class="metric-sub">"XP für erledigte Aufgaben"</p>
-                            <p class="metric-value">{move || progress().level} <span class="metric-unit">"Level"</span></p>
-                            <div class="xp-bar mt-5">
-                                <div class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></div>
-                            </div>
-                            <p class="metric-foot">
-                                {move || {
-                                    let p = progress();
-                                    format!("{} / {} XP bis Level {}", p.current, p.needed, p.level + 1)
-                                }}
-                            </p>
-                        </section>
-                        </div>
                     </div>
                     </Show>
                     <div class="play-side">
@@ -167,6 +155,42 @@ pub fn TodayPage() -> impl IntoView {
                     </div>
                 </div>
             </section>
+        </div>
+    }
+}
+
+/// Level and achievements, opened from the level bar.
+#[component]
+fn ProgressDialog(open: RwSignal<bool>) -> impl IntoView {
+    let store = Store::get();
+    let progress = move || store.profile.with(|p| level_for_xp(p.xp));
+    let handle = window_event_listener(leptos::ev::keydown, move |e| {
+        if e.key() == "Escape" {
+            open.set(false);
+        }
+    });
+    on_cleanup(move || handle.remove());
+    view! {
+        <div class="dialog-backdrop" on:click=move |_| open.set(false)>
+            <div class="dialog progress-dialog" role="dialog" aria-modal="true" aria-labelledby="progress-title" on:click=|e| e.stop_propagation()>
+                <div class="dialog-head">
+                    <h2 id="progress-title" class="font-semibold">"Level & Erfolge"</h2>
+                    <button type="button" class="btn btn-outline btn-sm" autofocus=true on:click=move |_| open.set(false)>"Schließen"</button>
+                </div>
+                <section class="level-card">
+                    <p class="metric-value">{move || progress().level} <span class="metric-unit">"Level"</span></p>
+                    <div class="xp-bar mt-3">
+                        <div class="xp-fill" style=move || format!("width:{}%", progress().percent().max(2.0))></div>
+                    </div>
+                    <p class="metric-foot">
+                        {move || {
+                            let p = progress();
+                            format!("{} / {} XP bis Level {}", p.current, p.needed, p.level + 1)
+                        }}
+                    </p>
+                </section>
+                <AchievementGrid />
+            </div>
         </div>
     }
 }

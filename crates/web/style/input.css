@@ -1212,12 +1212,13 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .plan-group.overdue .list-heading { color: var(--danger, #b4472a); }
 
 /* XP-Leiste über die ganze Breite unter dem Kopf */
-.xp-strip { display: flex; align-items: center; gap: 0.6rem; max-width: 72rem; margin: 0 auto 0.75rem; padding: 0.35rem 0 0; color: var(--text); text-decoration: none; font-size: 0.72rem; font-weight: 700; }
+.xp-strip { display: flex; width: 100%; align-items: center; gap: 0.6rem; margin: 0 0 0.75rem; padding: 0.35rem 0 0; border: 0; background: none; cursor: pointer; font: inherit; color: var(--text); text-decoration: none; font-size: 0.72rem; font-weight: 700; }
 .xp-strip-bar { flex: 1; height: 0.3rem; border-radius: 999px; background: var(--border); overflow: hidden; }
 .xp-strip-bar .xp-fill { display: block; }
 .xp-strip:hover .xp-strip-bar { background: var(--border-strong); }
 .xp-strip:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 0.4rem; }
-.xp-strip-level { flex: none; font-variant-numeric: tabular-nums; }
+.progress-dialog { max-width: 40rem; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; }
+.xp-strip-level { flex: none; font-size: 0.72rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .play-zone { scroll-margin-top: 1rem; }
 
 /* Importierte Kalender */
