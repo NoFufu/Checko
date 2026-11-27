@@ -137,10 +137,20 @@ fn when(date: NaiveDate, today: NaiveDate, start: Option<chrono::NaiveTime>) -> 
     }
 }
 
+/// HTTP client for push services – with time limits, so a slow push service
+/// can never block the reminders (or the test button) for long.
+fn push_client() -> reqwest::Client {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(12))
+        .build()
+        .unwrap_or_default()
+}
+
 /// Runs forever: every minute send the reminders that became due.
 pub fn spawn_scheduler(state: Shared) {
     tokio::spawn(async move {
-        let http = reqwest::Client::new();
+        let http = push_client();
         let mut tick = tokio::time::interval(Duration::from_secs(60));
         let mut rounds: u64 = 0;
         // Render gives the service its own public address. Calling it every
@@ -181,7 +191,7 @@ pub async fn test(State(s): State<Shared>, headers: HeaderMap) -> Result<String,
     if subs.is_empty() {
         return Ok("Kein Gerät angemeldet – erst „Erinnerungen aktivieren“ tippen.".into());
     }
-    let http = reqwest::Client::new();
+    let http = push_client();
     let payload = serde_json::json!({
         "title": "Checko",
         "body": "Test vom Server – Erinnerungen kommen auch bei geschlossener App. 🦎",
