@@ -292,6 +292,28 @@ async function main() {
       await page.keyboard.press('Escape');
     });
 
+    await flow('Kalender: über mehrere Tage ziehen öffnet Serientermin', async () => {
+      await nav(page, 'Kalender');
+      const days = page.locator('.cal-day');
+      const a = await days.nth(15).boundingBox(); const c = await days.nth(17).boundingBox();
+      await page.mouse.move(a.x + a.width / 2, a.y + a.height - 6); await page.mouse.down();
+      await page.mouse.move(c.x + c.width / 2, c.y + c.height - 6, { steps: 6 }); await page.mouse.up();
+      await page.locator('.dialog').waitFor({ timeout: 3000 });
+      expect((await page.locator('.dialog').innerText()).includes('bis '), 'Serie bis … fehlt');
+      await page.keyboard.press('Escape');
+    });
+
+    await flow('Kategorie per Ziehen in Überkategorie und wieder heraus', async () => {
+      await dismissPopups(page);
+      await page.locator('.topbar a[aria-label="Einstellungen"]').first().click(); await page.waitForTimeout(300);
+      await page.locator('input[aria-label="Neue Überkategorie"]').fill('Checkup-Gruppe'); await page.keyboard.press('Enter');
+      await page.locator('.folder-link', { hasText: 'Gesundheit' }).dragTo(page.locator('.cat-group-head', { hasText: 'Checkup-Gruppe' }));
+      await page.locator('.cat-group .folder-link', { hasText: 'Gesundheit' }).waitFor({ timeout: 3000 });
+      await page.locator('.cat-group .folder-link', { hasText: 'Gesundheit' }).dragTo(page.locator('.group-head').first());
+      await page.waitForTimeout(300);
+      expect(!(await page.locator('.cat-group .folder-link', { hasText: 'Gesundheit' }).count()), 'nicht wieder herausgezogen');
+    });
+
     await flow('Hell/Dunkel umschalten', async () => {
       await page.locator('.topbar .theme-option[aria-label="Dunkel"]').click();
       expect(await page.evaluate(() => document.documentElement.dataset.theme) === 'dark', 'Dunkelmodus nicht aktiv');

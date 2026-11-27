@@ -44,6 +44,27 @@ const MAIN: [Item; 5] = [
     },
 ];
 
+/// MIME type for dragging a category (into/out of an Überkategorie).
+const CAT_DRAG: &str = "application/x-checko-category";
+
+/// Category name carried by a drag from the sidebar.
+fn dragged_category(e: &leptos::ev::DragEvent) -> Option<String> {
+    e.data_transfer()?
+        .get_data(CAT_DRAG)
+        .ok()
+        .filter(|s| !s.is_empty())
+}
+
+/// Is a category (not a task) being dragged? (`getData` is empty during dragover.)
+fn dragging_category(e: &leptos::ev::DragEvent) -> bool {
+    e.data_transfer()
+        .map(|dt| {
+            dt.types()
+                .includes(&wasm_bindgen::JsValue::from_str(CAT_DRAG), 0)
+        })
+        .unwrap_or(false)
+}
+
 /// Task id carried by a drag from a task row.
 fn dragged_task(e: &leptos::ev::DragEvent) -> Option<uuid::Uuid> {
     e.data_transfer()?.get_data(DRAG_TYPE).ok()?.parse().ok()
@@ -121,6 +142,7 @@ pub fn Sidebar() -> impl IntoView {
     let store = Store::get();
     let open = RwSignal::new(load_flag(OPEN_KEY, true));
     let cats_open = RwSignal::new(load_flag(GROUP_KEY, true));
+    let cats_over = RwSignal::new(false);
     Effect::new(move |_| save_flag(OPEN_KEY, open.get()));
     Effect::new(move |_| save_flag(GROUP_KEY, cats_open.get()));
     view! {
@@ -158,6 +180,16 @@ pub fn Sidebar() -> impl IntoView {
                     <button
                         type="button"
                         class="group-head"
+                        class:drop-over=move || cats_over.get()
+                        on:dragover=move |e| if dragging_category(&e) { e.prevent_default(); cats_over.set(true); }
+                        on:dragleave=move |_| cats_over.set(false)
+                        on:drop=move |e| {
+                            cats_over.set(false);
+                            if let Some(cat) = dragged_category(&e) {
+                                e.prevent_default();
+                                store.set_category_parent(&cat, None);
+                            }
+                        }
                         aria-expanded=move || cats_open.get().to_string()
                         title="Kategorien"
                         on:click=move |_| cats_open.update(|o| *o = !*o)
@@ -206,12 +238,25 @@ pub fn Sidebar() -> impl IntoView {
 /// An Überkategorie: collapsible list of its categories.
 #[component]
 fn CategoryGroup(name: String, items: Vec<String>) -> impl IntoView {
+    let store = Store::get();
     let key = format!("checko-group-open-{name}");
     let open = RwSignal::new(load_flag(&key, true));
     Effect::new(move |_| save_flag(&key, open.get()));
     let count = items.len();
+    let over = RwSignal::new(false);
+    let group = name.clone();
     view! {
-        <li class="cat-group">
+        <li class="cat-group" class:drop-over=move || over.get()
+            on:dragover=move |e| if dragging_category(&e) { e.prevent_default(); over.set(true); }
+            on:dragleave=move |_| over.set(false)
+            on:drop=move |e| {
+                over.set(false);
+                if let Some(cat) = dragged_category(&e) {
+                    e.prevent_default();
+                    e.stop_propagation();
+                    store.set_category_parent(&cat, Some(&group));
+                }
+            }>
             <button type="button" class="cat-group-head nav-item" aria-expanded=move || open.get().to_string() on:click=move |_| open.update(|o| *o = !*o)>
                 <span class="group-chevron" class:closed=move || !open.get()><Icon glyph=Glyph::ChevronDown size=14 /></span>
                 <span class="nav-label truncate">{name.clone()}</span>
@@ -273,6 +318,7 @@ fn CategoryLink(name: String) -> impl IntoView {
         js_sys::encode_uri_component(&name)
     );
     let drop_name = name.clone();
+    let drag_name = name.clone();
     let style = format!("--c:{}", area_color(&name));
     let icon = crate::ui::category_icon(&name);
     let title = name.clone();
@@ -285,12 +331,25 @@ fn CategoryLink(name: String) -> impl IntoView {
             on:drop=move |e| {
                 e.prevent_default();
                 over.set(false);
-                if let Some(id) = dragged_task(&e) {
+                if let Some(cat) = dragged_category(&e) {
+                    // dropped onto another category: join its Überkategorie (or none)
+                    if cat != drop_name {
+                        let parent = store.profile.with_untracked(|p| p.category_parent(&drop_name).map(str::to_string));
+                        store.set_category_parent(&cat, parent.as_deref());
+                    }
+                } else if let Some(id) = dragged_task(&e) {
                     store.add_category(id, &drop_name);
                 }
             }
         >
-            <a href=href class="folder-link nav-item" title=title style=style>
+            <a href=href class="folder-link nav-item" title=title style=style
+                draggable=crate::ui::fine_pointer().then_some("true")
+                on:dragstart=move |e| {
+                    if let Some(dt) = e.data_transfer() {
+                        let _ = dt.set_data(CAT_DRAG, &drag_name);
+                        dt.set_effect_allowed("move");
+                    }
+                }>
                 <span class="cat-icon">{icon}</span>
                 <span class="nav-label truncate">{name}</span>
                 <Show when=move || count.get() != 0>
