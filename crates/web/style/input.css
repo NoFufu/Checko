@@ -364,8 +364,6 @@ kbd { font: inherit; font-size: 0.72rem; font-weight: 600; color: var(--muted); 
 .urgency-2 { --dot: #f97316; --dot-light: #fdba74; }
 .urgency-3 { --dot: #eab308; --dot-light: #fde68a; }
 .urgency-4 { --dot: #22c55e; --dot-light: #86efac; }
-.urgency::after { background: radial-gradient(circle at 32% 28%, var(--dot-light) 0%, var(--dot) 55%, color-mix(in srgb, var(--dot) 75%, #000) 100%) !important;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25), 0 0 0 3px color-mix(in srgb, var(--dot) 16%, transparent), 0 2px 8px -1px color-mix(in srgb, var(--dot) 60%, transparent) !important; }
 .segment .area-dot { display: inline-block; margin-right: 0.4rem; vertical-align: 0.05em; }
 
 /* ---------- Quick-add parsing ---------- */
@@ -1274,3 +1272,67 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .notify-msg { white-space: pre-line; }
 .cal-grid { -webkit-touch-callout: none; }
 .cal-grid.selecting { touch-action: none; }
+
+/* ============================================================
+   Glow-Rand (nach Aceternity „Glowing Effect“): beim Darüberfahren,
+   Fokus oder Auswahl leuchtet ein umlaufender Farbverlauf als Rand auf.
+   ============================================================ */
+@property --glow-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes glowSpin { to { --glow-a: 360deg; } }
+
+.sidebar .nav-item, .sidebar .group-head, .task-row { position: relative; isolation: isolate; }
+.sidebar .nav-item::before, .sidebar .group-head::before, .task-row::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--glow-a), #65a982, #a48cd9, #f4a587, #6fa8dc, #65a982);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  opacity: 0; transition: opacity 220ms cubic-bezier(.34,1.56,.64,1);
+  animation: glowSpin 3.5s linear infinite; animation-play-state: paused;
+}
+.sidebar .nav-item::after, .sidebar .group-head::after, .task-row::after {
+  content: ""; position: absolute; inset: -2px; z-index: -2; border-radius: inherit; pointer-events: none;
+  background: conic-gradient(from var(--glow-a), #65a982, #a48cd9, #f4a587, #6fa8dc, #65a982);
+  filter: blur(10px); opacity: 0; transition: opacity 220ms ease;
+  animation: glowSpin 3.5s linear infinite; animation-play-state: paused;
+}
+.sidebar .nav-item:hover::before, .sidebar .group-head:hover::before, .task-row:hover::before,
+.sidebar .nav-item:focus-visible::before, .task-row.selected::before, .task-row:active::before,
+.sidebar .nav-item[aria-current="page"]::before { opacity: 1; animation-play-state: running; }
+.sidebar .nav-item:hover::after, .sidebar .group-head:hover::after, .task-row:hover::after,
+.task-row.selected::after, .task-row:active::after { opacity: 0.22; animation-play-state: running; }
+.sidebar .nav-item[aria-current="page"]::before { opacity: 0.7; }
+@media (prefers-reduced-motion: reduce) {
+  .sidebar .nav-item::before, .sidebar .group-head::before, .task-row::before,
+  .sidebar .nav-item::after, .sidebar .group-head::after, .task-row::after { animation: none; }
+}
+/* the glow lives in the row's own layer, so rows need their own background */
+.task-row { background: var(--panel); }
+.task-row:hover, .task-row.selected { background: var(--panel); }
+/* no green bar on the left any more */
+.task-row.selected, .note-item.active { box-shadow: none; }
+/* rows: a little air so the glow is not cut by the neighbour */
+.task-list { display: flex; flex-direction: column; gap: 4px; }
+.task-row + .task-row { border-top: 0; }
+
+/* sidebar: more space between links, no overlapping */
+.sidebar .nav-section { gap: 4px; }
+.sidebar .area-list, .sidebar .group-items, .cat-group-items { gap: 4px; }
+.sidebar .nav-item:focus-visible { outline: none; }
+
+/* urgency: plain solid dots, no glow */
+.urgency::after { box-shadow: none; width: 0.6rem; height: 0.6rem; margin: -0.3rem; }
+.urgency:hover { box-shadow: none; background: var(--panel-soft); }
+.urgency-1 { --dot: #dc2626; }
+.urgency-2 { --dot: #ea580c; }
+.urgency-3 { --dot: #ca8a04; }
+.urgency-4 { --dot: #9ca3af; }
+.cat-group-items { display: flex; flex-direction: column; }
+/* phone tab bar keeps its own look */
+@media (max-width: 640px) { .sidebar .nav-item::before, .sidebar .nav-item::after { display: none; } }
+/* appointment time blocks: solid colour, no gloss */
+.appt-time.urgency-1 { background: #dc2626; box-shadow: none; }
+.appt-time.urgency-2 { background: #ea580c; box-shadow: none; }
+.appt-time.urgency-3 { background: #a16207; box-shadow: none; color: #fff; }
+.appt-time.urgency-4 { background: #4b4458; box-shadow: none; }
+.sidebar .nav-item:hover::after, .sidebar .group-head:hover::after, .task-row:hover::after,
+.task-row.selected::after, .task-row:active::after { opacity: 0.14; }
