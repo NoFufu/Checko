@@ -182,8 +182,36 @@ pub fn spawn_scheduler(state: Shared) {
 
 /// `POST /api/push/test` (Bearer): send a test reminder through the push
 /// service right now and report what each browser's push service answered.
-pub async fn test(State(s): State<Shared>, headers: HeaderMap) -> Result<String, ApiError> {
+#[derive(Deserialize, Default)]
+#[serde(default)]
+pub struct TestQuery {
+    /// Send after this many seconds (max. 10 minutes) instead of right away.
+    #[serde(rename = "in")]
+    delay: u64,
+}
+
+pub async fn test(
+    State(s): State<Shared>,
+    headers: HeaderMap,
+    axum::extract::Query(q): axum::extract::Query<TestQuery>,
+) -> Result<String, ApiError> {
     let user = user_from(&headers, &s.db).await?;
+    if q.delay > 0 {
+        let delay = q.delay.min(600);
+        let state = s.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(Duration::from_secs(delay)).await;
+            let _ = send_test(&state, user).await;
+        });
+        return Ok(format!(
+            "✓ Server schickt den Test in {} Min. – du kannst Checko jetzt schließen.",
+            delay.div_ceil(60)
+        ));
+    }
+    send_test(&s, user).await
+}
+
+async fn send_test(s: &Shared, user: Uuid) -> Result<String, ApiError> {
     let subs = sqlx::query("SELECT endpoint, p256dh, auth FROM push_subs WHERE user_id = $1")
         .bind(user)
         .fetch_all(&s.db)
@@ -203,7 +231,7 @@ pub async fn test(State(s): State<Shared>, headers: HeaderMap) -> Result<String,
         let endpoint: String = sub.get("endpoint");
         let host = endpoint.split('/').nth(2).unwrap_or("?").to_string();
         let r = send_one(
-            &s,
+            s,
             &http,
             &endpoint,
             sub.get("p256dh"),

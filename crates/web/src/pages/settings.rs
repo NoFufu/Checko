@@ -308,6 +308,12 @@ fn NotifySetup() -> impl IntoView {
         })
     };
     let ios_tab = crate::notify::ios_tab();
+    let delayed = move |secs: u32| {
+        msg.set(Some(format!("✓ Checko erinnert in {} Min., solange es geöffnet ist.\nServer wird gefragt …", secs / 60)));
+        leptos::task::spawn_local(async move {
+            msg.set(Some(crate::notify::delayed_test(secs).await));
+        });
+    };
     let server_test = move |_| {
         busy.set(true);
         msg.set(Some(
@@ -349,6 +355,10 @@ fn NotifySetup() -> impl IntoView {
                 </Show>
                 <Show when=move || perm.get() == P::Granted>
                     <button type="button" class="btn btn-outline" on:click=test>"Test-Benachrichtigung"</button>
+                </Show>
+                <Show when=move || perm.get() == P::Granted>
+                    <button type="button" class="btn btn-outline" on:click=move |_| delayed(60)>"Test in 1 Min."</button>
+                    <button type="button" class="btn btn-outline" on:click=move |_| delayed(120)>"Test in 2 Min."</button>
                 </Show>
                 <Show when=move || perm.get() == P::Granted && signed_in()>
                     <button type="button" class="btn btn-outline" disabled=move || busy.get() on:click=server_test>"Test über den Server"</button>

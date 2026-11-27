@@ -285,10 +285,41 @@ pub async fn enable_push(step: impl Fn(&'static str)) -> Result<(), String> {
 
 /// Ask the server to send a test push right now; returns its report.
 pub async fn server_test() -> Result<String, String> {
+    server_test_in(0).await
+}
+
+/// Test reminder after `secs`: shown by the open app *and* pushed by the server
+/// (same tag, so it appears only once). Tests the real path, also with Checko closed.
+pub async fn delayed_test(secs: u32) -> String {
+    let title = "Checko-Test";
+    let body = format!("Test-Erinnerung nach {} Min. – es klappt! 🦎", secs / 60);
+    let fire = wasm_bindgen::closure::Closure::once_into_js(move || {
+        leptos::task::spawn_local(async move { show(title, &body, "checko-delayed-test").await });
+    });
+    if let Some(w) = web_sys::window() {
+        let _ = w.set_timeout_with_callback_and_timeout_and_arguments_0(
+            fire.unchecked_ref(),
+            secs as i32 * 1000,
+        );
+    }
+    let app = format!(
+        "✓ Checko erinnert in {} Min., solange es geöffnet ist.",
+        secs / 60
+    );
+    if Sync::get().config.with_untracked(|c| c.token.is_none()) {
+        return app;
+    }
+    match server_test_in(secs).await {
+        Ok(r) => format!("{app}\n{r}"),
+        Err(e) => format!("{app}\n✗ Server: {e}"),
+    }
+}
+
+async fn server_test_in(secs: u32) -> Result<String, String> {
     let cfg = Sync::get().config.get_untracked();
     let token = cfg.token.ok_or("Nicht angemeldet")?;
     let server = cfg.server.trim_end_matches('/').to_string();
-    let resp = Request::post(&format!("{server}/api/push/test"))
+    let resp = Request::post(&format!("{server}/api/push/test?in={secs}"))
         .header("Authorization", &format!("Bearer {token}"))
         .abort_signal(deadline(70_000).as_ref())
         .send()
