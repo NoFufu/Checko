@@ -307,6 +307,36 @@ impl Store {
         );
     }
 
+    /// New category without a task (sidebar / settings).
+    pub fn new_category(&self, name: &str) {
+        let mut added = None;
+        self.profile.update(|p| added = p.add_category(name, now()));
+        if let Some(n) = added {
+            self.notify(format!("Kategorie „{n}“ angelegt"), None);
+        }
+    }
+
+    pub fn add_group(&self, name: &str) {
+        let mut ok = false;
+        self.profile.update(|p| ok = p.add_group(name, now()));
+        if !ok && !name.trim().is_empty() {
+            self.notify("Diese Überkategorie gibt es schon", None);
+        }
+    }
+
+    pub fn rename_group(&self, old: &str, new: &str) {
+        self.profile.update(|p| p.rename_group(old, new, now()));
+    }
+
+    pub fn delete_group(&self, name: &str) {
+        self.profile.update(|p| p.delete_group(name, now()));
+    }
+
+    pub fn set_category_parent(&self, name: &str, parent: Option<&str>) {
+        self.profile
+            .update(|p| p.set_category_parent(name, parent, now()));
+    }
+
     pub fn set_category_style(&self, name: &str, emoji: Option<String>, color: Option<String>) {
         self.profile
             .update(|p| p.set_category_style(name, emoji, color, now()));

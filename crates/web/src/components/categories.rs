@@ -18,7 +18,13 @@ fn hex_for(color: &str) -> String {
 #[component]
 pub fn CategoryManager() -> impl IntoView {
     let store = Store::get();
+    let new_cat = RwSignal::new(String::new());
     view! {
+        <GroupManager />
+        <form class="cat-add" on:submit=move |e| { e.prevent_default(); store.new_category(&new_cat.get_untracked()); new_cat.set(String::new()); }>
+            <input class="cat-name-input cat-add-input" placeholder="Neue Kategorie, z. B. Garten" aria-label="Neue Kategorie" bind:value=new_cat />
+            <button type="submit" class="btn btn-outline btn-sm">"Hinzufügen"</button>
+        </form>
         <ul class="cat-manage">
             <For
                 each=move || store.areas()
@@ -27,7 +33,7 @@ pub fn CategoryManager() -> impl IntoView {
             />
         </ul>
         <p class="text-sm text-muted">
-            "Neue Kategorien entstehen, sobald du sie einer Aufgabe gibst (z. B. „#Garten“). "
+            "Neue Kategorien legst du oben an – oder einfach mit „#Garten“ in einer Aufgabe. "
             "Löschen entfernt nur die Kategorie – die Aufgaben bleiben."
         </p>
     }
@@ -49,9 +55,10 @@ fn CategoryRow(name: String) -> impl IntoView {
     let custom = {
         let n = n.clone();
         move || {
-            store
-                .profile
-                .with(|p| p.category_style(&n).is_some_and(|s| !s.hidden))
+            store.profile.with(|p| {
+                p.category_style(&n)
+                    .is_some_and(|s| s.emoji.is_some() || s.color.is_some())
+            })
         }
     };
     let current_style = {
@@ -135,6 +142,7 @@ fn CategoryRow(name: String) -> impl IntoView {
                     }
                 />
             </form>
+            <ParentSelect name=name.clone() />
             <Show when=custom.clone()>
                 <button type="button" class="btn btn-outline btn-sm" on:click=reset.clone()>"Standard"</button>
             </Show>
@@ -142,6 +150,67 @@ fn CategoryRow(name: String) -> impl IntoView {
                 "Löschen"
             </button>
         </li>
+    }
+}
+
+/// Drop-down: which Überkategorie a category belongs to.
+#[component]
+fn ParentSelect(name: String) -> impl IntoView {
+    let store = Store::get();
+    let groups = move || store.profile.with(|p| p.category_groups.clone());
+    let n = name.clone();
+    let current = move || {
+        store
+            .profile
+            .with(|p| p.category_parent(&n).unwrap_or_default().to_string())
+    };
+    let n2 = name.clone();
+    view! {
+        <Show when=move || !groups().is_empty()>
+            <select class="cat-parent" aria-label=format!("Überkategorie für {name}") prop:value=current.clone()
+                on:change={
+                    let n2 = n2.clone();
+                    move |e| { let v = event_target_value(&e); store.set_category_parent(&n2, Some(v.as_str()).filter(|v| !v.is_empty())); }
+                }>
+                <option value="">"Keine Überkategorie"</option>
+                {move || groups().into_iter().map(|g| view! { <option value=g.clone()>{g.clone()}</option> }).collect_view()}
+            </select>
+        </Show>
+    }
+}
+
+/// Überkategorien: create, rename, delete.
+#[component]
+fn GroupManager() -> impl IntoView {
+    let store = Store::get();
+    let new_group = RwSignal::new(String::new());
+    let groups = move || store.profile.with(|p| p.category_groups.clone());
+    view! {
+        <div class="group-manage">
+            <p class="text-sm font-semibold">"Überkategorien"</p>
+            <ul class="group-manage-list">
+                <For each=groups key=|g| g.clone() children=move |g| {
+                    let name = RwSignal::new(g.clone());
+                    let (old, old2) = (g.clone(), g.clone());
+                    view! {
+                        <li class="group-chip">
+                            <input class="cat-name-input" aria-label=format!("Name der Überkategorie {g}") bind:value=name
+                                on:change=move |_| store.rename_group(&old, &name.get_untracked()) />
+                            <button type="button" class="btn btn-outline btn-sm" aria-label=format!("Überkategorie {g} löschen")
+                                on:click=move |_| {
+                                    let ok = web_sys::window().and_then(|w| w.confirm_with_message(&format!("Überkategorie „{old2}“ löschen? Die Kategorien darin bleiben.")).ok()).unwrap_or(false);
+                                    if ok { store.delete_group(&old2); }
+                                }>"Löschen"</button>
+                        </li>
+                    }
+                } />
+            </ul>
+            <form class="cat-add" on:submit=move |e| { e.prevent_default(); store.add_group(&new_group.get_untracked()); new_group.set(String::new()); }>
+                <input class="cat-name-input cat-add-input" placeholder="Neue Überkategorie, z. B. Zuhause" aria-label="Neue Überkategorie" bind:value=new_group />
+                <button type="submit" class="btn btn-outline btn-sm">"Anlegen"</button>
+            </form>
+            <p class="text-sm text-muted">"Danach bei jeder Kategorie unten die Überkategorie wählen."</p>
+        </div>
     }
 }
 

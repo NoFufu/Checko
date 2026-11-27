@@ -164,10 +164,86 @@ impl Profile {
     fn tidy_styles(&mut self) {
         self.category_styles.retain(|s| {
             s.hidden
+                || s.parent.is_some()
                 || s.emoji.is_some()
                 || s.color.is_some()
                 || !crate::AREAS.iter().any(|a| same(a, &s.name))
         });
+    }
+
+    /// Create a category without a task (or show a hidden default one again).
+    pub fn add_category(&mut self, name: &str, now: DateTime<Utc>) -> Option<String> {
+        let name = name.trim().trim_start_matches('#').trim();
+        if name.is_empty() {
+            return None;
+        }
+        if self.category_hidden(name) {
+            self.unhide_category(name, now);
+        } else {
+            self.style_mut(name);
+        }
+        self.tidy_styles();
+        self.updated_at = Some(now);
+        Some(name.to_string())
+    }
+
+    /// New Überkategorie. Returns false if the name is empty or taken.
+    pub fn add_group(&mut self, name: &str, now: DateTime<Utc>) -> bool {
+        let name = name.trim();
+        if name.is_empty() || self.category_groups.iter().any(|g| same(g, name)) {
+            return false;
+        }
+        self.category_groups.push(name.to_string());
+        self.updated_at = Some(now);
+        true
+    }
+
+    /// Rename a group; its categories follow.
+    pub fn rename_group(&mut self, old: &str, new: &str, now: DateTime<Utc>) {
+        let new = new.trim();
+        if new.is_empty()
+            || self
+                .category_groups
+                .iter()
+                .any(|g| same(g, new) && !same(g, old))
+        {
+            return;
+        }
+        for g in self.category_groups.iter_mut().filter(|g| same(g, old)) {
+            *g = new.to_string();
+        }
+        for s in self.category_styles.iter_mut() {
+            if s.parent.as_deref().is_some_and(|p| same(p, old)) {
+                s.parent = Some(new.to_string());
+            }
+        }
+        self.updated_at = Some(now);
+    }
+
+    /// Delete a group; its categories stay, just without group.
+    pub fn delete_group(&mut self, name: &str, now: DateTime<Utc>) {
+        self.category_groups.retain(|g| !same(g, name));
+        for s in self.category_styles.iter_mut() {
+            if s.parent.as_deref().is_some_and(|p| same(p, name)) {
+                s.parent = None;
+            }
+        }
+        self.tidy_styles();
+        self.updated_at = Some(now);
+    }
+
+    /// Put a category into a group (`None` = no group).
+    pub fn set_category_parent(&mut self, name: &str, parent: Option<&str>, now: DateTime<Utc>) {
+        let parent = parent
+            .and_then(|p| self.category_groups.iter().find(|g| same(g, p)))
+            .cloned();
+        self.style_mut(name).parent = parent;
+        self.tidy_styles();
+        self.updated_at = Some(now);
+    }
+
+    pub fn category_parent(&self, name: &str) -> Option<&str> {
+        self.category_style(name).and_then(|s| s.parent.as_deref())
     }
 
     /// Own categories kept in the profile (e.g. renamed ones without tasks).
@@ -264,6 +340,45 @@ mod tests {
         assert_eq!(p.kept_categories().collect::<Vec<_>>(), vec!["Badezimmer"]);
         p.set_category_style("Arbeit", Some("💼".into()), None, now);
         p.set_category_style("Arbeit", None, None, now);
+        assert!(p.category_style("Arbeit").is_none());
+    }
+
+    #[test]
+    fn add_category_without_task() {
+        let now = Utc::now();
+        let mut p = Profile::default();
+        assert_eq!(p.add_category(" #Garten ", now).as_deref(), Some("Garten"));
+        assert_eq!(p.kept_categories().collect::<Vec<_>>(), vec!["Garten"]);
+        assert!(p.add_category("  ", now).is_none());
+        p.delete_category_style("Arbeit", now);
+        p.add_category("arbeit", now);
+        assert!(!p.category_hidden("Arbeit"));
+    }
+
+    #[test]
+    fn groups() {
+        let now = Utc::now();
+        let mut p = Profile::default();
+        assert!(p.add_group("Zuhause", now));
+        assert!(!p.add_group("zuhause", now));
+        p.set_category_parent("Bad", Some("Zuhause"), now);
+        p.set_category_parent("Arbeit", Some("Zuhause"), now);
+        p.set_category_parent("Küche", Some("Gibt es nicht"), now);
+        assert_eq!(p.category_parent("bad"), Some("Zuhause"));
+        assert_eq!(p.category_parent("Küche"), None);
+        // renaming the category keeps its group
+        p.rename_category_style("Bad", "Badezimmer", now);
+        assert_eq!(p.category_parent("Badezimmer"), Some("Zuhause"));
+        // renaming the group moves the categories along
+        p.rename_group("Zuhause", "Wohnung", now);
+        assert_eq!(p.category_parent("Badezimmer"), Some("Wohnung"));
+        assert_eq!(p.category_groups, vec!["Wohnung".to_string()]);
+        // deleting the group keeps the categories
+        p.delete_group("Wohnung", now);
+        assert!(p.category_groups.is_empty());
+        assert_eq!(p.category_parent("Badezimmer"), None);
+        assert!(p.kept_categories().any(|c| c == "Badezimmer"));
+        // a default category without anything left is dropped again
         assert!(p.category_style("Arbeit").is_none());
     }
 

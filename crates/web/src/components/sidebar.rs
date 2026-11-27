@@ -168,16 +168,95 @@ pub fn Sidebar() -> impl IntoView {
                     </button>
                     <Show when=move || cats_open.get()>
                         <ul class="group-items area-list">
-                            {move || store
-                                .areas()
-                                .into_iter()
-                                .map(|name| view! { <CategoryLink name=name /> })
-                                .collect_view()}
+                            {move || {
+                                let areas = store.areas();
+                                let (groups, parent_of) = store.profile.with(|p| {
+                                    let parents: Vec<Option<String>> = areas.iter().map(|a| p.category_parent(a).map(str::to_string)).collect();
+                                    (p.category_groups.clone(), parents)
+                                });
+                                let loose = areas
+                                    .iter()
+                                    .zip(&parent_of)
+                                    .filter(|(_, p)| p.is_none())
+                                    .map(|(a, _)| view! { <CategoryLink name=a.clone() /> })
+                                    .collect_view();
+                                let grouped = groups
+                                    .into_iter()
+                                    .map(|g| {
+                                        let inside: Vec<String> = areas
+                                            .iter()
+                                            .zip(&parent_of)
+                                            .filter(|(_, p)| p.as_deref() == Some(g.as_str()))
+                                            .map(|(a, _)| a.clone())
+                                            .collect();
+                                        view! { <CategoryGroup name=g items=inside /> }
+                                    })
+                                    .collect_view();
+                                view! { {grouped} {loose} }
+                            }}
+                            <li><NewCategory /></li>
                         </ul>
                     </Show>
                 </div>
             </div>
         </aside>
+    }
+}
+
+/// An Überkategorie: collapsible list of its categories.
+#[component]
+fn CategoryGroup(name: String, items: Vec<String>) -> impl IntoView {
+    let key = format!("checko-group-open-{name}");
+    let open = RwSignal::new(load_flag(&key, true));
+    Effect::new(move |_| save_flag(&key, open.get()));
+    let count = items.len();
+    view! {
+        <li class="cat-group">
+            <button type="button" class="cat-group-head nav-item" aria-expanded=move || open.get().to_string() on:click=move |_| open.update(|o| *o = !*o)>
+                <span class="group-chevron" class:closed=move || !open.get()><Icon glyph=Glyph::ChevronDown size=14 /></span>
+                <span class="nav-label truncate">{name.clone()}</span>
+                <span class="nav-count">{count}</span>
+            </button>
+            <Show when=move || open.get()>
+                <ul class="cat-group-items">
+                    {items.clone().into_iter().map(|n| view! { <CategoryLink name=n /> }).collect_view()}
+                </ul>
+            </Show>
+        </li>
+    }
+}
+
+/// "+ Neue Kategorie" at the end of the list.
+#[component]
+fn NewCategory() -> impl IntoView {
+    let store = Store::get();
+    let editing = RwSignal::new(false);
+    let text = RwSignal::new(String::new());
+    let save = move || {
+        let t = text.get_untracked();
+        if !t.trim().is_empty() {
+            store.new_category(&t);
+        }
+        text.set(String::new());
+        editing.set(false);
+    };
+    view! {
+        <Show
+            when=move || editing.get()
+            fallback=move || view! {
+                <button type="button" class="nav-item new-cat" on:click=move |_| editing.set(true)>
+                    <Icon glyph=Glyph::Add size=16 />
+                    <span class="nav-label">"Neue Kategorie"</span>
+                </button>
+            }
+        >
+            <form class="new-cat-form" on:submit=move |e| { e.prevent_default(); save(); }>
+                <input class="new-cat-input" autofocus=true placeholder="Name, z. B. Garten" aria-label="Name der neuen Kategorie"
+                    bind:value=text
+                    on:blur=move |_| save()
+                    on:keydown=move |e| if e.key() == "Escape" { text.set(String::new()); editing.set(false); } />
+            </form>
+        </Show>
     }
 }
 

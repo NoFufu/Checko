@@ -160,6 +160,8 @@ pub struct Profile {
     pub updated_at: Option<DateTime<Utc>>,
     /// Own emoji/colour per category, and hidden default categories.
     pub category_styles: Vec<CategoryStyle>,
+    /// Überkategorien (groups of categories), in display order.
+    pub category_groups: Vec<String>,
     /// Focus mode: XP, level, streak, achievements and confetti are hidden.
     pub focus_mode: bool,
 }
@@ -174,6 +176,8 @@ pub struct CategoryStyle {
     pub color: Option<String>,
     /// Hidden from the category list (used for deleted default categories).
     pub hidden: bool,
+    /// Überkategorie (group) this category belongs to.
+    pub parent: Option<String>,
 }
 
 #[cfg(test)]
