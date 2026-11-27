@@ -283,6 +283,26 @@ pub async fn enable_push(step: impl Fn(&'static str)) -> Result<(), String> {
     }
 }
 
+/// Ask the server to send a test push right now; returns its report.
+pub async fn server_test() -> Result<String, String> {
+    let cfg = Sync::get().config.get_untracked();
+    let token = cfg.token.ok_or("Nicht angemeldet")?;
+    let server = cfg.server.trim_end_matches('/').to_string();
+    let resp = Request::post(&format!("{server}/api/push/test"))
+        .header("Authorization", &format!("Bearer {token}"))
+        .abort_signal(deadline(70_000).as_ref())
+        .send()
+        .await
+        .map_err(|_| SLOW_SERVER.to_string())?;
+    if !resp.ok() {
+        return Err(format!(
+            "Server-Fehler {} – ist der Server schon auf dem neuesten Stand?",
+            resp.status()
+        ));
+    }
+    resp.text().await.map_err(|e| e.to_string())
+}
+
 /// Is this browser already subscribed to push?
 pub async fn push_active() -> bool {
     let Some(reg) = registration().await else {

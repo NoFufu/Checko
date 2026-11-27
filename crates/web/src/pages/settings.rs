@@ -308,6 +308,19 @@ fn NotifySetup() -> impl IntoView {
         })
     };
     let ios_tab = crate::notify::ios_tab();
+    let server_test = move |_| {
+        busy.set(true);
+        msg.set(Some(
+            "Server schickt einen Test … (schläft er, dauert es bis zu einer Minute)".into(),
+        ));
+        leptos::task::spawn_local(async move {
+            msg.set(Some(match crate::notify::server_test().await {
+                Ok(r) => format!("{r}\nKommt nichts an, obwohl „gesendet“ dasteht: Windows-„Nicht stören“/Fokus prüfen."),
+                Err(e) => e,
+            }));
+            busy.set(false);
+        });
+    };
     let status = move || {
         if ios_tab {
             return "Im Safari-Tab erlaubt das iPhone keine Benachrichtigungen. So geht's: unten auf Teilen (□↑) → „Zum Home-Bildschirm“ → Checko über das neue Symbol öffnen und hier auf „Erinnerungen aktivieren“ tippen.";
@@ -337,8 +350,11 @@ fn NotifySetup() -> impl IntoView {
                 <Show when=move || perm.get() == P::Granted>
                     <button type="button" class="btn btn-outline" on:click=test>"Test-Benachrichtigung"</button>
                 </Show>
+                <Show when=move || perm.get() == P::Granted && signed_in()>
+                    <button type="button" class="btn btn-outline" disabled=move || busy.get() on:click=server_test>"Test über den Server"</button>
+                </Show>
             </div>
-            {move || msg.get().map(|m| view! { <p class="text-sm mt-2">{m}</p> })}
+            {move || msg.get().map(|m| view! { <p class="text-sm mt-2 notify-msg">{m}</p> })}
         </section>
     }
 }

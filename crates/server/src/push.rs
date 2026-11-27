@@ -143,8 +143,19 @@ pub fn spawn_scheduler(state: Shared) {
         let http = reqwest::Client::new();
         let mut tick = tokio::time::interval(Duration::from_secs(60));
         let mut rounds: u64 = 0;
+        // Render gives the service its own public address. Calling it every
+        // ~10 minutes counts as a visit, so the free server does not fall asleep
+        // (asleep it could not send any reminders).
+        let own_url = std::env::var("RENDER_EXTERNAL_URL").ok();
         loop {
             tick.tick().await;
+            if let (Some(url), true) = (&own_url, rounds.is_multiple_of(10)) {
+                let _ = http
+                    .get(format!("{}/health", url.trim_end_matches('/')))
+                    .timeout(Duration::from_secs(30))
+                    .send()
+                    .await;
+            }
             if let Err(e) = send_due(&state, &http).await {
                 eprintln!("push: {e}");
             }
@@ -159,6 +170,53 @@ pub fn spawn_scheduler(state: Shared) {
     });
 }
 
+/// `POST /api/push/test` (Bearer): send a test reminder through the push
+/// service right now and report what each browser's push service answered.
+pub async fn test(State(s): State<Shared>, headers: HeaderMap) -> Result<String, ApiError> {
+    let user = user_from(&headers, &s.db).await?;
+    let subs = sqlx::query("SELECT endpoint, p256dh, auth FROM push_subs WHERE user_id = $1")
+        .bind(user)
+        .fetch_all(&s.db)
+        .await?;
+    if subs.is_empty() {
+        return Ok("Kein Gerät angemeldet – erst „Erinnerungen aktivieren“ tippen.".into());
+    }
+    let http = reqwest::Client::new();
+    let payload = serde_json::json!({
+        "title": "Checko",
+        "body": "Test vom Server – Erinnerungen kommen auch bei geschlossener App. 🦎",
+        "tag": "checko-server-test",
+    })
+    .to_string();
+    let mut lines = Vec::new();
+    for sub in &subs {
+        let endpoint: String = sub.get("endpoint");
+        let host = endpoint.split('/').nth(2).unwrap_or("?").to_string();
+        let r = send_one(
+            &s,
+            &http,
+            &endpoint,
+            sub.get("p256dh"),
+            sub.get("auth"),
+            &payload,
+        )
+        .await;
+        lines.push(match r {
+            Ok(201) | Ok(200) | Ok(202) => format!("✓ {host}: gesendet"),
+            Ok(404) | Ok(410) => {
+                let _ = sqlx::query("DELETE FROM push_subs WHERE endpoint = $1")
+                    .bind(&endpoint)
+                    .execute(&s.db)
+                    .await;
+                format!("✗ {host}: Anmeldung abgelaufen – bitte neu aktivieren")
+            }
+            Ok(code) => format!("✗ {host}: Push-Dienst antwortet {code}"),
+            Err(e) => format!("✗ {host}: {e}"),
+        });
+    }
+    Ok(lines.join("\n"))
+}
+
 async fn send_due(
     state: &Arc<crate::AppState>,
     http: &reqwest::Client,
@@ -171,9 +229,9 @@ async fn send_due(
         let user: Uuid = u.get("user_id");
         let tz: i32 = u.get("tz");
         let now = (Utc::now() + chrono::Duration::minutes(tz as i64)).naive_utc();
-        // 10 minutes back: nothing is lost if the free server was briefly asleep;
+        // 60 minutes back: nothing is lost if the free server was briefly asleep;
         // push_sent makes sure every reminder goes out only once.
-        let after = now - chrono::Duration::minutes(10);
+        let after = now - chrono::Duration::minutes(60);
         let rows: Vec<(String, Value)> = sqlx::query(
             "SELECT kind, data FROM records WHERE user_id = $1 AND data IS NOT NULL AND kind IN ('task','event')",
         )

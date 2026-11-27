@@ -1271,3 +1271,4 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .heat-tip-head { font-weight: 700; margin-bottom: 0.15rem; }
 .heat-tip-item { opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 @media (prefers-reduced-motion: reduce) { .heat-cell { transition: none; } }
+.notify-msg { white-space: pre-line; }

@@ -555,6 +555,7 @@ fn app(state: Shared) -> Router {
         .route("/api/feed/{file}", get(feed))
         .route("/api/push/key", get(push::key))
         .route("/api/push/subscribe", post(push::subscribe))
+        .route("/api/push/test", post(push::test))
         .layer(cors())
         .with_state(state)
 }
