@@ -1,5 +1,6 @@
 use checko_core::{
-    done_tasks, open_appointments, open_tasks, open_todos, planned_groups, trashed_tasks, PlanGroup,
+    done_tasks, my_day_suggestions, my_day_tasks, open_appointments, open_tasks, open_todos,
+    planned_groups, trashed_tasks, PlanGroup,
 };
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
@@ -15,6 +16,7 @@ use crate::store::Store;
 
 #[derive(Clone, Copy, PartialEq)]
 enum View {
+    MyDay,
     Open,
     Planned,
     Done,
@@ -30,8 +32,10 @@ pub fn TasksPage() -> impl IntoView {
     // "?kategorie=Bad" (from a category block or the sidebar) sets the filter.
     let query = use_query_map();
     Effect::new(move |_| {
-        if query.with(|q| q.get("ansicht")).as_deref() == Some("geplant") {
-            view_tab.set(View::Planned);
+        match query.with(|q| q.get("ansicht")).as_deref() {
+            Some("geplant") => view_tab.set(View::Planned),
+            Some("meintag") => view_tab.set(View::MyDay),
+            _ => {}
         }
         if let Some(k) = query.with(|q| q.get("kategorie")) {
             area.set(Some(k));
@@ -51,6 +55,23 @@ pub fn TasksPage() -> impl IntoView {
         })
     };
     let planned_count = move || planned().iter().map(|(_, v)| v.len()).sum::<usize>();
+    let my_day = move || {
+        store.tasks.with(|ts| {
+            my_day_tasks(ts, crate::time::today())
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+    };
+    let my_day_open = move || my_day().iter().filter(|t| t.is_open()).count();
+    let suggestions = move || {
+        store.tasks.with(|ts| {
+            my_day_suggestions(ts, crate::time::today())
+                .into_iter()
+                .map(|(s, t)| (s, t.clone()))
+                .collect::<Vec<_>>()
+        })
+    };
     let trash_count = move || store.tasks.with(|t| trashed_tasks(t).len());
 
     let list = move || {
@@ -58,7 +79,7 @@ pub fn TasksPage() -> impl IntoView {
         store.tasks.with(|ts| {
             let items: Vec<_> = match view_tab.get() {
                 View::Open => open_todos(ts, a.as_deref()),
-                View::Planned => Vec::new(),
+                View::Planned | View::MyDay => Vec::new(),
                 View::Done => done_tasks(ts, a.as_deref()),
                 View::Trash => trashed_tasks(ts),
             }
@@ -120,12 +141,13 @@ pub fn TasksPage() -> impl IntoView {
 
             <div class="toolbar">
                 <div class="segmented" role="tablist" aria-label="Ansicht">
+                    {tab(View::MyDay, "Mein Tag", Box::new(my_day_open))}
                     {tab(View::Open, "Offen", Box::new(open_count))}
                     {tab(View::Planned, "Geplant", Box::new(planned_count))}
                     {tab(View::Done, "Erledigt", Box::new(done_count))}
                     {tab(View::Trash, "Papierkorb", Box::new(trash_count))}
                 </div>
-                <Show when=move || view_tab.get() != View::Trash>
+                <Show when=move || !matches!(view_tab.get(), View::Trash | View::MyDay)>
                     <AreaFilter area=area />
                 </Show>
                 <Show when=move || { view_tab.get() == View::Trash && trash_count() > 0 }>
@@ -146,6 +168,72 @@ pub fn TasksPage() -> impl IntoView {
                     </button>
                 </Show>
             </div>
+
+            <Show when=move || view_tab.get() == View::MyDay>
+                <div class="planned my-day">
+                    <section class="plan-group">
+                        <h2 class="list-heading">
+                            <Icon glyph=Glyph::Sun size=16 />
+                            {crate::time::today_label}
+                        </h2>
+                        <section class="panel list-panel">
+                            <Show
+                                when=move || !my_day().is_empty()
+                                fallback=|| view! { <p class="empty-line px-3">"Dein Tag ist noch leer. Nimm unten Vorschläge dazu oder öffne eine Aufgabe und tippe „Zu Mein Tag“."</p> }
+                            >
+                                <ul class="task-list">
+                                    <For
+                                        each=my_day
+                                        key=|t| (t.meta.id, t.meta.updated_at)
+                                        children=move |t| view! { <TaskItem task=t /> }
+                                    />
+                                </ul>
+                            </Show>
+                        </section>
+                    </section>
+                    <Show when=move || !suggestions().is_empty()>
+                        <section class="plan-group">
+                            <h2 class="list-heading">
+                                "Vorschläge"
+                                <span class="count">{move || suggestions().len()}</span>
+                            </h2>
+                            <section class="panel list-panel">
+                                <ul class="suggest-list">
+                                    <For
+                                        each=suggestions
+                                        key=|(s, t)| (*s as u8, t.meta.id, t.meta.updated_at)
+                                        children=move |(s, t)| {
+                                            let id = t.meta.id;
+                                            let title = t.title.clone();
+                                            view! {
+                                                <li class="suggest-row">
+                                                    <button
+                                                        type="button"
+                                                        class="suggest-title"
+                                                        on:click=move |_| store.detail.set(Some(id))
+                                                    >
+                                                        <span>{t.title.clone()}</span>
+                                                        <span class="suggest-why" class:overdue=s == checko_core::Suggestion::Overdue>{s.label()}</span>
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        class="btn-icon"
+                                                        aria-label=format!("„{title}“ zu Mein Tag")
+                                                        title="Zu Mein Tag"
+                                                        on:click=move |_| store.toggle_my_day(id)
+                                                    >
+                                                        <Icon glyph=Glyph::Add size=18 />
+                                                    </button>
+                                                </li>
+                                            }
+                                        }
+                                    />
+                                </ul>
+                            </section>
+                        </section>
+                    </Show>
+                </div>
+            </Show>
 
             <Show when=move || view_tab.get() == View::Planned>
                 <div class="planned">
@@ -174,7 +262,7 @@ pub fn TasksPage() -> impl IntoView {
                 </div>
             </Show>
 
-            <Show when=move || view_tab.get() != View::Planned>
+            <Show when=move || !matches!(view_tab.get(), View::Planned | View::MyDay)>
             <div class="task-columns" class:split=move || view_tab.get() == View::Open>
                 <div class="task-col">
                     <Show when=move || view_tab.get() == View::Open>
@@ -188,7 +276,7 @@ pub fn TasksPage() -> impl IntoView {
                             when=move || !list().is_empty()
                             fallback=move || {
                                 let text = match view_tab.get() {
-                                    View::Open | View::Planned => "Keine offenen To-dos. Füge oben eins hinzu!",
+                                    View::Open | View::Planned | View::MyDay => "Keine offenen To-dos. Füge oben eins hinzu!",
                                     View::Done => "Noch nichts erledigt. Das erste Häkchen wartet!",
                                     View::Trash => "Der Papierkorb ist leer.",
                                 };

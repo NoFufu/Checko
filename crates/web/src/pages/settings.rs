@@ -309,7 +309,10 @@ fn NotifySetup() -> impl IntoView {
     };
     let ios_tab = crate::notify::ios_tab();
     let delayed = move |secs: u32| {
-        msg.set(Some(format!("✓ Checko erinnert in {} Min., solange es geöffnet ist.\nServer wird gefragt …", secs / 60)));
+        msg.set(Some(format!(
+            "✓ Checko erinnert in {} Min., solange es geöffnet ist.\nServer wird gefragt …",
+            secs / 60
+        )));
         leptos::task::spawn_local(async move {
             msg.set(Some(crate::notify::delayed_test(secs).await));
         });

@@ -394,6 +394,19 @@ impl Store {
         });
     }
 
+    /// Add to / remove from "Mein Tag" (today only).
+    pub fn toggle_my_day(&self, id: Uuid) {
+        let today = crate::time::today();
+        self.edit(id, |t| {
+            t.my_day = if t.in_my_day(today) {
+                None
+            } else {
+                Some(today)
+            };
+            t.meta.updated_at = now();
+        });
+    }
+
     pub fn set_priority(&self, id: Uuid, p: Priority) {
         self.edit(id, |t| {
             t.priority = p;

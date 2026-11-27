@@ -408,6 +408,15 @@ fn DetailBody(task: Task) -> impl IntoView {
             <span class="text-sm text-muted">
                 {format!("Erstellt am {}", task.meta.created_at.format("%d.%m.%Y"))}
             </span>
+            <button
+                type="button"
+                class="btn btn-outline btn-sm"
+                aria-pressed=move || store.tasks.with(|ts| ts.iter().any(|t| t.meta.id == id && t.in_my_day(crate::time::today()))).to_string()
+                on:click=move |_| store.toggle_my_day(id)
+            >
+                <Icon glyph=Glyph::Sun size=14 />
+                {move || if store.tasks.with(|ts| ts.iter().any(|t| t.meta.id == id && t.in_my_day(crate::time::today()))) { "Aus Mein Tag entfernen" } else { "Zu Mein Tag" }}
+            </button>
             <button type="button" class="btn btn-outline btn-sm" on:click=move |_| { store.trash(id); store.detail.set(None); }>
                 <Icon glyph=Glyph::Trash size=14 />
                 "Löschen"

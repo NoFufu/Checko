@@ -100,6 +100,9 @@ pub struct Task {
     /// Reminder: minutes before the due time (all-day: before 09:00). `None` = off.
     #[serde(default)]
     pub remind: Option<u32>,
+    /// Day the task was added to "Mein Tag" (only counts on that day).
+    #[serde(default)]
+    pub my_day: Option<NaiveDate>,
 }
 
 impl Task {
@@ -123,6 +126,7 @@ impl Task {
             recurrence: None,
             appointment: None,
             remind: None,
+            my_day: None,
         }
     }
 }

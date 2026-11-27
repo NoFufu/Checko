@@ -1336,3 +1336,13 @@ button.cal-num:focus-visible { outline: 2px solid var(--green); outline-offset: 
 .appt-time.urgency-4 { background: #4b4458; box-shadow: none; }
 .sidebar .nav-item:hover::after, .sidebar .group-head:hover::after, .task-row:hover::after,
 .task-row.selected::after, .task-row:active::after { opacity: 0.14; }
+
+/* Mein Tag – Vorschläge */
+.suggest-list { list-style: none; margin: 0; padding: 0.25rem; }
+.suggest-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.15rem 0.25rem; border-radius: 0.7rem; }
+.suggest-row:hover { background: var(--panel-soft); }
+.suggest-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 0.6rem; padding: 0.55rem 0.4rem; border: 0; background: none; font: inherit; color: var(--text); text-align: left; cursor: pointer; }
+.suggest-title > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-why { flex-shrink: 0; font-size: 0.75rem; color: var(--muted); }
+.suggest-why.overdue { color: var(--danger, #b4472a); }
+.suggest-title:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; border-radius: 0.5rem; }

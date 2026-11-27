@@ -191,6 +191,21 @@ async function main() {
       await page.locator('.segment', { hasText: 'Offen' }).click();
     });
 
+    await flow('Mein Tag: Vorschlag übernehmen', async () => {
+      await nav(page, 'Aufgaben');
+      const input = page.locator('.task-form input').first();
+      await input.fill('Checkup mein Tag heute');
+      await input.press('Enter');
+      await page.waitForTimeout(300);
+      await page.locator('.segment', { hasText: 'Mein Tag' }).click();
+      const row = page.locator('.suggest-row', { hasText: 'Checkup mein Tag' });
+      await row.waitFor();
+      await row.locator('.btn-icon').click();
+      await page.locator('.my-day .task-list', { hasText: 'Checkup mein Tag' }).waitFor();
+      expect(!(await row.count()), 'Vorschlag nach Übernahme noch da');
+      await page.locator('.segment', { hasText: 'Offen' }).click();
+    });
+
     await flow('Kalender: Doppelklick legt Eintrag an', async () => {
       await nav(page, 'Kalender');
       await page.locator('.cal-day').nth(17).dblclick();
