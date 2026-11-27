@@ -319,8 +319,9 @@ fn DayPanel(selected: RwSignal<NaiveDate>) -> impl IntoView {
                 <button type="submit" class="btn btn-primary" disabled=move || title.get().trim().is_empty()>"Termin speichern"</button>
             </form>
             <details class="cal-import">
-                <summary>"Outlook-Kalender importieren"</summary>
+                <summary>"Outlook-Kalender importieren / entfernen"</summary>
                 <crate::components::data_tools::IcsImport compact=true />
+                <crate::components::data_tools::ImportList />
             </details>
         </aside>
     }

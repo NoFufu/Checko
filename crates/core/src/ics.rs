@@ -236,6 +236,7 @@ pub fn merge_ics(
     events: &mut Vec<Event>,
     imported: Vec<IcsEvent>,
     category: Option<&str>,
+    source_name: Option<&str>,
     now: DateTime<Utc>,
 ) -> ImportStats {
     let mut stats = ImportStats::default();
@@ -252,7 +253,8 @@ pub fn merge_ics(
                     || e.notes != ie.notes
                     || e.recurrence != ie.recurrence
                     || e.meta.deleted_at.is_some();
-                if changed {
+                if changed || (source_name.is_some() && e.source_name.as_deref() != source_name) {
+                    e.source_name = source_name.map(str::to_string);
                     e.title = ie.title;
                     e.date = ie.date;
                     e.start = ie.start;
@@ -274,6 +276,7 @@ pub fn merge_ics(
                 e.recurrence = ie.recurrence;
                 e.category = category.map(str::to_string);
                 e.source_uid = Some(ie.uid);
+                e.source_name = source_name.map(str::to_string);
                 events.push(e);
                 stats.added += 1;
             }
@@ -334,7 +337,13 @@ END:VCALENDAR\r\n";
     fn reimport_updates_instead_of_duplicating() {
         let now = Utc::now();
         let mut events = Vec::new();
-        let first = merge_ics(&mut events, parse_ics(OUTLOOK, 60), Some("Arbeit"), now);
+        let first = merge_ics(
+            &mut events,
+            parse_ics(OUTLOOK, 60),
+            Some("Arbeit"),
+            None,
+            now,
+        );
         assert_eq!(
             first,
             ImportStats {
@@ -346,7 +355,13 @@ END:VCALENDAR\r\n";
         assert_eq!(events[0].category.as_deref(), Some("Arbeit"));
         events[0].remind = Some(15); // set in Checko – must survive a re-import
         let moved = OUTLOOK.replace("20261127T090000", "20261127T100000");
-        let second = merge_ics(&mut events, parse_ics(&moved, 60), Some("Arbeit"), now);
+        let second = merge_ics(
+            &mut events,
+            parse_ics(&moved, 60),
+            Some("Arbeit"),
+            None,
+            now,
+        );
         assert_eq!(
             second,
             ImportStats {

@@ -38,6 +38,50 @@ fn utc_offset_min() -> i32 {
     -(js_sys::Date::new_0().get_timezone_offset() as i32)
 }
 
+/// Imported calendars with a button to remove one again (e.g. the wrong file).
+#[component]
+pub fn ImportList() -> impl IntoView {
+    let store = Store::get();
+    let batches = move || store.events.with(|e| checko_core::import_batches(e));
+    view! {
+        <Show when=move || !batches().is_empty()>
+            <div class="import-list">
+                <p class="text-sm font-semibold">"Importierte Kalender"</p>
+                <ul>
+                    <For
+                        each=batches
+                        key=|b| (b.key.clone(), b.count)
+                        children=move |b| {
+                            let label = b.name.clone().unwrap_or_else(|| {
+                                format!("Import vom {}", crate::time::local_label(b.imported_at))
+                            });
+                            let key = b.key.clone();
+                            let title = label.clone();
+                            let remove = move |_| {
+                                let ok = web_sys::window()
+                                    .and_then(|w| w.confirm_with_message(&format!("„{title}“ entfernen? Alle {} Termine daraus werden gelöscht.", b.count)).ok())
+                                    .unwrap_or(false);
+                                if ok {
+                                    store.delete_import(&key);
+                                }
+                            };
+                            view! {
+                                <li class="import-row">
+                                    <span class="min-w-0">
+                                        <span class="block font-semibold truncate">{label.clone()}</span>
+                                        <span class="block text-sm text-muted">{format!("{} Termine", b.count)}</span>
+                                    </span>
+                                    <button type="button" class="btn btn-outline btn-sm" aria-label=format!("{label} entfernen") on:click=remove>"Entfernen"</button>
+                                </li>
+                            }
+                        }
+                    />
+                </ul>
+            </div>
+        </Show>
+    }
+}
+
 /// Box to pick or drop an `.ics` file; the events land in the Checko calendar.
 #[component]
 pub fn IcsImport(#[prop(optional)] compact: bool) -> impl IntoView {
@@ -83,7 +127,7 @@ pub fn IcsImport(#[prop(optional)] compact: bool) -> impl IntoView {
             let mut stats = Default::default();
             store
                 .events
-                .update(|es| stats = merge_ics(es, parsed, cat, now()));
+                .update(|es| stats = merge_ics(es, parsed, cat, Some(&name), now()));
             let checko_core::ImportStats {
                 added,
                 updated,

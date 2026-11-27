@@ -54,6 +54,7 @@ pub enum Undo {
     Complete(Uuid),
     NoteTrash(Uuid),
     EventTrash(Uuid),
+    EventsRestore(Vec<Uuid>),
     ShoppingClear(Vec<Uuid>),
 }
 
@@ -438,6 +439,18 @@ impl Store {
         });
     }
 
+    /// Remove all events of one calendar import (with undo).
+    pub fn delete_import(&self, key: &str) {
+        let mut ids = Vec::new();
+        self.events
+            .update(|es| ids = checko_core::delete_import(es, key, now()));
+        let n = ids.len();
+        self.notify(
+            format!("{n} Termine entfernt"),
+            Some(Undo::EventsRestore(ids)),
+        );
+    }
+
     pub fn delete_event(&self, id: Uuid) {
         self.edit_event(id, |e| e.meta.deleted_at = Some(now()));
         self.notify("Termin gelöscht", Some(Undo::EventTrash(id)));
@@ -559,6 +572,12 @@ impl Store {
             Undo::Trash(id) => self.restore(id),
             Undo::Complete(id) => self.reopen(id),
             Undo::EventTrash(id) => self.edit_event(id, |e| e.meta.deleted_at = None),
+            Undo::EventsRestore(ids) => self.events.update(|es| {
+                for e in es.iter_mut().filter(|e| ids.contains(&e.meta.id)) {
+                    e.meta.deleted_at = None;
+                    e.meta.updated_at = now();
+                }
+            }),
             Undo::NoteTrash(id) => self.notes.update(|ns| {
                 if let Some(n) = ns.iter_mut().find(|n| n.meta.id == id) {
                     n.meta.deleted_at = None;

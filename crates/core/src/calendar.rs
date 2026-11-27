@@ -107,6 +107,9 @@ pub struct Event {
     /// UID from an imported calendar file, so a re-import updates instead of duplicating.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub source_uid: Option<String>,
+    /// File the event was imported from (e.g. "outlook.ics"), to remove an import again.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source_name: Option<String>,
 }
 
 impl Event {
@@ -122,6 +125,7 @@ impl Event {
             recurrence: None,
             remind: None,
             source_uid: None,
+            source_name: None,
         }
     }
 
